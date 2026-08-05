@@ -9,6 +9,7 @@ import { deleteProducts } from "@/app/actions/batchDelete"
 import { ExcelImportButton } from "@/components/ExcelImportButton"
 import { SearchBar } from "@/components/SearchBar"
 import { ClickableRow } from "@/components/ClickableRow"
+import { ProductAIModal } from "@/components/ProductAIModal"
 
 function formatRupee(paise: number) {
   return new Intl.NumberFormat('en-IN', {
@@ -94,7 +95,15 @@ export default async function ProductsPage(props: { searchParams: Promise<{ sear
                       <span className="font-mono text-xs">{product.materialCode}</span>
                     </td>
                     <td className="px-6 py-4 text-zinc-300">
-                      <div className="truncate max-w-xs font-medium group-hover:text-brand-orange transition-colors">{product.materialDescription}</div>
+                      <div className="flex items-start gap-2">
+                        <div className="truncate max-w-[250px] font-medium group-hover:text-brand-orange transition-colors">{product.materialDescription}</div>
+                        <ProductAIModal product={{
+                          description: product.materialDescription,
+                          make: product.make || '',
+                          model: product.modelNo || '',
+                          specification: product.specification || ''
+                        }} />
+                      </div>
                       <div className="text-xs text-zinc-500">{product.specification}</div>
                     </td>
                     <td className="px-6 py-4 text-zinc-300">

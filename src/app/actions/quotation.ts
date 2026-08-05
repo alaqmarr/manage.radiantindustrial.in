@@ -18,6 +18,24 @@ type QuotationItemData = {
   supplierId?: string
 }
 
+export async function getQuotationUpdatedAt(id: string) {
+  try {
+    const session = await auth()
+    if (!session?.user) return { error: "Unauthorized" }
+
+    const q = await prisma.quotation.findUnique({
+      where: { id },
+      select: { updatedAt: true }
+    })
+    
+    if (!q) return { error: "Not found" }
+    
+    return { success: true, updatedAt: q.updatedAt }
+  } catch (e: any) {
+    return { error: "Failed to check status" }
+  }
+}
+
 export async function createQuotation(data: {
   clientId: string
   prNo?: string
@@ -41,7 +59,7 @@ export async function createQuotation(data: {
     
     for (const item of data.items) {
       const amount = item.quantity * item.spSnapshot
-      const gst = Math.round(amount * (item.gstSnapshot / 100))
+      const gst = Math.round(amount * (item.product.gstRate / 100))
       
       totalAmount += amount
       totalGst += gst
@@ -110,6 +128,7 @@ export async function upsertDraftQuotation(data: {
   prNo?: string
   rfqNo?: string
   status?: string
+  expectedUpdatedAt?: Date
   items: QuotationItemData[]
 }) {
   try {
@@ -118,12 +137,23 @@ export async function upsertDraftQuotation(data: {
       return { error: "Unauthorized" }
     }
 
+    if (data.id && data.expectedUpdatedAt) {
+      const current = await prisma.quotation.findUnique({
+        where: { id: data.id },
+        select: { updatedAt: true }
+      })
+      
+      if (current && current.updatedAt.getTime() > new Date(data.expectedUpdatedAt).getTime()) {
+        return { error: "CONFLICT: Someone else has updated this quotation since you opened it. Please refresh the page to see the latest changes." }
+      }
+    }
+
     let totalAmount = 0
     let totalGst = 0
     
     for (const item of data.items) {
       const amount = item.quantity * item.spSnapshot
-      const gst = Math.round(amount * (item.gstSnapshot / 100))
+      const gst = Math.round(amount * (item.product.gstRate / 100))
       
       totalAmount += amount
       totalGst += gst

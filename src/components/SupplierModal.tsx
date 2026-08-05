@@ -23,7 +23,9 @@ export function SupplierModal({ suppliers }: { suppliers: any[] }) {
   // Reset form when modal opens
   useEffect(() => {
     if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setName(supplierToEdit?.name || "")
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setContact(supplierToEdit?.contact || "")
     }
   }, [isOpen, supplierToEdit])

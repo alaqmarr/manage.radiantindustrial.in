@@ -51,7 +51,7 @@ export default async function EditQuotationPage({ params }: { params: Promise<{ 
         <p className="text-zinc-400 mt-2">Update an existing quotation.</p>
       </div>
 
-      <QuotationForm clients={clients} products={products} initialData={quotation} />
+      <QuotationForm clients={clients} products={products} initialData={quotation} initialUpdatedAt={quotation.updatedAt} />
     </div>
   )
 }

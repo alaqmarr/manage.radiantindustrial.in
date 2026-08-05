@@ -11,13 +11,15 @@ type Client = { id: string, name: string }
 type Product = { id: string, materialCode: string, materialDescription: string, sellingPrice: number, gstRate: number, unit: string }
 
 
-export function QuotationForm({ clients: initialClients, products, initialData }: { clients: Client[], products: Product[], initialData?: any }) {
+export function QuotationForm({ clients: initialClients, products, initialData, initialUpdatedAt }: { clients: Client[], products: Product[], initialData?: any, initialUpdatedAt?: Date }) {
   const router = useRouter()
   
   // Base states
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [quotationId, setQuotationId] = useState(initialData?.id || "")
   const [saveStatus, setSaveStatus] = useState<"IDLE" | "SAVING" | "SAVED" | "ERROR">("IDLE")
+  const [conflictDetected, setConflictDetected] = useState(false)
+  const expectedUpdatedAt = useRef<Date | undefined>(initialUpdatedAt)
   
   // Form fields
   const [clients, setClients] = useState(initialClients)
@@ -63,6 +65,26 @@ export function QuotationForm({ clients: initialClients, products, initialData }
     currentCp?: number
     currentSp?: number
   } | null>(null)
+
+  // Background Polling for Updates
+  useEffect(() => {
+    if (!quotationId || conflictDetected) return
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await getQuotationUpdatedAt(quotationId)
+        if (res.success && res.updatedAt && expectedUpdatedAt.current) {
+          if (new Date(res.updatedAt).getTime() > new Date(expectedUpdatedAt.current).getTime()) {
+            setConflictDetected(true)
+          }
+        }
+      } catch (e) {
+        // silently ignore polling errors
+      }
+    }, 10000) // Poll every 10 seconds
+
+    return () => clearInterval(interval)
+  }, [quotationId, conflictDetected])
 
   // Removed auto-save logic per user request
 
@@ -222,6 +244,7 @@ export function QuotationForm({ clients: initialClients, products, initialData }
         prNo,
         rfqNo,
         status,
+        expectedUpdatedAt: expectedUpdatedAt.current,
         items: items.map(item => ({
           product: item.product,
           quantity: item.quantity,
@@ -232,7 +255,12 @@ export function QuotationForm({ clients: initialClients, products, initialData }
       }
 
       const result = await upsertDraftQuotation(payload)
-      if (result.error) throw new Error(result.error)
+      if (result.error) {
+        if (result.error.startsWith("CONFLICT")) {
+          setConflictDetected(true)
+        }
+        throw new Error(result.error)
+      }
 
       router.push(`/quotations/${result.id}`)
       router.refresh()
@@ -255,6 +283,25 @@ export function QuotationForm({ clients: initialClients, products, initialData }
           onSave={handleVendorPriceSave}
           onClose={() => setVendorDialogItem(null)}
         />
+      )}
+
+      {/* Conflict Warning Banner */}
+      {conflictDetected && (
+        <div className="bg-rose-500/10 border border-rose-500/30 p-4 rounded-xl flex items-start gap-4 animate-in fade-in slide-in-from-top-2">
+          <AlertCircle className="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <h3 className="text-sm font-medium text-rose-500">Conflict Detected: New Updates Available</h3>
+            <p className="text-sm text-rose-400 mt-1">
+              Someone else has modified this quotation since you opened it. Saving now would overwrite their changes.
+            </p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="mt-3 px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              Reload to see latest changes
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Auto-save status */}

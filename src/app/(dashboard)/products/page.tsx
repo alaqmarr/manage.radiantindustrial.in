@@ -97,13 +97,15 @@ export default async function ProductsPage(props: { searchParams: Promise<{ sear
                     <td className="px-6 py-4 text-zinc-300">
                       <div className="flex items-start gap-2">
                         <div className="truncate max-w-[250px] font-medium group-hover:text-brand-orange transition-colors">{product.materialDescription}</div>
-                        <Link 
-                          href={`/products/${product.id}/insights`}
+                        <a 
+                          href={`https://www.google.com/search?q=${encodeURIComponent(`${product.make || ''} ${product.materialDescription} stockists suppliers in Ranigunj Secunderabad Hyderabad`)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           className="p-1 text-brand-orange hover:bg-brand-orange/10 rounded-lg transition-colors group/ai relative"
-                          title="View AI Sourcing Insights"
+                          title="Search on Google"
                         >
                           <Sparkles className="w-4 h-4 group-hover/ai:scale-110 transition-transform" />
-                        </Link>
+                        </a>
                       </div>
                       <div className="text-xs text-zinc-500">{product.specification}</div>
                     </td>

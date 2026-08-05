@@ -101,7 +101,6 @@ export default async function ProductsPage(props: { searchParams: Promise<{ sear
                           href={`/products/${product.id}/insights`}
                           className="p-1 text-brand-orange hover:bg-brand-orange/10 rounded-lg transition-colors group/ai relative"
                           title="View AI Sourcing Insights"
-                          onClick={(e) => e.stopPropagation()}
                         >
                           <Sparkles className="w-4 h-4 group-hover/ai:scale-110 transition-transform" />
                         </Link>

@@ -9,7 +9,10 @@ export async function createProduct(formData: FormData) {
     if (!session?.user) {
       return { error: "Unauthorized" }
     }
-    const materialCode = String(formData.get("materialCode"))
+    let materialCode = String(formData.get("materialCode")).trim()
+    if (!materialCode) {
+      materialCode = `RAD-${Math.floor(10000000 + Math.random() * 90000000)}`
+    }
     const materialDescription = String(formData.get("materialDescription"))
     
     // Convert inputs from rupees to paise

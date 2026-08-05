@@ -93,8 +93,8 @@ export function ProductForm({ suppliers, initialData }: { suppliers: any[], init
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-zinc-400 mb-1">Material Code *</label>
-          <input required name="materialCode" type="text" defaultValue={initialData?.materialCode} className="w-full bg-zinc-950 border border-premium-border rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+          <label className="block text-sm font-medium text-zinc-400 mb-1">Material Code</label>
+          <input name="materialCode" type="text" placeholder="Leave empty to auto-generate" defaultValue={initialData?.materialCode} className="w-full bg-zinc-950 border border-premium-border rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
         </div>
 
         <div>

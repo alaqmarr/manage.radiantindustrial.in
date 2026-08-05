@@ -5,11 +5,16 @@ import { revalidatePath } from "next/cache"
 import { generateSlug } from "@/lib/slugify"
 
 type QuotationItemData = {
-  productId: string
+  product: {
+    id: string
+    materialCode: string
+    materialDescription: string
+    unit: string
+    gstRate: number
+  }
   quantity: number
   spSnapshot: number // paise
   cpSnapshot?: number // paise
-  gstSnapshot: number
   supplierId?: string
 }
 
@@ -43,6 +48,28 @@ export async function createQuotation(data: {
     }
 
     // Generate a unique ID
+    // Upsert all products
+    for (const item of data.items) {
+      const p = await prisma.product.upsert({
+        where: { materialCode: item.product.materialCode },
+        update: {
+          materialDescription: item.product.materialDescription,
+          unit: item.product.unit,
+          gstRate: item.product.gstRate
+        },
+        create: {
+          id: generateSlug(`${item.product.materialCode} ${item.product.materialDescription}`, true),
+          materialCode: item.product.materialCode,
+          materialDescription: item.product.materialDescription,
+          unit: item.product.unit,
+          gstRate: item.product.gstRate,
+          costPrice: 0,
+          sellingPrice: 0
+        }
+      })
+      item.product.id = p.id
+    }
+
     const count = await prisma.quotation.count()
     const id = generateSlug(`QT-${Date.now()}-${count + 1}`)
 
@@ -58,11 +85,11 @@ export async function createQuotation(data: {
         items: {
           create: data.items.map((item, index) => ({
             id: generateSlug(`QTI-${id}-${index}`),
-            productId: item.productId,
+            productId: item.product.id,
             quantity: item.quantity,
             spSnapshot: item.spSnapshot,
             cpSnapshot: item.cpSnapshot || null,
-            gstSnapshot: item.gstSnapshot,
+            gstSnapshot: item.product.gstRate,
             supplierId: item.supplierId || null
           }))
         }
@@ -105,6 +132,28 @@ export async function upsertDraftQuotation(data: {
     let quotationId = data.id
     const finalStatus = data.status || "DRAFT"
 
+    // Upsert all products
+    for (const item of data.items) {
+      const p = await prisma.product.upsert({
+        where: { materialCode: item.product.materialCode },
+        update: {
+          materialDescription: item.product.materialDescription,
+          unit: item.product.unit,
+          gstRate: item.product.gstRate
+        },
+        create: {
+          id: generateSlug(`${item.product.materialCode} ${item.product.materialDescription}`, true),
+          materialCode: item.product.materialCode,
+          materialDescription: item.product.materialDescription,
+          unit: item.product.unit,
+          gstRate: item.product.gstRate,
+          costPrice: 0,
+          sellingPrice: 0
+        }
+      })
+      item.product.id = p.id
+    }
+
     if (!quotationId) {
       // Create new draft
       const count = await prisma.quotation.count()
@@ -122,11 +171,11 @@ export async function upsertDraftQuotation(data: {
           items: {
             create: data.items.map((item, index) => ({
               id: generateSlug(`QTI-${quotationId}-${index}`),
-              productId: item.productId,
+              productId: item.product.id,
               quantity: item.quantity,
               spSnapshot: item.spSnapshot,
               cpSnapshot: item.cpSnapshot || null,
-              gstSnapshot: item.gstSnapshot,
+              gstSnapshot: item.product.gstRate,
               supplierId: item.supplierId || null
             }))
           }
@@ -152,11 +201,11 @@ export async function upsertDraftQuotation(data: {
           items: {
             create: data.items.map((item, index) => ({
               id: generateSlug(`QTI-${quotationId}-${index}`),
-              productId: item.productId,
+              productId: item.product.id,
               quantity: item.quantity,
               spSnapshot: item.spSnapshot,
               cpSnapshot: item.cpSnapshot || null,
-              gstSnapshot: item.gstSnapshot,
+              gstSnapshot: item.product.gstRate,
               supplierId: item.supplierId || null
             }))
           }

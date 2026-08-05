@@ -34,24 +34,22 @@ export async function importExcelAction(formData: FormData) {
     // Typical headers based on user image:
     // SR NO, PR NO, Items No, Material Code, Material Descriptions, QTY, Unit, SPECIFICATION, Make, Model NO, Photo
     for (const row of data) {
-      const materialCode = row["Material Code"] ? String(row["Material Code"]) : null
+      let materialCode = row["Material Code"] ? String(row["Material Code"]) : null
       const materialDescription = row["Material Descriptions"] ? String(row["Material Descriptions"]) : null
       
-      if (!materialCode || !materialDescription) {
-        continue // skip rows without required fields
+      if (!materialDescription) {
+        continue // skip rows without description
+      }
+
+      if (!materialCode) {
+        materialCode = `RAD-${Math.floor(10000000 + Math.random() * 90000000)}`
       }
 
       const slugId = generateSlug(`${materialCode} ${materialDescription}`, true)
 
       await prisma.product.upsert({
         where: { materialCode },
-        update: {
-          materialDescription,
-          specification: row["SPECIFICATION"] ? String(row["SPECIFICATION"]) : null,
-          make: row["Make"] ? String(row["Make"]) : null,
-          modelNo: row["Model NO"] ? String(row["Model NO"]) : null,
-          unit: row["Unit"] ? String(row["Unit"]) : "NUM",
-        },
+        update: {},
         create: {
           id: slugId,
           materialCode,
@@ -102,44 +100,30 @@ export async function parseQuotationExcelAction(formData: FormData) {
     const parsedItems: any[] = []
 
     for (const row of data) {
-      const materialCode = row["Material Code"] ? String(row["Material Code"]) : null
+      let materialCode = row["Material Code"] ? String(row["Material Code"]) : null
       const materialDescription = row["Material Descriptions"] ? String(row["Material Descriptions"]) : null
       const qtyStr = row["QTY"] ? String(row["QTY"]) : "1"
       let quantity = parseInt(qtyStr, 10)
       if (isNaN(quantity) || quantity <= 0) quantity = 1
 
-      if (!materialCode || !materialDescription) {
+      if (!materialDescription) {
         continue 
       }
 
-      const slugId = generateSlug(`${materialCode} ${materialDescription}`, true)
+      if (!materialCode) {
+        materialCode = `RAD-${Math.floor(10000000 + Math.random() * 90000000)}`
+      }
 
-      // Ensure product exists
-      const product = await prisma.product.upsert({
-        where: { materialCode },
-        update: {
-          materialDescription,
-          unit: row["Unit"] ? String(row["Unit"]) : "NUM",
-        },
-        create: {
-          id: slugId,
-          materialCode,
-          materialDescription,
-          unit: row["Unit"] ? String(row["Unit"]) : "NUM",
-          costPrice: 0,
-          sellingPrice: 0,
-          gstRate: 18.0,
-        }
-      })
+      const slugId = `TEMP-${Math.floor(Math.random() * 100000000)}`
 
       parsedItems.push({
         product: {
-          id: product.id,
-          materialCode: product.materialCode,
-          materialDescription: product.materialDescription,
-          sellingPrice: product.sellingPrice,
-          gstRate: product.gstRate,
-          unit: product.unit
+          id: slugId,
+          materialCode: materialCode,
+          materialDescription: materialDescription,
+          sellingPrice: 0,
+          gstRate: 18.0,
+          unit: row["Unit"] ? String(row["Unit"]) : "NUM"
         },
         quantity,
         itemsNo: row["Items No"] ? String(row["Items No"]) : undefined,

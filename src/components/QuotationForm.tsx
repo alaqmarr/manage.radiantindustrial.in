@@ -64,58 +64,7 @@ export function QuotationForm({ clients: initialClients, products, initialData }
     currentSp?: number
   } | null>(null)
 
-  // 1. Auto-save Logic
-  const quotationIdRef = useRef(quotationId)
-  const lastSavedPayloadRef = useRef<string>("")
-  
-  useEffect(() => {
-    quotationIdRef.current = quotationId
-  }, [quotationId])
-
-  useEffect(() => {
-    if (!selectedClientId) return
-
-    const handler = setTimeout(async () => {
-      const payload = {
-        id: quotationIdRef.current || undefined,
-        clientId: selectedClientId,
-        prNo: prNo,
-        rfqNo: rfqNo,
-        status: "DRAFT",
-        items: items.map(item => ({
-          productId: item.product.id,
-          quantity: item.quantity,
-          spSnapshot: item.spSnapshot ?? 0,
-          cpSnapshot: item.cpSnapshot,
-          supplierId: item.supplierId,
-          gstSnapshot: item.product.gstRate
-        }))
-      }
-
-      const payloadString = JSON.stringify(payload)
-      if (payloadString === lastSavedPayloadRef.current) {
-        return // Nothing changed since last save
-      }
-
-      setSaveStatus("SAVING")
-      try {
-        const result = await upsertDraftQuotation(payload)
-        if (result.success && result.id) {
-          lastSavedPayloadRef.current = payloadString
-          if (!quotationIdRef.current) {
-            setQuotationId(result.id)
-          }
-          setSaveStatus("SAVED")
-        } else {
-          setSaveStatus("ERROR")
-        }
-      } catch (err) {
-        setSaveStatus("ERROR")
-      }
-    }, 1000)
-    
-    return () => clearTimeout(handler)
-  }, [selectedClientId, prNo, rfqNo, items])
+  // Removed auto-save logic per user request
 
   // 2. Client Creation
   const handleCreateClient = async () => {
@@ -200,6 +149,13 @@ export function QuotationForm({ clients: initialClients, products, initialData }
     setItems(items.map(i => i.product.id === productId ? { ...i, quantity } : i))
   }
 
+  const handleProductChange = (productId: string, field: keyof Product, value: any) => {
+    setItems(items.map(i => i.product.id === productId ? { 
+      ...i, 
+      product: { ...i.product, [field]: value } 
+    } : i))
+  }
+
   const handleVendorPriceSave = (cp: number, sp: number, supplierId: string) => {
     if (!vendorDialogItem) return
     setItems(items.map(i => i.product.id === vendorDialogItem.productId ? {
@@ -267,12 +223,11 @@ export function QuotationForm({ clients: initialClients, products, initialData }
         rfqNo,
         status,
         items: items.map(item => ({
-          productId: item.product.id,
+          product: item.product,
           quantity: item.quantity,
           spSnapshot: item.spSnapshot ?? 0,
           cpSnapshot: item.cpSnapshot,
           supplierId: item.supplierId,
-          gstSnapshot: item.product.gstRate
         }))
       }
 
@@ -478,16 +433,37 @@ export function QuotationForm({ clients: initialClients, products, initialData }
                   
                   return (
                     <tr key={item.product.id} className="hover:bg-white/5 even:bg-white/[0.02] transition-colors group">
-                      <td className="px-4 py-3 text-white font-mono text-xs">{item.product.materialCode}</td>
-                      <td className="px-4 py-3 text-zinc-300">
-                        {item.product.materialDescription}
-                        {isPending && (
-                          <span className="ml-2 inline-flex items-center gap-1 text-[10px] uppercase tracking-wider bg-rose-500/10 text-rose-400 px-2 py-0.5 rounded border border-rose-500/20">
-                            <AlertCircle className="w-3 h-3" /> Price Pending
-                          </span>
-                        )}
+                      <td className="px-4 py-3">
+                        <input 
+                          type="text"
+                          value={item.product.materialCode}
+                          onChange={e => handleProductChange(item.product.id, 'materialCode', e.target.value)}
+                          className="w-full bg-transparent border-b border-transparent hover:border-premium-border focus:border-brand-slate px-1 py-0.5 font-mono text-xs text-white focus:outline-none focus:bg-zinc-950/50 transition-colors rounded"
+                        />
                       </td>
-                      <td className="px-4 py-3 text-zinc-400 font-mono text-xs text-center">{item.product.unit}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <input 
+                            type="text"
+                            value={item.product.materialDescription}
+                            onChange={e => handleProductChange(item.product.id, 'materialDescription', e.target.value)}
+                            className="w-full min-w-[200px] bg-transparent border-b border-transparent hover:border-premium-border focus:border-brand-slate px-1 py-0.5 text-sm text-zinc-300 focus:outline-none focus:bg-zinc-950/50 transition-colors rounded"
+                          />
+                          {isPending && (
+                            <span className="flex-shrink-0 inline-flex items-center gap-1 text-[10px] uppercase tracking-wider bg-rose-500/10 text-rose-400 px-2 py-0.5 rounded border border-rose-500/20">
+                              <AlertCircle className="w-3 h-3" /> Price Pending
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <input 
+                          type="text"
+                          value={item.product.unit}
+                          onChange={e => handleProductChange(item.product.id, 'unit', e.target.value)}
+                          className="w-16 bg-transparent border-b border-transparent hover:border-premium-border focus:border-brand-slate px-1 py-0.5 font-mono text-xs text-zinc-400 text-center focus:outline-none focus:bg-zinc-950/50 transition-colors rounded uppercase"
+                        />
+                      </td>
                       <td className="px-4 py-3">
                         <button 
                           onClick={() => setVendorDialogItem({
@@ -518,7 +494,17 @@ export function QuotationForm({ clients: initialClients, products, initialData }
                           {sp > 0 ? (sp / 100).toFixed(2) : 'Set SP'}
                         </button>
                       </td>
-                      <td className="px-4 py-3 text-zinc-300">{item.product.gstRate}%</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center">
+                          <input 
+                            type="number"
+                            value={item.product.gstRate}
+                            onChange={e => handleProductChange(item.product.id, 'gstRate', parseFloat(e.target.value) || 0)}
+                            className="w-12 bg-transparent border-b border-transparent hover:border-premium-border focus:border-brand-slate px-1 py-0.5 text-sm text-zinc-300 text-right focus:outline-none focus:bg-zinc-950/50 transition-colors rounded"
+                          />
+                          <span className="text-zinc-500 text-xs ml-1">%</span>
+                        </div>
+                      </td>
                     <td className="px-4 py-3">
                       <input 
                         type="number" 

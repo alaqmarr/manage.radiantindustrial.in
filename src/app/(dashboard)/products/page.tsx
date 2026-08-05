@@ -9,7 +9,7 @@ import { deleteProducts } from "@/app/actions/batchDelete"
 import { ExcelImportButton } from "@/components/ExcelImportButton"
 import { SearchBar } from "@/components/SearchBar"
 import { ClickableRow } from "@/components/ClickableRow"
-import { ProductAIModal } from "@/components/ProductAIModal"
+import { Sparkles } from "lucide-react"
 
 function formatRupee(paise: number) {
   return new Intl.NumberFormat('en-IN', {
@@ -97,12 +97,14 @@ export default async function ProductsPage(props: { searchParams: Promise<{ sear
                     <td className="px-6 py-4 text-zinc-300">
                       <div className="flex items-start gap-2">
                         <div className="truncate max-w-[250px] font-medium group-hover:text-brand-orange transition-colors">{product.materialDescription}</div>
-                        <ProductAIModal product={{
-                          description: product.materialDescription,
-                          make: product.make || '',
-                          model: product.modelNo || '',
-                          specification: product.specification || ''
-                        }} />
+                        <Link 
+                          href={`/products/${product.id}/insights`}
+                          className="p-1 text-brand-orange hover:bg-brand-orange/10 rounded-lg transition-colors group/ai relative"
+                          title="View AI Sourcing Insights"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Sparkles className="w-4 h-4 group-hover/ai:scale-110 transition-transform" />
+                        </Link>
                       </div>
                       <div className="text-xs text-zinc-500">{product.specification}</div>
                     </td>

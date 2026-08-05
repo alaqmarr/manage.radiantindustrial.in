@@ -7,7 +7,7 @@ import authConfig from "./auth.config"
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
-  // @ts-expect-error NextAuth types clash with Prisma v7 generated types
+  // @ts-ignore: NextAuth types clash with Prisma v7 generated types
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   providers: [

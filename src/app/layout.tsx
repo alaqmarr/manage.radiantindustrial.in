@@ -1,8 +1,16 @@
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Outfit, Montserrat } from "next/font/google"
 import "./globals.css"
 
-const inter = Inter({ subsets: ["latin"] })
+const outfit = Outfit({ 
+  subsets: ["latin"],
+  variable: "--font-outfit",
+})
+
+const montserrat = Montserrat({ 
+  subsets: ["latin"],
+  variable: "--font-montserrat",
+})
 
 export const metadata: Metadata = {
   title: {
@@ -19,7 +27,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-zinc-950 text-white min-h-screen`}>
+      <body className={`${outfit.variable} ${montserrat.variable} font-sans bg-zinc-950 text-white min-h-screen`}>
         {children}
       </body>
     </html>

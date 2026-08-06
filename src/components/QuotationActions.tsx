@@ -214,7 +214,8 @@ export function QuotationActions({
           {`
             @page { margin: 15mm; size: A4; }
             body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: white; }
-            * { font-family: 'Inter', system-ui, sans-serif; }
+            * { font-family: var(--font-sans), 'Outfit', system-ui, sans-serif; }
+            h1, h2, h3 { font-family: var(--font-heading), 'Montserrat', sans-serif !important; }
           `}
         </style>
         
@@ -228,11 +229,11 @@ export function QuotationActions({
                   {settings?.logoUrl ? (
                     <img src={settings.logoUrl} alt={settings.companyName} style={{ maxHeight: "48px", marginBottom: "12px" }} />
                   ) : (
-                    <h1 style={{ margin: "0 0 12px 0", fontSize: "20px", fontWeight: "700", color: "#111827" }}>{settings?.companyName || "Company Name"}</h1>
+                    <h1 style={{ margin: "0 0 12px 0", fontSize: "20px", fontWeight: "700", color: "#111827", fontFamily: "var(--font-heading), 'Montserrat', Arial, sans-serif" }}>{settings?.companyName || "Company Name"}</h1>
                   )}
                 </td>
                 <td valign="top" width="50%" align="right">
-                  <h2 style={{ margin: "0 0 6px 0", fontSize: "22px", fontWeight: "800", color: "#f97316", textTransform: "uppercase", letterSpacing: "1px" }}>Quotation</h2>
+                  <h2 style={{ margin: "0 0 6px 0", fontSize: "22px", fontWeight: "800", color: "#f97316", textTransform: "uppercase", letterSpacing: "1px", fontFamily: "var(--font-heading), 'Montserrat', Arial, sans-serif" }}>Quotation</h2>
                   <p style={{ margin: "0 0 2px 0", color: "#4b5563" }}><strong>Date:</strong> {new Date(quotation.createdAt).toLocaleDateString()}</p>
                   <p style={{ margin: "0", color: "#4b5563", wordBreak: "break-all" }}><strong>Quote No:</strong> {quotation.id}</p>
                 </td>
@@ -291,13 +292,13 @@ export function QuotationActions({
                     )}
                   </td>
                   <td style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "center", verticalAlign: "top" }}>
-                    <span style={{ fontWeight: "600", color: "#374151", fontSize: "13px" }}>{item.quantity}</span>
+                    <span style={{ fontWeight: "600", color: "#374151", fontSize: "13px", fontVariantNumeric: "tabular-nums" }}>{item.quantity}</span>
                     <span style={{ fontSize: "10px", color: "#9ca3af", marginLeft: "4px" }}>{item.product.unit}</span>
                   </td>
-                  <td style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "right", verticalAlign: "top", fontSize: "13px" }}>
+                  <td style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "right", verticalAlign: "top", fontSize: "13px", fontVariantNumeric: "tabular-nums" }}>
                     ₹{(item.spSnapshot / 100).toFixed(2)}
                   </td>
-                  <td style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "right", verticalAlign: "top", fontWeight: "600", color: "#111827", fontSize: "13px" }}>
+                  <td style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "right", verticalAlign: "top", fontWeight: "600", color: "#111827", fontSize: "13px", fontVariantNumeric: "tabular-nums" }}>
                     ₹{(Math.round(item.spSnapshot * item.quantity) / 100).toFixed(2)}
                   </td>
                 </tr>
@@ -315,15 +316,15 @@ export function QuotationActions({
                     <tbody>
                       <tr>
                         <td style={{ padding: "12px 16px", color: "#4b5563", textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Subtotal</td>
-                        <td style={{ padding: "12px 16px", fontWeight: "600", color: "#111827", textAlign: "right", borderBottom: "1px solid #e5e7eb" }}>₹{(quotation.totalAmount / 100).toFixed(2)}</td>
+                        <td style={{ padding: "12px 16px", fontWeight: "600", color: "#111827", textAlign: "right", borderBottom: "1px solid #e5e7eb", fontVariantNumeric: "tabular-nums" }}>₹{(quotation.totalAmount / 100).toFixed(2)}</td>
                       </tr>
                       <tr>
                         <td style={{ padding: "12px 16px", color: "#4b5563", textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Total GST</td>
-                        <td style={{ padding: "12px 16px", fontWeight: "600", color: "#111827", textAlign: "right", borderBottom: "1px solid #e5e7eb" }}>₹{(quotation.totalGst / 100).toFixed(2)}</td>
+                        <td style={{ padding: "12px 16px", fontWeight: "600", color: "#111827", textAlign: "right", borderBottom: "1px solid #e5e7eb", fontVariantNumeric: "tabular-nums" }}>₹{(quotation.totalGst / 100).toFixed(2)}</td>
                       </tr>
                       <tr>
                         <td style={{ padding: "16px", fontSize: "16px", fontWeight: "800", color: "#111827", textAlign: "left" }}>Grand Total</td>
-                        <td style={{ padding: "16px", fontSize: "16px", fontWeight: "800", color: "#f97316", textAlign: "right" }}>₹{((quotation.totalAmount + quotation.totalGst) / 100).toFixed(2)}</td>
+                        <td style={{ padding: "16px", fontSize: "16px", fontWeight: "800", color: "#f97316", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>₹{((quotation.totalAmount + quotation.totalGst) / 100).toFixed(2)}</td>
                       </tr>
                     </tbody>
                   </table>

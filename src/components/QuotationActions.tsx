@@ -151,12 +151,8 @@ export function QuotationActions({
                 <th style={{ padding: "10px", border: "1px solid #ddd", textAlign: "left", minWidth: "300px" }}>Description</th>
                 <th style={{ padding: "10px", border: "1px solid #ddd", textAlign: "center", width: "80px" }}>UOM</th>
                 <th style={{ padding: "10px", border: "1px solid #ddd", textAlign: "center", width: "80px" }}>Qty</th>
-                {quotation.status !== "DRAFT" && (
-                  <>
                     <th style={{ padding: "10px", border: "1px solid #ddd", textAlign: "right", width: "120px" }}>Rate (₹)</th>
                     <th style={{ padding: "10px", border: "1px solid #ddd", textAlign: "right", width: "120px" }}>Amount (₹)</th>
-                  </>
-                )}
               </tr>
             </thead>
             <tbody>
@@ -171,28 +167,33 @@ export function QuotationActions({
                   </td>
                   <td style={{ padding: "10px", border: "1px solid #ddd", textAlign: "center" }}>{item.product.unit}</td>
                   <td style={{ padding: "10px", border: "1px solid #ddd", textAlign: "center" }}>{item.quantity}</td>
-                  {quotation.status !== "DRAFT" && (
-                    <>
                       <td style={{ padding: "10px", border: "1px solid #ddd", textAlign: "right" }}>
                         {(item.spSnapshot / 100).toFixed(2)}
                       </td>
                       <td style={{ padding: "10px", border: "1px solid #ddd", textAlign: "right" }}>
                         {((item.spSnapshot * item.quantity) / 100).toFixed(2)}
                       </td>
-                    </>
-                  )}
                 </tr>
               ))}
             </tbody>
           </table>
 
-          {quotation.status !== "DRAFT" && (
-            <div style={{ textAlign: "right", marginBottom: "30px" }}>
-              <p style={{ margin: "0 0 5px 0" }}><strong>Total (excl. GST):</strong> ₹{(quotation.totalAmount / 100).toFixed(2)}</p>
-              <p style={{ margin: "0 0 5px 0" }}><strong>GST:</strong> ₹{(quotation.totalGst / 100).toFixed(2)}</p>
-              <p style={{ margin: "0", fontSize: "1.1em", color: "#f48c36" }}><strong>Grand Total:</strong> ₹{((quotation.totalAmount + quotation.totalGst) / 100).toFixed(2)}</p>
-            </div>
-          )}
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "20px" }}>
+                    <div style={{ width: "250px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px", color: "#666" }}>
+                        <span>Subtotal:</span>
+                        <span>₹{(quotation.totalAmount / 100).toFixed(2)}</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px", color: "#666" }}>
+                        <span>Total GST:</span>
+                        <span>₹{(quotation.totalGst / 100).toFixed(2)}</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", fontSize: "1.1em", borderTop: "1px solid #ddd", paddingTop: "5px" }}>
+                        <span>Grand Total:</span>
+                        <span>₹{((quotation.totalAmount + quotation.totalGst) / 100).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
 
           {settings?.bottomDetails && (
             <div style={{ borderTop: "1px solid #ddd", paddingTop: "20px", fontSize: "0.9em", color: "#666", whiteSpace: "pre-wrap" }}>

@@ -103,17 +103,8 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
                   <td className="py-4 px-4 text-center text-zinc-400 text-xs font-mono">{item.product.unit}</td>
                   <td className="py-4 px-4 text-center text-zinc-300">{item.quantity}</td>
                   
-                  {isDraft ? (
-                    <>
-                      <td className="py-4 px-4 text-right"></td>
-                      <td className="py-4 px-4 text-right"></td>
-                    </>
-                  ) : (
-                    <>
-                      <td className="py-4 px-4 text-right text-zinc-300">{formatRupee(item.spSnapshot)}</td>
-                      <td className="py-4 px-4 text-right text-white font-medium">{formatRupee(item.spSnapshot * item.quantity)}</td>
-                    </>
-                  )}
+                  <td className="py-4 px-4 text-right text-zinc-300">{formatRupee(item.spSnapshot)}</td>
+                  <td className="py-4 px-4 text-right text-white font-medium">{formatRupee(item.spSnapshot * item.quantity)}</td>
                 </tr>
               ))}
             </tbody>
@@ -121,8 +112,7 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
         </div>
 
         {/* Totals */}
-        {!isDraft && (
-          <div className="flex justify-end mb-12">
+        <div className="flex justify-end mb-12">
             <div className="w-72 space-y-3 text-sm">
               <div className="flex justify-between text-zinc-400">
                 <span>Subtotal (excl. GST)</span>
@@ -138,7 +128,6 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
               </div>
             </div>
           </div>
-        )}
 
         {/* Bottom Details */}
         {settings?.bottomDetails && (

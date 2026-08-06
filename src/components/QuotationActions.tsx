@@ -125,87 +125,117 @@ export function QuotationActions({
       </div>
 
       {/* Print Template & Hidden Email Table */}
-      <div className="hidden print:block w-full bg-white text-black p-4">
+      {/* Print Template & Hidden Email Table */}
+      <div className="hidden print:block w-full bg-white text-black">
         <style type="text/css" media="print">
           {`
-            @page { margin: 20mm; }
-            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            @page { margin: 15mm; size: A4; }
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: white; }
+            * { font-family: 'Inter', system-ui, sans-serif; }
           `}
         </style>
-        <div ref={emailTableRef} style={{ fontFamily: "sans-serif", color: "#333", maxWidth: "800px", margin: "0 auto" }}>
-          {settings?.logoUrl && (
-            <div style={{ marginBottom: "20px" }}>
-              <img src={settings.logoUrl} alt={settings.companyName} style={{ maxHeight: "80px" }} />
-            </div>
-          )}
+        
+        <div ref={emailTableRef} style={{ color: "#1f2937", maxWidth: "800px", margin: "0 auto", fontSize: "14px", lineHeight: "1.5" }}>
           
-          <div style={{ marginBottom: "20px" }}>
-            <h2 style={{ color: "#556270", margin: "0 0 10px 0" }}>{settings?.companyName || "Quotation"}</h2>
-            <p style={{ margin: "0 0 5px 0" }}><strong>To:</strong> {quotation.client.name}</p>
-            {quotation.prNo && <p style={{ margin: "0 0 5px 0" }}><strong>PR No:</strong> {quotation.prNo}</p>}
-            {quotation.rfqNo && <p style={{ margin: "0 0 15px 0" }}><strong>RFQ No:</strong> {quotation.rfqNo}</p>}
-            
-            {settings?.quotationMessage && (
-              <p style={{ margin: "0 0 20px 0" }}>{settings.quotationMessage}</p>
-            )}
+          {/* Header */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "2px solid #f3f4f6", paddingBottom: "24px", marginBottom: "32px" }}>
+            <div>
+              {settings?.logoUrl ? (
+                <img src={settings.logoUrl} alt={settings.companyName} style={{ maxHeight: "64px", marginBottom: "16px" }} />
+              ) : (
+                <h1 style={{ margin: "0 0 16px 0", fontSize: "24px", fontWeight: "700", color: "#111827" }}>{settings?.companyName || "Company Name"}</h1>
+              )}
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <h2 style={{ margin: "0 0 8px 0", fontSize: "28px", fontWeight: "800", color: "#f97316", textTransform: "uppercase", letterSpacing: "1px" }}>Quotation</h2>
+              <p style={{ margin: "0 0 4px 0", color: "#4b5563" }}><strong>Date:</strong> {new Date(quotation.createdAt).toLocaleDateString()}</p>
+              <p style={{ margin: "0", color: "#4b5563" }}><strong>Quote No:</strong> {quotation.id}</p>
+            </div>
           </div>
 
-          <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "20px" }}>
+          {/* Details */}
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "40px" }}>
+            <div style={{ flex: 1, paddingRight: "20px" }}>
+              <h3 style={{ margin: "0 0 8px 0", fontSize: "12px", textTransform: "uppercase", color: "#9ca3af", letterSpacing: "0.5px" }}>Quote To</h3>
+              <p style={{ margin: "0 0 4px 0", fontSize: "16px", fontWeight: "600", color: "#111827" }}>{quotation.client.name}</p>
+              {quotation.client.email && <p style={{ margin: "0 0 4px 0", color: "#4b5563" }}>{quotation.client.email}</p>}
+            </div>
+            
+            <div style={{ flex: 1, paddingLeft: "20px", borderLeft: "1px solid #f3f4f6" }}>
+              <h3 style={{ margin: "0 0 8px 0", fontSize: "12px", textTransform: "uppercase", color: "#9ca3af", letterSpacing: "0.5px" }}>Reference</h3>
+              {quotation.prNo && <p style={{ margin: "0 0 4px 0" }}><strong style={{ color: "#4b5563" }}>PR No:</strong> {quotation.prNo}</p>}
+              {quotation.rfqNo && <p style={{ margin: "0 0 4px 0" }}><strong style={{ color: "#4b5563" }}>RFQ No:</strong> {quotation.rfqNo}</p>}
+            </div>
+          </div>
+
+          {settings?.quotationMessage && (
+            <div style={{ marginBottom: "32px", padding: "16px", backgroundColor: "#f9fafb", borderRadius: "8px", color: "#374151" }}>
+              <p style={{ margin: "0", whiteSpace: "pre-wrap" }}>{settings.quotationMessage}</p>
+            </div>
+          )}
+
+          {/* Table */}
+          <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "40px" }}>
             <thead>
-              <tr style={{ backgroundColor: "#556270", color: "white" }}>
-                <th style={{ padding: "10px", border: "1px solid #ddd", textAlign: "left", width: "120px" }}>Code</th>
-                <th style={{ padding: "10px", border: "1px solid #ddd", textAlign: "left", minWidth: "300px" }}>Description</th>
-                <th style={{ padding: "10px", border: "1px solid #ddd", textAlign: "center", width: "80px" }}>UOM</th>
-                <th style={{ padding: "10px", border: "1px solid #ddd", textAlign: "center", width: "80px" }}>Qty</th>
-                    <th style={{ padding: "10px", border: "1px solid #ddd", textAlign: "right", width: "120px" }}>Rate (₹)</th>
-                    <th style={{ padding: "10px", border: "1px solid #ddd", textAlign: "right", width: "120px" }}>Amount (₹)</th>
+              <tr>
+                <th style={{ padding: "12px 8px", borderBottom: "2px solid #e5e7eb", textAlign: "left", color: "#6b7280", fontSize: "12px", textTransform: "uppercase", fontWeight: "600" }}>Item</th>
+                <th style={{ padding: "12px 8px", borderBottom: "2px solid #e5e7eb", textAlign: "left", color: "#6b7280", fontSize: "12px", textTransform: "uppercase", fontWeight: "600" }}>Description</th>
+                <th style={{ padding: "12px 8px", borderBottom: "2px solid #e5e7eb", textAlign: "center", color: "#6b7280", fontSize: "12px", textTransform: "uppercase", fontWeight: "600" }}>Qty</th>
+                <th style={{ padding: "12px 8px", borderBottom: "2px solid #e5e7eb", textAlign: "right", color: "#6b7280", fontSize: "12px", textTransform: "uppercase", fontWeight: "600" }}>Rate</th>
+                <th style={{ padding: "12px 8px", borderBottom: "2px solid #e5e7eb", textAlign: "right", color: "#6b7280", fontSize: "12px", textTransform: "uppercase", fontWeight: "600" }}>Amount</th>
               </tr>
             </thead>
             <tbody>
               {quotation.items.filter((item: any) => item.spSnapshot > 0).map((item: any) => (
                 <tr key={item.id}>
-                  <td style={{ padding: "10px", border: "1px solid #ddd" }}>{item.product.materialCode}</td>
-                  <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                    <div style={{ fontWeight: "500", marginBottom: "4px" }}>{item.product.materialDescription}</div>
+                  <td style={{ padding: "16px 8px", borderBottom: "1px solid #f3f4f6", verticalAlign: "top" }}>
+                    <span style={{ fontFamily: "monospace", color: "#4b5563" }}>{item.product.materialCode}</span>
+                  </td>
+                  <td style={{ padding: "16px 8px", borderBottom: "1px solid #f3f4f6", verticalAlign: "top" }}>
+                    <div style={{ fontWeight: "600", color: "#111827", marginBottom: "4px" }}>{item.product.materialDescription}</div>
                     {item.product.specification && (
-                      <div style={{ fontSize: "0.85em", color: "#666", whiteSpace: "pre-wrap" }}>{item.product.specification}</div>
+                      <div style={{ fontSize: "12px", color: "#6b7280", whiteSpace: "pre-wrap", marginBottom: "4px" }}>{item.product.specification}</div>
                     )}
                     {item.comment && (
-                      <div style={{ fontSize: "0.85em", color: "#555", fontStyle: "italic", whiteSpace: "pre-wrap", marginTop: "4px" }}>{item.comment}</div>
+                      <div style={{ fontSize: "12px", color: "#555", fontStyle: "italic", whiteSpace: "pre-wrap", marginTop: "4px" }}>{item.comment}</div>
                     )}
                   </td>
-                  <td style={{ padding: "10px", border: "1px solid #ddd", textAlign: "center" }}>{item.product.unit}</td>
-                  <td style={{ padding: "10px", border: "1px solid #ddd", textAlign: "center" }}>{item.quantity}</td>
-                      <td style={{ padding: "10px", border: "1px solid #ddd", textAlign: "right" }}>
-                        {(item.spSnapshot / 100).toFixed(2)}
-                      </td>
-                      <td style={{ padding: "10px", border: "1px solid #ddd", textAlign: "right" }}>
-                        {(Math.round(item.spSnapshot * item.quantity) / 100).toFixed(2)}
-                      </td>
+                  <td style={{ padding: "16px 8px", borderBottom: "1px solid #f3f4f6", textAlign: "center", verticalAlign: "top" }}>
+                    <span style={{ fontWeight: "500", color: "#374151" }}>{item.quantity}</span>
+                    <span style={{ fontSize: "12px", color: "#9ca3af", marginLeft: "4px" }}>{item.product.unit}</span>
+                  </td>
+                  <td style={{ padding: "16px 8px", borderBottom: "1px solid #f3f4f6", textAlign: "right", verticalAlign: "top" }}>
+                    ₹{(item.spSnapshot / 100).toFixed(2)}
+                  </td>
+                  <td style={{ padding: "16px 8px", borderBottom: "1px solid #f3f4f6", textAlign: "right", verticalAlign: "top", fontWeight: "500", color: "#111827" }}>
+                    ₹{(Math.round(item.spSnapshot * item.quantity) / 100).toFixed(2)}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
 
-                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "20px" }}>
-                    <div style={{ width: "250px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px", color: "#666" }}>
-                        <span>Subtotal:</span>
-                        <span>₹{(quotation.totalAmount / 100).toFixed(2)}</span>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px", color: "#666" }}>
-                        <span>Total GST:</span>
-                        <span>₹{(quotation.totalGst / 100).toFixed(2)}</span>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", fontSize: "1.1em", borderTop: "1px solid #ddd", paddingTop: "5px" }}>
-                        <span>Grand Total:</span>
-                        <span>₹{((quotation.totalAmount + quotation.totalGst) / 100).toFixed(2)}</span>
-                      </div>
-                    </div>
-                  </div>
+          {/* Totals */}
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "40px" }}>
+            <div style={{ width: "300px", padding: "24px", backgroundColor: "#f9fafb", borderRadius: "8px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px", color: "#4b5563" }}>
+                <span>Subtotal</span>
+                <span style={{ fontWeight: "500", color: "#111827" }}>₹{(quotation.totalAmount / 100).toFixed(2)}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px", color: "#4b5563" }}>
+                <span>Total GST</span>
+                <span style={{ fontWeight: "500", color: "#111827" }}>₹{(quotation.totalGst / 100).toFixed(2)}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", borderTop: "2px solid #e5e7eb", paddingTop: "16px", fontSize: "18px", fontWeight: "700", color: "#111827" }}>
+                <span>Grand Total</span>
+                <span style={{ color: "#f97316" }}>₹{((quotation.totalAmount + quotation.totalGst) / 100).toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
 
+          {/* Footer */}
           {settings?.bottomDetails && (
-            <div style={{ borderTop: "1px solid #ddd", paddingTop: "20px", fontSize: "0.9em", color: "#666", whiteSpace: "pre-wrap" }}>
+            <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: "24px", fontSize: "12px", color: "#6b7280", whiteSpace: "pre-wrap", lineHeight: "1.6" }}>
               {settings.bottomDetails}
             </div>
           )}

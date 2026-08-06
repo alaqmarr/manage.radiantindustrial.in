@@ -547,7 +547,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                               placeholder="Add comment (optional)..."
                               value={item.comment || ""}
                               onChange={(e) => handleCommentChange(item.product.id, e.target.value)}
-                              className="w-full bg-zinc-950/50 border border-transparent hover:border-premium-border focus:border-brand-slate px-2 py-1 text-xs text-zinc-400 focus:text-zinc-300 rounded focus:outline-none transition-colors"
+                              className="w-full bg-zinc-950/50 border border-transparent hover:border-premium-border focus:border-brand-slate px-2 py-1 text-xs text-red-500 font-bold focus:text-red-400 rounded focus:outline-none transition-colors placeholder:text-zinc-600 placeholder:font-normal"
                             />
                           </div>
                         </div>

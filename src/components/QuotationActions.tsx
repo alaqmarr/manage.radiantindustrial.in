@@ -288,7 +288,7 @@ export function QuotationActions({
                       <div style={{ fontSize: "11px", color: "#6b7280", whiteSpace: "pre-wrap", marginBottom: "4px" }}>{item.product.specification}</div>
                     )}
                     {item.comment && (
-                      <div style={{ fontSize: "11px", color: "#555", fontStyle: "italic", whiteSpace: "pre-wrap", marginTop: "4px" }}>{item.comment}</div>
+                      <div style={{ fontSize: "11px", color: "#dc2626", fontWeight: "bold", whiteSpace: "pre-wrap", marginTop: "4px" }}>{item.comment}</div>
                     )}
                   </td>
                   <td style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "center", verticalAlign: "top" }}>

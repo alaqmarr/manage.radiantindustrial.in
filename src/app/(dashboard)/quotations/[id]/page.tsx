@@ -58,7 +58,7 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
       </div>
 
       {/* Dashboard View Container */}
-      <div className="glass-panel p-8 rounded-2xl relative overflow-hidden print:hidden">
+      <div className="glass-panel p-8 rounded-lg relative overflow-hidden print:hidden">
         {/* Decorative corner glow */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-brand-orange/5 rounded-full blur-3xl pointer-events-none" />
         

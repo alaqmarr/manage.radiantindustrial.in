@@ -9,7 +9,7 @@ export function DashboardCharts({ data }: { data: any }) {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-      <div className="glass-panel rounded-2xl p-6 h-96 flex flex-col">
+      <div className="glass-panel rounded-md p-6 h-96 flex flex-col">
         <h3 className="text-zinc-200 font-medium mb-6">Revenue Trend</h3>
         <div className="flex-1 w-full h-full">
           <ResponsiveContainer width="100%" height="100%">
@@ -27,7 +27,7 @@ export function DashboardCharts({ data }: { data: any }) {
         </div>
       </div>
 
-      <div className="glass-panel rounded-2xl p-6 h-96 flex flex-col">
+      <div className="glass-panel rounded-md p-6 h-96 flex flex-col">
         <h3 className="text-zinc-200 font-medium mb-6">Purchases vs Sales</h3>
         <div className="flex-1 w-full h-full">
           <ResponsiveContainer width="100%" height="100%">
@@ -48,3 +48,4 @@ export function DashboardCharts({ data }: { data: any }) {
     </div>
   )
 }
+

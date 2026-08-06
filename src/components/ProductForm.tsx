@@ -73,19 +73,19 @@ export function ProductForm({ suppliers, initialData }: { suppliers: any[], init
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl glass-panel p-6 rounded-2xl">
+    <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl glass-panel p-6 rounded-md">
       <div className="grid grid-cols-2 gap-6">
         <div className="col-span-2">
           <label className="block text-sm font-medium text-zinc-400 mb-2">Product Image</label>
           <div className="flex items-center gap-4">
-            <div className="w-24 h-24 rounded-lg bg-white/5 border border-premium-border flex items-center justify-center overflow-hidden">
+            <div className="w-24 h-24 rounded-md bg-white/5 border border-premium-border flex items-center justify-center overflow-hidden">
               {imagePreview ? (
                 <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
               ) : (
                 <ImagePlus className="w-8 h-8 text-zinc-600" />
               )}
             </div>
-            <label className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white text-sm font-medium rounded-lg cursor-pointer transition-colors border border-premium-border">
+            <label className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white text-sm font-medium rounded-md cursor-pointer transition-colors border border-premium-border">
               Choose Image
               <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
             </label>
@@ -94,17 +94,17 @@ export function ProductForm({ suppliers, initialData }: { suppliers: any[], init
 
         <div>
           <label className="block text-sm font-medium text-zinc-400 mb-1">Material Code</label>
-          <input name="materialCode" type="text" placeholder="Leave empty to auto-generate" defaultValue={initialData?.materialCode} className="w-full bg-zinc-950 border border-premium-border rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+          <input name="materialCode" type="text" placeholder="Leave empty to auto-generate" defaultValue={initialData?.materialCode} className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-zinc-400 mb-1">Material Description *</label>
-          <input required name="materialDescription" type="text" defaultValue={initialData?.materialDescription} className="w-full bg-zinc-950 border border-premium-border rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+          <input required name="materialDescription" type="text" defaultValue={initialData?.materialDescription} className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-zinc-400 mb-1">Supplier</label>
-          <select name="supplierId" defaultValue={initialData?.supplierId || ""} className="w-full bg-zinc-950 border border-premium-border rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate">
+          <select name="supplierId" defaultValue={initialData?.supplierId || ""} className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate">
             <option value="">No Supplier (Direct)</option>
             {suppliers.map(s => (
               <option key={s.id} value={s.id}>{s.name}</option>
@@ -115,22 +115,22 @@ export function ProductForm({ suppliers, initialData }: { suppliers: any[], init
         <div className="grid grid-cols-3 gap-4 col-span-2">
           <div>
             <label className="block text-sm font-medium text-zinc-400 mb-1">Make</label>
-            <input name="make" type="text" defaultValue={initialData?.make || ""} className="w-full bg-zinc-950 border border-premium-border rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+            <input name="make" type="text" defaultValue={initialData?.make || ""} className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
           </div>
           <div>
             <label className="block text-sm font-medium text-zinc-400 mb-1">Model No</label>
-            <input name="modelNo" type="text" defaultValue={initialData?.modelNo || ""} className="w-full bg-zinc-950 border border-premium-border rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+            <input name="modelNo" type="text" defaultValue={initialData?.modelNo || ""} className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
           </div>
           <div>
             <label className="block text-sm font-medium text-zinc-400 mb-1">Unit</label>
-            <input name="unit" type="text" defaultValue={initialData?.unit || "NUM"} className="w-full bg-zinc-950 border border-premium-border rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+            <input name="unit" type="text" defaultValue={initialData?.unit || "NUM"} className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
           </div>
         </div>
 
         <div className="grid grid-cols-1 gap-4 col-span-2">
           <div>
             <label className="block text-sm font-medium text-zinc-400 mb-1">Cost Price (Rupees) *</label>
-            <input required name="costPrice" type="number" step="0.01" min="0" defaultValue={initialData?.costPrice ? initialData.costPrice / 100 : undefined} className="w-full max-w-md bg-zinc-950 border border-premium-border rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+            <input required name="costPrice" type="number" step="0.01" min="0" defaultValue={initialData?.costPrice ? initialData.costPrice / 100 : undefined} className="w-full max-w-md bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
           </div>
         </div>
       </div>
@@ -139,7 +139,7 @@ export function ProductForm({ suppliers, initialData }: { suppliers: any[], init
         <button 
           type="submit" 
           disabled={isSubmitting}
-          className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-brand-orange to-brand-orange-dark hover:from-brand-orange-dark hover:to-brand-orange shadow-lg shadow-brand-orange/20 disabled:opacity-50 text-white font-medium rounded-lg transition-all active:scale-95"
+          className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-brand-orange to-brand-orange-dark hover:from-brand-orange-dark hover:to-brand-orange shadow-lg shadow-brand-orange/20 disabled:opacity-50 text-white font-medium rounded-md transition-all active:scale-95"
         >
           {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
           {initialData ? 'Update Product' : 'Save Product'}
@@ -148,3 +148,4 @@ export function ProductForm({ suppliers, initialData }: { suppliers: any[], init
     </form>
   )
 }
+

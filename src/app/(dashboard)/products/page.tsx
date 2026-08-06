@@ -54,14 +54,14 @@ export default async function ProductsPage(props: { searchParams: Promise<{ sear
           <SearchBar placeholder="Search products..." />
           <BatchDeleteButton deleteAction={deleteProducts} entityName="products" />
           <ExcelImportButton />
-          <Link href="/products/new" className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-brand-orange to-brand-orange-dark hover:from-brand-orange-dark hover:to-brand-orange shadow-lg shadow-brand-orange/20 text-white font-medium rounded-lg transition-all active:scale-95">
+          <Link href="/products/new" className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-brand-orange to-brand-orange-dark hover:from-brand-orange-dark hover:to-brand-orange shadow-lg shadow-brand-orange/20 text-white font-medium rounded-md transition-all active:scale-95">
             <Plus className="w-4 h-4" />
             <span className="text-sm">Add Product</span>
           </Link>
         </div>
       </div>
 
-      <div className="glass-panel rounded-2xl overflow-hidden">
+      <div className="glass-panel rounded-md overflow-hidden">
         <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
             <thead className="text-xs text-zinc-400 uppercase bg-premium-surface/50 border-b border-premium-border">
@@ -101,12 +101,12 @@ export default async function ProductsPage(props: { searchParams: Promise<{ sear
                     </td>
                     <td className="px-6 py-4 text-zinc-300">
                       <div className="flex items-start gap-2">
-                        <div className="truncate max-w-[250px] font-medium group-hover:text-brand-orange transition-colors">{product.materialDescription}</div>
+                        <div className="font-medium group-hover:text-brand-orange transition-colors">{product.materialDescription}</div>
                         <a 
                           href={`https://www.google.com/search?q=${encodeURIComponent(`${product.make || ''} ${product.materialDescription} stockists suppliers in Ranigunj Secunderabad Hyderabad`)}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="p-1 text-brand-orange hover:bg-brand-orange/10 rounded-lg transition-colors group/ai relative"
+                          className="p-1 text-brand-orange hover:bg-brand-orange/10 rounded-md transition-colors group/ai relative"
                           title="Search on Google"
                         >
                           <Sparkles className="w-4 h-4 group-hover/ai:scale-110 transition-transform" />
@@ -134,3 +134,4 @@ export default async function ProductsPage(props: { searchParams: Promise<{ sear
     </SelectionProvider>
   )
 }
+

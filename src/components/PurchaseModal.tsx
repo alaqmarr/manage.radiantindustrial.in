@@ -165,13 +165,13 @@ export function PurchaseModal({
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
       
       {/* Modal Content */}
-      <div className="glass-panel w-full max-w-4xl max-h-[90vh] flex flex-col rounded-2xl border border-premium-border shadow-2xl relative z-10 animate-in fade-in zoom-in-95">
+      <div className="glass-panel w-full max-w-4xl max-h-[90vh] flex flex-col rounded-md border border-premium-border shadow-2xl relative z-10 animate-in fade-in zoom-in-95">
         <div className="flex items-center justify-between p-6 border-b border-premium-border">
           <div>
             <h3 className="text-xl font-medium text-white">{isEditing ? "Edit Purchase" : "Record Purchase"}</h3>
             <p className="text-sm text-zinc-400 mt-1">{isEditing ? "Update an existing purchase." : "Add stock from a supplier."}</p>
           </div>
-          <button onClick={handleClose} className="text-zinc-400 hover:text-white transition-colors p-2 hover:bg-white/5 rounded-lg">
+          <button onClick={handleClose} className="text-zinc-400 hover:text-white transition-colors p-2 hover:bg-white/5 rounded-md">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -183,7 +183,7 @@ export function PurchaseModal({
             <select 
               value={selectedSupplierId} 
               onChange={e => setSelectedSupplierId(e.target.value)}
-              className="w-full max-w-md bg-zinc-950 border border-premium-border rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate"
+              className="w-full max-w-md bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate"
             >
               <option value="">Select a Supplier</option>
               {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -207,12 +207,12 @@ export function PurchaseModal({
                 onFocus={() => setIsDropdownOpen(true)}
                 onKeyDown={handleKeyDown}
                 placeholder="Search products by code or description..."
-                className="flex-1 max-w-md bg-zinc-950 border border-premium-border rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate shadow-lg shadow-black/20"
+                className="flex-1 max-w-md bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate shadow-lg shadow-black/20"
               />
             </div>
             
             {isDropdownOpen && searchTerm && (
-              <ul className="absolute z-10 mt-2 w-full max-w-md glass-panel border border-premium-border rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar overflow-x-hidden animate-in fade-in slide-in-from-top-2">
+              <ul className="absolute z-10 mt-2 w-full max-w-md glass-panel border border-premium-border rounded-md shadow-2xl max-h-60 overflow-y-auto custom-scrollbar overflow-x-hidden animate-in fade-in slide-in-from-top-2">
                 {filteredProducts.length === 0 ? (
                   <li className="px-4 py-3 text-zinc-500 text-sm">No products found.</li>
                 ) : (
@@ -233,7 +233,7 @@ export function PurchaseModal({
 
           {/* Items Table */}
           {items.length > 0 && (
-            <div className="glass-panel border border-premium-border rounded-xl overflow-hidden mt-4">
+            <div className="glass-panel border border-premium-border rounded-md overflow-hidden mt-4">
               <table className="w-full text-sm text-left">
                 <thead className="text-xs text-zinc-400 uppercase bg-premium-surface/50 border-b border-premium-border">
                   <tr>
@@ -301,14 +301,14 @@ export function PurchaseModal({
           <button 
             onClick={handleClose}
             disabled={isSubmitting}
-            className="px-6 py-2 bg-white/5 hover:bg-white/10 text-white font-medium rounded-lg transition-colors border border-premium-border disabled:opacity-50 active:scale-95"
+            className="px-6 py-2 bg-white/5 hover:bg-white/10 text-white font-medium rounded-md transition-colors border border-premium-border disabled:opacity-50 active:scale-95"
           >
             Cancel
           </button>
           <button 
             onClick={handleSubmit}
             disabled={isSubmitting || items.length === 0}
-            className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-brand-orange to-brand-orange-dark hover:from-brand-orange-dark hover:to-brand-orange shadow-lg shadow-brand-orange/20 text-white font-medium rounded-lg transition-all active:scale-95 disabled:opacity-50"
+            className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-brand-orange to-brand-orange-dark hover:from-brand-orange-dark hover:to-brand-orange shadow-lg shadow-brand-orange/20 text-white font-medium rounded-md transition-all active:scale-95 disabled:opacity-50"
           >
             {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
             {isEditing ? "Update Purchase" : "Confirm Purchase"}
@@ -318,3 +318,4 @@ export function PurchaseModal({
     </div>
   )
 }
+

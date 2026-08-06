@@ -102,7 +102,7 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <div className="p-3 bg-brand-orange/10 rounded-xl">
+        <div className="p-3 bg-brand-orange/10 rounded-md">
           <Sparkles className="w-6 h-6 text-brand-orange" />
         </div>
         <div>
@@ -160,11 +160,11 @@ function MetricCard({
   subtext?: string
 }) {
   return (
-    <div className="glass-panel p-6 rounded-2xl relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
+    <div className="glass-panel p-6 rounded-md relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
       <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-white/5 rounded-full blur-2xl group-hover:bg-brand-orange/10 transition-colors" />
       <div className="flex items-center justify-between mb-4 relative z-10">
         <h3 className="text-zinc-400 font-medium tracking-wide text-sm">{title}</h3>
-        <div className="p-2.5 bg-white/5 rounded-xl border border-white/5 shadow-inner">
+        <div className="p-2.5 bg-white/5 rounded-md border border-white/5 shadow-inner">
           {icon}
         </div>
       </div>
@@ -182,3 +182,4 @@ function MetricCard({
     </div>
   )
 }
+

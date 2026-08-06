@@ -54,14 +54,14 @@ export default async function QuotationsPage(props: { searchParams: Promise<{ se
         <div className="flex items-center gap-3">
           <SearchBar placeholder="Search quotations..." />
           <BatchDeleteButton deleteAction={deleteQuotations} entityName="quotations" />
-          <Link href="/quotations/new" className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-brand-orange to-brand-orange-dark hover:from-brand-orange-dark hover:to-brand-orange shadow-lg shadow-brand-orange/20 text-white font-medium rounded-lg transition-all active:scale-95">
+          <Link href="/quotations/new" className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-brand-orange to-brand-orange-dark hover:from-brand-orange-dark hover:to-brand-orange shadow-lg shadow-brand-orange/20 text-white font-medium rounded-md transition-all active:scale-95">
             <Plus className="w-4 h-4" />
             <span className="text-sm">Create Quotation</span>
           </Link>
         </div>
       </div>
 
-      <div className="glass-panel rounded-2xl overflow-hidden">
+      <div className="glass-panel rounded-md overflow-hidden">
         <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
             <thead className="text-xs text-zinc-400 uppercase bg-premium-surface/50 border-b border-premium-border">
@@ -127,3 +127,4 @@ export default async function QuotationsPage(props: { searchParams: Promise<{ se
     </SelectionProvider>
   )
 }
+

@@ -30,7 +30,7 @@ export function SearchBar({ placeholder = "Search..." }: { placeholder?: string 
       </div>
       <input
         type="text"
-        className="block w-full pl-10 pr-3 py-2 border border-premium-border rounded-lg leading-5 bg-premium-surface/50 text-zinc-300 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-brand-orange focus:border-brand-orange sm:text-sm transition-all"
+        className="block w-full pl-10 pr-3 py-2 border border-premium-border rounded-md leading-5 bg-premium-surface/50 text-zinc-300 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-brand-orange focus:border-brand-orange sm:text-sm transition-all"
         placeholder={placeholder}
         value={term}
         onChange={(e) => setTerm(e.target.value)}
@@ -38,3 +38,4 @@ export function SearchBar({ placeholder = "Search..." }: { placeholder?: string 
     </div>
   )
 }
+

@@ -31,7 +31,7 @@ export function ExcelImportButton() {
   }
 
   return (
-    <label className={`flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-zinc-800 text-white rounded-lg transition-colors cursor-pointer ${isUploading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-800'}`}>
+    <label className={`flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-zinc-800 text-white rounded-md transition-colors cursor-pointer ${isUploading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-800'}`}>
       {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileUp className="w-4 h-4" />}
       <span className="font-medium text-sm">{isUploading ? 'Importing...' : 'Import Excel'}</span>
       <input 
@@ -45,3 +45,4 @@ export function ExcelImportButton() {
     </label>
   )
 }
+

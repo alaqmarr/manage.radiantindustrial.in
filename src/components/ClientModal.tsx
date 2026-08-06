@@ -61,7 +61,7 @@ export function ClientModal({ clients }: { clients: any[] }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-0">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={close} />
-      <div className="relative bg-zinc-900 border border-premium-border rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative bg-zinc-900 border border-premium-border rounded-md shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         <div className="flex items-center justify-between p-6 border-b border-premium-border bg-white/[0.02]">
           <h2 className="text-xl font-semibold text-white">
             {isEditing ? "Edit Client" : "Add New Client"}
@@ -79,7 +79,7 @@ export function ClientModal({ clients }: { clients: any[] }) {
               type="text" 
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full bg-zinc-950 border border-premium-border rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
+              className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
               placeholder="Company or Contact Name"
             />
           </div>
@@ -89,7 +89,7 @@ export function ClientModal({ clients }: { clients: any[] }) {
               type="text" 
               value={contact}
               onChange={(e) => setContact(e.target.value)}
-              className="w-full bg-zinc-950 border border-premium-border rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
+              className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
               placeholder="Email, Phone, etc."
             />
           </div>
@@ -98,7 +98,7 @@ export function ClientModal({ clients }: { clients: any[] }) {
             <button 
               type="submit" 
               disabled={isSubmitting}
-              className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-brand-orange to-brand-orange-dark hover:from-brand-orange-dark hover:to-brand-orange shadow-lg shadow-brand-orange/20 disabled:opacity-50 text-white font-medium rounded-lg transition-all active:scale-95"
+              className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-brand-orange to-brand-orange-dark hover:from-brand-orange-dark hover:to-brand-orange shadow-lg shadow-brand-orange/20 disabled:opacity-50 text-white font-medium rounded-md transition-all active:scale-95"
             >
               {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
               {isEditing ? "Update Client" : "Save Client"}
@@ -109,3 +109,4 @@ export function ClientModal({ clients }: { clients: any[] }) {
     </div>
   )
 }
+

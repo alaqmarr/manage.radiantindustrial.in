@@ -119,7 +119,7 @@ export function VendorPriceDialog({
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="glass-panel w-full max-w-lg p-6 rounded-2xl border border-premium-border">
+      <div className="glass-panel w-full max-w-lg p-6 rounded-md border border-premium-border">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h3 className="text-lg font-medium text-white">Vendor Prices</h3>
@@ -149,14 +149,14 @@ export function VendorPriceDialog({
               </div>
               
               {isAddingNew ? (
-                <div className="bg-white/5 p-4 rounded-xl border border-premium-border space-y-3">
+                <div className="bg-white/5 p-4 rounded-md border border-premium-border space-y-3">
                   <input 
                     type="text"
                     autoFocus
                     placeholder="Supplier Name"
                     value={newSupplierName}
                     onChange={e => setNewSupplierName(e.target.value)}
-                    className="w-full bg-zinc-950 border border-premium-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-orange"
+                    className="w-full bg-zinc-950 border border-premium-border rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-orange"
                   />
                   <div className="flex gap-2 items-center">
                     <span className="text-zinc-400 text-sm">₹</span>
@@ -165,7 +165,7 @@ export function VendorPriceDialog({
                       placeholder="Cost Price (CP)"
                       value={newSupplierCp}
                       onChange={e => setNewSupplierCp(e.target.value === "" ? "" : Number(e.target.value))}
-                      className="flex-1 bg-zinc-950 border border-premium-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-orange"
+                      className="flex-1 bg-zinc-950 border border-premium-border rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-orange"
                     />
                   </div>
                   <div className="flex gap-2 justify-end mt-2">
@@ -191,7 +191,7 @@ export function VendorPriceDialog({
                           setSelectedSupplierId(s.supplierId)
                           setSelectedCp(s.costPrice)
                         }}
-                        className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
+                        className={`flex items-center justify-between p-3 rounded-md border cursor-pointer transition-colors ${
                           selectedSupplierId === s.supplierId 
                             ? 'bg-brand-orange/10 border-brand-orange/50 text-white shadow-lg shadow-brand-orange/5' 
                             : 'bg-white/5 border-premium-border text-zinc-400 hover:border-brand-slate hover:bg-white/10'
@@ -262,7 +262,7 @@ export function VendorPriceDialog({
                   placeholder="0.00"
                   value={spInput}
                   onChange={e => setSpInput(e.target.value === "" ? "" : Number(e.target.value))}
-                  className="w-full bg-zinc-950 border border-premium-border rounded-lg px-4 py-3 text-lg text-white font-mono focus:outline-none focus:ring-2 focus:ring-brand-orange"
+                  className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-3 text-lg text-white font-mono focus:outline-none focus:ring-2 focus:ring-brand-orange"
                 />
               </div>
               {selectedCp && spInput && (
@@ -279,7 +279,7 @@ export function VendorPriceDialog({
 
             <button 
               onClick={handleSave}
-              className="w-full py-3 bg-gradient-to-r from-brand-orange to-brand-orange-dark hover:from-brand-orange-dark hover:to-brand-orange shadow-lg shadow-brand-orange/20 text-white font-medium rounded-lg transition-all active:scale-95"
+              className="w-full py-3 bg-gradient-to-r from-brand-orange to-brand-orange-dark hover:from-brand-orange-dark hover:to-brand-orange shadow-lg shadow-brand-orange/20 text-white font-medium rounded-md transition-all active:scale-95"
             >
               Confirm Prices
             </button>
@@ -289,3 +289,4 @@ export function VendorPriceDialog({
     </div>
   )
 }
+

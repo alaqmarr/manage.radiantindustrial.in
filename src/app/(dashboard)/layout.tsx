@@ -4,6 +4,7 @@ import { CommandPalette } from "@/components/CommandPalette"
 import { GlobalModals } from "@/components/GlobalModals"
 import { prisma } from "@/lib/prisma"
 import { Suspense } from "react"
+import { DisableNumberInputScroll } from "@/components/DisableNumberInputScroll"
 
 export default async function DashboardLayout({
   children,
@@ -14,6 +15,7 @@ export default async function DashboardLayout({
   const products = await prisma.product.findMany({ select: { id: true, materialCode: true, materialDescription: true, costPrice: true } })
   return (
     <div className="flex bg-premium-dark min-h-screen text-zinc-200 print:bg-white print:text-black">
+      <DisableNumberInputScroll />
       <div className="print:hidden">
         <Sidebar />
       </div>
@@ -25,7 +27,7 @@ export default async function DashboardLayout({
           <div className="print:hidden">
             <CommandPalette />
           </div>
-          <div className="max-w-7xl mx-auto w-full animate-in fade-in duration-500 print:max-w-none">
+          <div className="max-w-[1920px] mx-auto w-full animate-in fade-in duration-500 print:max-w-none">
             {children}
           </div>
         </main>

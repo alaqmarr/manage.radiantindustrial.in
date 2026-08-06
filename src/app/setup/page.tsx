@@ -15,7 +15,7 @@ export default async function SetupPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-zinc-950 p-4">
-      <div className="w-full max-w-md space-y-8 bg-zinc-900 p-10 rounded-2xl border border-zinc-800 shadow-2xl">
+      <div className="w-full max-w-md space-y-8 bg-zinc-900 p-10 rounded-md border border-zinc-800 shadow-2xl">
         <div className="text-center">
           <img src="/logo-full-white.png" alt="Radiant Industrial Co." className="h-16 mx-auto mb-4 object-contain" />
           <h2 className="text-2xl font-bold tracking-tight text-white">
@@ -30,3 +30,4 @@ export default async function SetupPage() {
     </div>
   )
 }
+

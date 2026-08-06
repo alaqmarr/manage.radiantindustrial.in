@@ -36,7 +36,7 @@ export function CommandPalette() {
   return (
     <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh] px-4 backdrop-blur-sm bg-black/50 p-4 transition-all">
       <Command 
-        className="w-full max-w-2xl bg-premium-surface border border-premium-border rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+        className="w-full max-w-2xl bg-premium-surface border border-premium-border rounded-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
         label="Global Command Menu"
       >
         <div className="flex items-center border-b border-premium-border px-3">
@@ -55,21 +55,21 @@ export function CommandPalette() {
           <Command.Group heading="Create Actions" className="px-2 py-1.5 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
             <Command.Item 
               onSelect={() => runCommand(() => router.push("/quotations/new"))}
-              className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-zinc-200 hover:bg-brand-orange/20 hover:text-brand-orange cursor-pointer transition-colors aria-selected:bg-brand-orange/20 aria-selected:text-brand-orange"
+              className="flex items-center gap-3 px-3 py-3 rounded-md text-sm text-zinc-200 hover:bg-brand-orange/20 hover:text-brand-orange cursor-pointer transition-colors aria-selected:bg-brand-orange/20 aria-selected:text-brand-orange"
             >
               <FileText className="w-4 h-4" />
               <span>Create Quotation</span>
             </Command.Item>
             <Command.Item 
               onSelect={() => runCommand(() => router.push("/products/new"))}
-              className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-zinc-200 hover:bg-brand-orange/20 hover:text-brand-orange cursor-pointer transition-colors aria-selected:bg-brand-orange/20 aria-selected:text-brand-orange"
+              className="flex items-center gap-3 px-3 py-3 rounded-md text-sm text-zinc-200 hover:bg-brand-orange/20 hover:text-brand-orange cursor-pointer transition-colors aria-selected:bg-brand-orange/20 aria-selected:text-brand-orange"
             >
               <PackagePlus className="w-4 h-4" />
               <span>Add New Product</span>
             </Command.Item>
             <Command.Item 
               onSelect={() => runCommand(() => router.push("?action=new-purchase"))}
-              className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-zinc-200 hover:bg-brand-orange/20 hover:text-brand-orange cursor-pointer transition-colors aria-selected:bg-brand-orange/20 aria-selected:text-brand-orange"
+              className="flex items-center gap-3 px-3 py-3 rounded-md text-sm text-zinc-200 hover:bg-brand-orange/20 hover:text-brand-orange cursor-pointer transition-colors aria-selected:bg-brand-orange/20 aria-selected:text-brand-orange"
             >
               <ShoppingCart className="w-4 h-4" />
               <span>Create Purchase</span>
@@ -79,14 +79,14 @@ export function CommandPalette() {
           <Command.Group heading="Entities" className="px-2 py-1.5 text-xs font-semibold text-zinc-500 uppercase tracking-wider mt-4">
              <Command.Item 
               onSelect={() => runCommand(() => router.push("/clients"))}
-              className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-zinc-200 hover:bg-white/10 cursor-pointer transition-colors aria-selected:bg-white/10"
+              className="flex items-center gap-3 px-3 py-3 rounded-md text-sm text-zinc-200 hover:bg-white/10 cursor-pointer transition-colors aria-selected:bg-white/10"
             >
               <Users className="w-4 h-4" />
               <span>Manage Clients</span>
             </Command.Item>
             <Command.Item 
               onSelect={() => runCommand(() => router.push("/suppliers"))}
-              className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-zinc-200 hover:bg-white/10 cursor-pointer transition-colors aria-selected:bg-white/10"
+              className="flex items-center gap-3 px-3 py-3 rounded-md text-sm text-zinc-200 hover:bg-white/10 cursor-pointer transition-colors aria-selected:bg-white/10"
             >
               <Truck className="w-4 h-4" />
               <span>Manage Suppliers</span>
@@ -98,3 +98,4 @@ export function CommandPalette() {
     </div>
   )
 }
+

@@ -172,13 +172,13 @@ export function QuotationActions({
       <div className="flex gap-3 print:hidden">
         <button 
           onClick={handleExportExcel}
-          className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 font-medium rounded-lg transition-colors border border-emerald-500/20 active:scale-95"
+          className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 font-medium rounded-md transition-colors border border-emerald-500/20 active:scale-95"
         >
           <span className="text-sm">Export Excel</span>
         </button>
         <button 
           onClick={() => router.push(`/quotations/${quotation.id}/edit`)}
-          className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-white font-medium rounded-lg transition-colors border border-premium-border active:scale-95"
+          className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-white font-medium rounded-md transition-colors border border-premium-border active:scale-95"
         >
           <Edit className="w-4 h-4" />
           <span className="text-sm">Edit</span>
@@ -186,21 +186,21 @@ export function QuotationActions({
         <button 
           onClick={handleDelete}
           disabled={isDeleting}
-          className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 disabled:opacity-50 text-red-500 font-medium rounded-lg transition-colors border border-red-500/20 active:scale-95"
+          className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 disabled:opacity-50 text-red-500 font-medium rounded-md transition-colors border border-red-500/20 active:scale-95"
         >
           <Trash2 className="w-4 h-4" />
           <span className="text-sm">{isDeleting ? "Deleting..." : "Delete"}</span>
         </button>
         <button 
           onClick={handleCopyEmail}
-          className="flex items-center gap-2 px-4 py-2 bg-brand-slate hover:bg-brand-slate/80 text-white font-medium rounded-lg transition-colors border border-brand-slate/50 active:scale-95"
+          className="flex items-center gap-2 px-4 py-2 bg-brand-slate hover:bg-brand-slate/80 text-white font-medium rounded-md transition-colors border border-brand-slate/50 active:scale-95"
         >
           {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
           <span className="text-sm">{copied ? "Copied!" : "Copy for Email"}</span>
         </button>
         <button 
           onClick={handlePrint}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-brand-orange to-brand-orange-dark hover:from-brand-orange-dark hover:to-brand-orange shadow-lg shadow-brand-orange/20 text-white font-medium rounded-lg transition-all active:scale-95"
+          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-brand-orange to-brand-orange-dark hover:from-brand-orange-dark hover:to-brand-orange shadow-lg shadow-brand-orange/20 text-white font-medium rounded-md transition-all active:scale-95"
         >
           <Printer className="w-4 h-4" />
           <span className="text-sm">Print Quotation</span>
@@ -343,3 +343,4 @@ export function QuotationActions({
     </>
   )
 }
+

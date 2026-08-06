@@ -319,7 +319,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
 
       {/* Conflict Warning Banner */}
       {conflictDetected && (
-        <div className="bg-rose-500/10 border border-rose-500/30 p-4 rounded-xl flex items-start gap-4 animate-in fade-in slide-in-from-top-2">
+        <div className="bg-rose-500/10 border border-rose-500/30 p-4 rounded-md flex items-start gap-4 animate-in fade-in slide-in-from-top-2">
           <AlertCircle className="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
             <h3 className="text-sm font-medium text-rose-500">Conflict Detected: New Updates Available</h3>
@@ -328,7 +328,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
             </p>
             <button 
               onClick={() => window.location.reload()}
-              className="mt-3 px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white text-sm font-medium rounded-lg transition-colors"
+              className="mt-3 px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white text-sm font-medium rounded-md transition-colors"
             >
               Reload to see latest changes
             </button>
@@ -346,7 +346,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
       {/* Client Modal */}
       {isClientModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="glass-panel w-full max-w-md p-6 rounded-2xl border border-premium-border">
+          <div className="glass-panel w-full max-w-md p-6 rounded-md border border-premium-border">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-medium text-white">New Client</h3>
               <button onClick={() => setIsClientModalOpen(false)} className="text-zinc-400 hover:text-white transition-colors">
@@ -360,7 +360,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                   autoFocus
                   value={newClientName}
                   onChange={e => setNewClientName(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
                   placeholder="Acme Corp"
                 />
               </div>
@@ -369,14 +369,14 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                 <input 
                   value={newClientContact}
                   onChange={e => setNewClientContact(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
                   placeholder="contact@acme.com"
                 />
               </div>
               <button 
                 onClick={handleCreateClient}
                 disabled={isCreatingClient || !newClientName.trim()}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-brand-orange hover:bg-orange-600 disabled:opacity-50 text-white font-medium rounded-lg transition-colors mt-4"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-brand-orange hover:bg-orange-600 disabled:opacity-50 text-white font-medium rounded-md transition-colors mt-4"
               >
                 {isCreatingClient ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create Client"}
               </button>
@@ -386,14 +386,14 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
       )}
 
       {/* Basic Info */}
-      <div className="grid grid-cols-3 gap-6 glass-panel p-6 rounded-2xl">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 mt-2">
         <div>
           <label className="block text-sm font-medium text-zinc-400 mb-1">Client *</label>
           <div className="flex gap-2">
             <select 
               value={selectedClientId} 
               onChange={e => setSelectedClientId(e.target.value)}
-              className="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate"
+              className="flex-1 bg-zinc-950/50 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate"
             >
               <option value="">Select a Client</option>
               {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -401,7 +401,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
             <button 
               type="button"
               onClick={() => setIsClientModalOpen(true)}
-              className="px-3 bg-white/5 hover:bg-white/10 text-white rounded-lg border border-premium-border transition-colors active:scale-95"
+              className="px-3 bg-white/5 hover:bg-white/10 text-white rounded-md border border-premium-border transition-colors active:scale-95"
               title="Add New Client"
             >
               <Plus className="w-5 h-5" />
@@ -414,7 +414,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
             value={prNo} 
             onChange={e => setPrNo(e.target.value)}
             type="text" 
-            className="w-full bg-zinc-950 border border-premium-border rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
+            className="w-full bg-zinc-950/50 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
           />
         </div>
         <div>
@@ -423,13 +423,13 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
             value={rfqNo} 
             onChange={e => setRfqNo(e.target.value)}
             type="text" 
-            className="w-full bg-zinc-950 border border-premium-border rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
+            className="w-full bg-zinc-950/50 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
           />
         </div>
       </div>
 
       {/* Items Area */}
-      <div className="glass-panel p-6 rounded-2xl space-y-4">
+      <div className="space-y-4 mb-16">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-medium text-white">Quotation Items</h2>
           <div>
@@ -444,7 +444,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
-              className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 disabled:opacity-50 text-white font-medium rounded-lg transition-colors text-sm border border-premium-border active:scale-95"
+              className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 disabled:opacity-50 text-white font-medium rounded-md transition-colors text-sm border border-premium-border active:scale-95"
             >
               {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
               Upload Items (Excel)
@@ -465,12 +465,12 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
               onFocus={() => setIsDropdownOpen(true)}
               onKeyDown={handleKeyDown}
               placeholder="Search products by code or description..."
-              className="flex-1 bg-zinc-950 border border-premium-border rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate shadow-lg shadow-black/20"
+              className="flex-1 bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate shadow-lg shadow-black/20"
             />
           </div>
           
           {isDropdownOpen && searchTerm && (
-            <ul className="absolute z-10 mt-2 w-full glass-panel border border-premium-border rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar overflow-x-hidden animate-in fade-in slide-in-from-top-2">
+            <ul className="absolute z-10 mt-2 w-full glass-panel border border-premium-border rounded-md shadow-2xl max-h-60 overflow-y-auto custom-scrollbar overflow-x-hidden animate-in fade-in slide-in-from-top-2">
               {filteredProducts.length === 0 ? (
                 <li className="px-4 py-3 text-zinc-500 text-sm">No products found.</li>
               ) : (
@@ -491,7 +491,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
         </div>
 
         {items.length > 0 && (
-          <div className="glass-panel border border-premium-border rounded-xl overflow-hidden mt-4">
+          <div className="glass-panel border border-premium-border rounded-md overflow-hidden mt-4">
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-zinc-400 uppercase bg-premium-surface/50 border-b border-premium-border">
                 <tr>
@@ -677,14 +677,14 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
             <button 
               onClick={() => handleSubmit("DRAFT")}
               disabled={isSubmitting || saveStatus === "SAVING"}
-              className="flex-1 md:flex-none px-6 py-2.5 bg-white/5 hover:bg-white/10 text-white font-medium rounded-lg transition-colors border border-premium-border disabled:opacity-50"
+              className="flex-1 md:flex-none px-6 py-2.5 bg-white/5 hover:bg-white/10 text-white font-medium rounded-md transition-colors border border-premium-border disabled:opacity-50"
             >
               {saveStatus === "SAVING" ? "Saving..." : "Save Draft"}
             </button>
             <button 
               onClick={() => handleSubmit("PENDING")}
               disabled={isSubmitting}
-              className="flex-1 md:flex-none flex items-center justify-center gap-2 px-8 py-2.5 bg-gradient-to-r from-brand-orange to-brand-orange-dark hover:from-brand-orange-dark hover:to-brand-orange shadow-lg shadow-brand-orange/20 text-white font-medium rounded-lg transition-all active:scale-95 disabled:opacity-50"
+              className="flex-1 md:flex-none flex items-center justify-center gap-2 px-8 py-2.5 bg-gradient-to-r from-brand-orange to-brand-orange-dark hover:from-brand-orange-dark hover:to-brand-orange shadow-lg shadow-brand-orange/20 text-white font-medium rounded-md transition-all active:scale-95 disabled:opacity-50"
             >
               {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
               {quotationId ? "Update Quotation" : "Create Quotation"}
@@ -695,3 +695,4 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
     </div>
   )
 }
+

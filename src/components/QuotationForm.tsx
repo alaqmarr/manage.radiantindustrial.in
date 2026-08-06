@@ -607,44 +607,70 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
           </div>
         )}
       </div>
-
-      {/* Totals Summary */}
+      {/* Sticky Bottom Bar */}
       {items.length > 0 && (
-        <div className="flex justify-end">
-          <div className="w-80 glass-panel p-6 rounded-2xl space-y-3">
-            <div className="flex justify-between text-zinc-400 text-sm">
-              <span>Subtotal (excl. GST)</span>
-              <span>₹{(items.reduce((sum, item) => sum + Math.round((item.spSnapshot || 0) * item.quantity), 0) / 100).toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-zinc-400 text-sm">
-              <span>Total GST</span>
-              <span>₹{(items.reduce((sum, item) => sum + Math.round(Math.round((item.spSnapshot || 0) * item.quantity) * (item.product.gstRate / 100)), 0) / 100).toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-lg font-bold text-white pt-3 border-t border-premium-border">
-              <span>Grand Total</span>
-              <span>₹{((items.reduce((sum, item) => sum + Math.round((item.spSnapshot || 0) * item.quantity), 0) + items.reduce((sum, item) => sum + Math.round(Math.round((item.spSnapshot || 0) * item.quantity) * (item.product.gstRate / 100)), 0)) / 100).toFixed(2)}</span>
-            </div>
+        <div className="fixed bottom-0 left-0 md:left-64 right-0 z-40 bg-zinc-950/80 backdrop-blur-xl border-t border-premium-border/50 p-4 md:px-8 flex flex-col md:flex-row items-center justify-between shadow-[0_-10px_40px_rgba(0,0,0,0.3)] animate-in slide-in-from-bottom-4">
+          <div className="flex flex-wrap items-center gap-6 md:gap-12 mb-4 md:mb-0">
+            
+            {/* Computed Totals */}
+            {(() => {
+              const totalAmount = items.reduce((sum, item) => sum + Math.round((item.spSnapshot || 0) * item.quantity), 0);
+              const totalGst = items.reduce((sum, item) => sum + Math.round(Math.round((item.spSnapshot || 0) * item.quantity) * (item.product.gstRate / 100)), 0);
+              const totalPCost = items.reduce((sum, item) => sum + Math.round((item.cpSnapshot || 0) * item.quantity), 0);
+              const totalProfit = totalAmount - totalPCost;
+              const marginPercent = totalAmount > 0 ? (totalProfit / totalAmount) * 100 : 0;
+              
+              return (
+                <>
+                  <div className="space-y-1">
+                    <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Subtotal</div>
+                    <div className="text-lg font-bold text-white">₹{(totalAmount / 100).toFixed(2)}</div>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Total P. Cost</div>
+                    <div className="text-lg font-bold text-amber-500/90">₹{(totalPCost / 100).toFixed(2)}</div>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Est. Profit</div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-lg font-bold text-emerald-500">₹{(totalProfit / 100).toFixed(2)}</span>
+                      {totalProfit > 0 && <span className="text-xs text-emerald-500/70 font-medium">({marginPercent.toFixed(1)}%)</span>}
+                    </div>
+                  </div>
+                  
+                  <div className="hidden lg:block w-px h-10 bg-premium-border/50"></div>
+                  
+                  <div className="space-y-1">
+                    <div className="text-[10px] text-brand-orange/80 uppercase font-bold tracking-widest">Grand Total (inc. GST)</div>
+                    <div className="text-2xl font-black text-brand-orange">₹{((totalAmount + totalGst) / 100).toFixed(2)}</div>
+                  </div>
+                </>
+              );
+            })()}
+            
+          </div>
+          
+          <div className="flex items-center gap-4 w-full md:w-auto">
+            <button 
+              onClick={() => handleSubmit("DRAFT")}
+              disabled={isSubmitting || saveStatus === "SAVING"}
+              className="flex-1 md:flex-none px-6 py-2.5 bg-white/5 hover:bg-white/10 text-white font-medium rounded-lg transition-colors border border-premium-border disabled:opacity-50"
+            >
+              {saveStatus === "SAVING" ? "Saving..." : "Save Draft"}
+            </button>
+            <button 
+              onClick={() => handleSubmit("PENDING")}
+              disabled={isSubmitting}
+              className="flex-1 md:flex-none flex items-center justify-center gap-2 px-8 py-2.5 bg-gradient-to-r from-brand-orange to-brand-orange-dark hover:from-brand-orange-dark hover:to-brand-orange shadow-lg shadow-brand-orange/20 text-white font-medium rounded-lg transition-all active:scale-95 disabled:opacity-50"
+            >
+              {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
+              {quotationId ? "Update Quotation" : "Create Quotation"}
+            </button>
           </div>
         </div>
       )}
-
-      <div className="flex justify-end gap-4">
-        <button 
-          onClick={() => handleSubmit("DRAFT")}
-          disabled={isSubmitting || saveStatus === "SAVING"}
-          className="px-6 py-2 bg-white/5 hover:bg-white/10 text-white font-medium rounded-lg transition-colors border border-premium-border disabled:opacity-50"
-        >
-          {saveStatus === "SAVING" ? "Saving..." : "Save as Draft"}
-        </button>
-        <button 
-          onClick={() => handleSubmit("PENDING")}
-          disabled={isSubmitting}
-          className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-brand-orange to-brand-orange-dark hover:from-brand-orange-dark hover:to-brand-orange shadow-lg shadow-brand-orange/20 text-white font-medium rounded-lg transition-all active:scale-95 disabled:opacity-50"
-        >
-          {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-          Create Quotation
-        </button>
-      </div>
     </div>
   )
 }

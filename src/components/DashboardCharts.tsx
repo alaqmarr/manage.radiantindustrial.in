@@ -5,16 +5,7 @@ import {
 } from 'recharts'
 
 export function DashboardCharts({ data }: { data: any }) {
-  // Placeholder data for now, ideally we pass down real time-series data
-  const revenueData = [
-    { name: 'Mon', sales: 4000, purchases: 2400 },
-    { name: 'Tue', sales: 3000, purchases: 1398 },
-    { name: 'Wed', sales: 2000, purchases: 9800 },
-    { name: 'Thu', sales: 2780, purchases: 3908 },
-    { name: 'Fri', sales: 1890, purchases: 4800 },
-    { name: 'Sat', sales: 2390, purchases: 3800 },
-    { name: 'Sun', sales: 3490, purchases: 4300 },
-  ]
+  const revenueData = data.chartData || []
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">

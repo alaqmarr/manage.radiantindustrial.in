@@ -10,35 +10,76 @@ import {
 import { DashboardCharts } from "@/components/DashboardCharts"
 
 async function getDashboardData() {
-  const salesAggregate = await prisma.quotation.aggregate({
-    _sum: {
-      totalAmount: true,
-      totalGst: true,
-    },
-    where: { status: 'ACCEPTED' }
+  const acceptedQuotations = await prisma.quotation.findMany({
+    where: { status: 'ACCEPTED' },
+    include: { items: true },
+    orderBy: { createdAt: 'asc' }
   })
   
-  const purchaseAggregate = await prisma.purchase.aggregate({
-    _sum: {
-      totalAmount: true,
-      totalGst: true,
+  // Basic totals
+  let totalSales = 0
+  let totalPurchases = 0
+  let totalSalesGst = 0
+  let totalPurchaseGst = 0
+  let profits = 0
+
+  for (const q of acceptedQuotations) {
+    totalSales += q.totalAmount
+    totalSalesGst += q.totalGst
+    
+    for (const item of q.items) {
+      const cp = item.cpSnapshot || 0
+      const sp = item.spSnapshot || 0
+      const qty = item.quantity
+      const gstRate = item.gstSnapshot || 0
+
+      const cost = cp * qty
+      const costGst = cost * (gstRate / 100)
+
+      totalPurchases += cost
+      totalPurchaseGst += costGst
+      profits += (sp - cp) * qty
     }
-  })
+  }
 
-  const totalSales = salesAggregate._sum.totalAmount || 0
-  const totalSalesGst = salesAggregate._sum.totalGst || 0
+  const gstToPay = totalSalesGst - totalPurchaseGst
 
-  const totalPurchases = purchaseAggregate._sum.totalAmount || 0
-  const totalPurchaseGst = purchaseAggregate._sum.totalGst || 0
-
-  const profits = totalSales - totalPurchases
-  const gstToPay = totalSalesGst - totalPurchaseGst // Input tax credit simplistic logic
+  // Generate last 7 days chart data
+  const chartData = []
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today)
+    d.setDate(d.getDate() - i)
+    const nextDay = new Date(d)
+    nextDay.setDate(d.getDate() + 1)
+    
+    const dayQuotes = acceptedQuotations.filter(q => q.createdAt >= d && q.createdAt < nextDay)
+    
+    let daySales = 0
+    let dayPurchases = 0
+    
+    for (const q of dayQuotes) {
+      daySales += q.totalAmount
+      for (const item of q.items) {
+        dayPurchases += (item.cpSnapshot || 0) * item.quantity
+      }
+    }
+    
+    chartData.push({
+      name: d.toLocaleDateString('en-US', { weekday: 'short' }),
+      sales: daySales,
+      purchases: dayPurchases
+    })
+  }
 
   return {
     totalSales,
     totalPurchases,
     profits,
     gstToPay,
+    chartData
   }
 }
 

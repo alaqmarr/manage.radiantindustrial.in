@@ -1,4 +1,9 @@
 import { prisma } from "@/lib/prisma"
+import { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "Clients"
+}
 import { Plus } from "lucide-react"
 import { SelectionProvider } from "@/components/selection/SelectionContext"
 import { SelectAllCheckbox } from "@/components/selection/SelectAllCheckbox"

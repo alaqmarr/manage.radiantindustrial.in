@@ -218,7 +218,7 @@ export function QuotationActions({
           `}
         </style>
         
-        <div ref={emailTableRef} style={{ color: "#1f2937", width: "100%", maxWidth: "100%", margin: "0 auto", padding: "40px", boxSizing: "border-box", fontSize: "12px", lineHeight: "1.4" }}>
+        <div ref={emailTableRef} style={{ color: "#1f2937", width: "100%", maxWidth: "800px", margin: "0 auto", padding: "40px", boxSizing: "border-box", fontSize: "12px", lineHeight: "1.4" }}>
           
           {/* Header */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "2px solid #f3f4f6", paddingBottom: "16px", marginBottom: "24px" }}>
@@ -258,7 +258,7 @@ export function QuotationActions({
           )}
 
           {/* Table */}
-          <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "24px", tableLayout: "fixed" }}>
+          <table style={{ width: "100%", maxWidth: "800px", borderCollapse: "collapse", marginBottom: "24px", tableLayout: "fixed" }}>
             <thead>
               <tr>
                 <th style={{ padding: "8px 4px", borderBottom: "2px solid #e5e7eb", textAlign: "left", color: "#6b7280", fontSize: "10px", textTransform: "uppercase", fontWeight: "600", width: "15%" }}>Code</th>
@@ -271,10 +271,10 @@ export function QuotationActions({
             <tbody>
               {quotation.items.filter((item: any) => item.spSnapshot > 0).map((item: any) => (
                 <tr key={item.id}>
-                  <td style={{ padding: "8px 4px", borderBottom: "1px solid #f3f4f6", verticalAlign: "top" }}>
+                  <td style={{ padding: "8px 4px", borderBottom: "1px solid #f3f4f6", verticalAlign: "top", wordBreak: "break-word" }}>
                     <span style={{ fontFamily: "monospace", color: "#4b5563" }}>{item.product.materialCode}</span>
                   </td>
-                  <td style={{ padding: "8px 4px", borderBottom: "1px solid #f3f4f6", verticalAlign: "top" }}>
+                  <td style={{ padding: "8px 4px", borderBottom: "1px solid #f3f4f6", verticalAlign: "top", wordBreak: "break-word" }}>
                     <div style={{ fontWeight: "600", color: "#111827", marginBottom: "2px" }}>{item.product.materialDescription}</div>
                     {item.product.specification && (
                       <div style={{ fontSize: "10px", color: "#6b7280", whiteSpace: "pre-wrap", marginBottom: "2px" }}>{item.product.specification}</div>

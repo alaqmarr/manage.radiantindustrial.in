@@ -2,6 +2,14 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { QuotationActions } from "@/components/QuotationActions"
+import { Metadata } from "next"
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params
+  return {
+    title: `Quotation ${id}`
+  }
+}
 
 function formatRupee(paise: number) {
   return new Intl.NumberFormat('en-IN', {

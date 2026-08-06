@@ -5,7 +5,10 @@ import "./globals.css"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Radiant Manage",
+  title: {
+    template: "%s | Radiant Industrial Company",
+    default: "Radiant Industrial Company",
+  },
   description: "Internal Management Application",
 }
 

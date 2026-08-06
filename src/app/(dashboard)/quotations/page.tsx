@@ -1,4 +1,9 @@
 import { prisma } from "@/lib/prisma"
+import { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "Quotations"
+}
 import { Plus } from "lucide-react"
 import Link from "next/link"
 import { SelectionProvider } from "@/components/selection/SelectionContext"

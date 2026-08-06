@@ -1,5 +1,10 @@
 import { prisma } from "@/lib/prisma"
 import { QuotationForm } from "@/components/QuotationForm"
+import { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "New Quotation"
+}
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 

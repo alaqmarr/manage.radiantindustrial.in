@@ -247,6 +247,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
     if (items.length === 0) return alert("Please add at least one item")
 
     setIsSubmitting(true)
+    setSaveStatus("SAVING")
     try {
       const payload = {
         id: quotationId || undefined,
@@ -273,11 +274,31 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
         throw new Error(result.error)
       }
 
-      router.push(`/quotations/${result.id}`)
-      router.refresh()
+      if (status === "DRAFT") {
+        setSaveStatus("SAVED")
+        if (!quotationId) {
+          setQuotationId(result.id)
+          window.history.replaceState(null, '', `/quotations/${result.id}/edit`)
+        }
+        
+        // Update expectedUpdatedAt to prevent conflict warning from our own save
+        if (result.id) {
+          const updatedRes = await getQuotationUpdatedAt(result.id)
+          if (updatedRes.success && updatedRes.updatedAt) {
+            expectedUpdatedAt.current = new Date(updatedRes.updatedAt)
+          }
+        }
+        
+        router.refresh()
+        setTimeout(() => setSaveStatus("IDLE"), 2000)
+      } else {
+        router.push(`/quotations/${result.id}`)
+        router.refresh()
+      }
     } catch (error: any) {
       console.error(error)
       alert(error.message || "Something went wrong")
+      setSaveStatus("ERROR")
     } finally {
       setIsSubmitting(false)
     }

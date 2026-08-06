@@ -2,6 +2,14 @@ import { prisma } from "@/lib/prisma"
 import { QuotationForm } from "@/components/QuotationForm"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
+import { Metadata } from "next"
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params
+  return {
+    title: `Edit Quotation ${id}`
+  }
+}
 
 export default async function EditQuotationPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth()

@@ -135,7 +135,7 @@ export function QuotationActions({
           `}
         </style>
         
-        <div ref={emailTableRef} style={{ color: "#1f2937", width: "100%", maxWidth: "100%", margin: "0 auto", fontSize: "12px", lineHeight: "1.4" }}>
+        <div ref={emailTableRef} style={{ color: "#1f2937", width: "100%", maxWidth: "100%", margin: "0 auto", padding: "40px", boxSizing: "border-box", fontSize: "12px", lineHeight: "1.4" }}>
           
           {/* Header */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "2px solid #f3f4f6", paddingBottom: "16px", marginBottom: "24px" }}>

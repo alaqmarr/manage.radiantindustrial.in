@@ -40,7 +40,8 @@ export default async function EditQuotationPage({ params }: { params: Promise<{ 
       materialDescription: true,
       sellingPrice: true,
       gstRate: true,
-      unit: true
+      unit: true,
+      specification: true
     }
   })
 

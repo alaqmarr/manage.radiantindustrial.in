@@ -8,7 +8,7 @@ import { VendorPriceDialog } from "./VendorPriceDialog"
 import { Loader2, Plus, Trash2, Upload, X, Check, AlertCircle } from "lucide-react"
 
 type Client = { id: string, name: string }
-type Product = { id: string, materialCode: string, materialDescription: string, sellingPrice: number, gstRate: number, unit: string }
+type Product = { id: string, materialCode: string, materialDescription: string, sellingPrice: number, gstRate: number, unit: string, specification?: string | null }
 
 
 export function QuotationForm({ clients: initialClients, products, initialData, initialUpdatedAt }: { clients: Client[], products: Product[], initialData?: any, initialUpdatedAt?: Date }) {
@@ -450,6 +450,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                   >
                     <div className="text-sm font-medium text-white">{p.materialCode}</div>
                     <div className="text-xs text-zinc-400 truncate">{p.materialDescription}</div>
+                    {p.specification && <div className="text-[10px] text-zinc-500 truncate mt-0.5">{p.specification}</div>}
                   </li>
                 ))
               )}
@@ -489,17 +490,24 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                         />
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <input 
-                            type="text"
-                            value={item.product.materialDescription}
-                            onChange={e => handleProductChange(item.product.id, 'materialDescription', e.target.value)}
-                            className="w-full min-w-[200px] bg-transparent border-b border-transparent hover:border-premium-border focus:border-brand-slate px-1 py-0.5 text-sm text-zinc-300 focus:outline-none focus:bg-zinc-950/50 transition-colors rounded"
-                          />
-                          {isPending && (
-                            <span className="flex-shrink-0 inline-flex items-center gap-1 text-[10px] uppercase tracking-wider bg-rose-500/10 text-rose-400 px-2 py-0.5 rounded border border-rose-500/20">
-                              <AlertCircle className="w-3 h-3" /> Price Pending
-                            </span>
+                        <div className="flex flex-col gap-1 w-full min-w-[200px]">
+                          <div className="flex items-center gap-2">
+                            <input 
+                              type="text"
+                              value={item.product.materialDescription}
+                              onChange={e => handleProductChange(item.product.id, 'materialDescription', e.target.value)}
+                              className="w-full bg-transparent border-b border-transparent hover:border-premium-border focus:border-brand-slate px-1 py-0.5 text-sm text-zinc-300 focus:outline-none focus:bg-zinc-950/50 transition-colors rounded"
+                            />
+                            {isPending && (
+                              <span className="flex-shrink-0 inline-flex items-center gap-1 text-[10px] uppercase tracking-wider bg-rose-500/10 text-rose-400 px-2 py-0.5 rounded border border-rose-500/20">
+                                <AlertCircle className="w-3 h-3" /> Price Pending
+                              </span>
+                            )}
+                          </div>
+                          {item.product.specification && (
+                            <div className="text-[10px] text-zinc-500 px-1 truncate" title={item.product.specification}>
+                              {item.product.specification}
+                            </div>
                           )}
                         </div>
                       </td>

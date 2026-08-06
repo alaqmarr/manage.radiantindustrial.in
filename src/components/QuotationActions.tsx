@@ -38,8 +38,37 @@ export function QuotationActions({
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch (err) {
-      console.error("Failed to copy", err)
-      alert("Failed to copy. Your browser might not support this feature.")
+      console.error("Failed to use Clipboard API, falling back to basic copy", err)
+      try {
+        // Fallback for non-HTTPS or browsers that don't support ClipboardItem
+        const range = document.createRange()
+        range.selectNodeContents(emailTableRef.current)
+        const selection = window.getSelection()
+        selection?.removeAllRanges()
+        selection?.addRange(range)
+        
+        // This requires the hidden div to actually be visible enough to be selected,
+        // but since it's `hidden print:block`, standard `execCommand` might fail.
+        // Let's temporarily make it visible for copying
+        const originalClass = emailTableRef.current.parentElement?.className
+        if (emailTableRef.current.parentElement) {
+          emailTableRef.current.parentElement.className = 'w-full bg-white text-black p-8 absolute top-[-9999px] left-[-9999px]'
+        }
+        
+        document.execCommand('copy')
+        
+        if (emailTableRef.current.parentElement && originalClass) {
+          emailTableRef.current.parentElement.className = originalClass
+        }
+        
+        selection?.removeAllRanges()
+        
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      } catch (fallbackErr) {
+        console.error("Fallback copy also failed", fallbackErr)
+        alert("Failed to copy. Your browser might not support this feature.")
+      }
     }
   }
 

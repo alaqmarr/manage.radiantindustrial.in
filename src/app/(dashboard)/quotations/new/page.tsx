@@ -22,7 +22,8 @@ export default async function NewQuotationPage() {
       materialDescription: true,
       sellingPrice: true,
       gstRate: true,
-      unit: true
+      unit: true,
+      specification: true
     }
   })
 

@@ -1,7 +1,8 @@
 "use client"
 import { useState, useEffect } from "react"
 import { Loader2, X, Plus, Check } from "lucide-react"
-import { getProductSuppliers, addProductSupplier } from "@/app/actions/supplier"
+import { getProductSuppliers, addProductSupplier, updateProductSupplierPrice } from "@/app/actions/supplier"
+import { Edit2 } from "lucide-react"
 
 type ProductSupplier = {
   id: string
@@ -39,6 +40,11 @@ export function VendorPriceDialog({
   const [newSupplierName, setNewSupplierName] = useState("")
   const [newSupplierCp, setNewSupplierCp] = useState<number | "">("")
   const [isSavingNew, setIsSavingNew] = useState(false)
+
+  // Edit Supplier State
+  const [editingSupplierId, setEditingSupplierId] = useState<string | null>(null)
+  const [editSupplierCp, setEditSupplierCp] = useState<number | "">("")
+  const [isUpdatingCp, setIsUpdatingCp] = useState(false)
 
   useEffect(() => {
     async function fetchSuppliers() {
@@ -79,6 +85,24 @@ export function VendorPriceDialog({
       alert(res.error || "Failed to add supplier")
     }
     setIsSavingNew(false)
+  }
+
+  const handleUpdateSupplierCp = async (supplierId: string) => {
+    if (!editSupplierCp) return
+    setIsUpdatingCp(true)
+    const res = await updateProductSupplierPrice(productId, supplierId, Number(editSupplierCp))
+    if (res.success && res.data) {
+      const updatedCp = (res.data as ProductSupplier).costPrice
+      setSuppliers(suppliers.map(s => s.supplierId === supplierId ? { ...s, costPrice: updatedCp } : s).sort((a,b) => a.costPrice - b.costPrice))
+      if (selectedSupplierId === supplierId) {
+        setSelectedCp(updatedCp)
+      }
+      setEditingSupplierId(null)
+      setEditSupplierCp("")
+    } else {
+      alert(res.error || "Failed to update supplier price")
+    }
+    setIsUpdatingCp(false)
   }
 
   const handleSave = () => {
@@ -179,7 +203,46 @@ export function VendorPriceDialog({
                           </div>
                           <span className="font-medium text-sm">{s.supplier.name}</span>
                         </div>
-                        <span className="font-mono text-sm">₹{(s.costPrice / 100).toFixed(2)}</span>
+                        {editingSupplierId === s.supplierId ? (
+                          <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                            <span className="text-zinc-500 text-sm">₹</span>
+                            <input 
+                              type="number"
+                              autoFocus
+                              value={editSupplierCp}
+                              onChange={e => setEditSupplierCp(e.target.value === "" ? "" : Number(e.target.value))}
+                              className="bg-zinc-950 border border-brand-orange rounded px-2 py-1 text-sm text-white w-24 focus:outline-none focus:ring-1 focus:ring-brand-orange"
+                            />
+                            <button 
+                              onClick={() => handleUpdateSupplierCp(s.supplierId)}
+                              disabled={isUpdatingCp || !editSupplierCp}
+                              className="p-1 bg-brand-orange hover:bg-orange-600 text-white rounded transition-colors disabled:opacity-50"
+                            >
+                              {isUpdatingCp ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                            </button>
+                            <button 
+                              onClick={() => { setEditingSupplierId(null); setEditSupplierCp(""); }}
+                              className="p-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded transition-colors"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-3">
+                            <span className="font-mono text-sm">₹{(s.costPrice / 100).toFixed(2)}</span>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setEditingSupplierId(s.supplierId)
+                                setEditSupplierCp(s.costPrice / 100)
+                              }}
+                              className="text-zinc-500 hover:text-white transition-colors"
+                              title="Edit Vendor Price"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ))
                   )}

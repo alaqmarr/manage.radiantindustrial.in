@@ -101,6 +101,37 @@ export async function addProductSupplier(
   }
 }
 
+export async function updateProductSupplierPrice(
+  productId: string, 
+  supplierId: string, 
+  costPrice: number
+) {
+  try {
+    const session = await auth()
+    if (!session?.user) return { error: "Unauthorized" }
+
+    const productSupplier = await prisma.productSupplier.update({
+      where: {
+        productId_supplierId: {
+          productId,
+          supplierId
+        }
+      },
+      data: {
+        costPrice: Math.round(costPrice * 100)
+      },
+      include: {
+        supplier: true
+      }
+    })
+
+    return { success: true, data: productSupplier }
+  } catch (error: any) {
+    console.error("Update product supplier price error:", error)
+    return { error: error.message || "Failed to update supplier price" }
+  }
+}
+
 import { revalidatePath } from "next/cache"
 
 export async function createSupplier(data: { name: string; contact?: string }) {

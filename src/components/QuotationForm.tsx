@@ -587,6 +587,31 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
         )}
       </div>
 
+      {/* Totals Summary */}
+      {items.length > 0 && (
+        <div className="flex justify-end">
+          <div className="w-80 glass-panel p-6 rounded-2xl space-y-3">
+            <div className="flex justify-between text-zinc-400 text-sm">
+              <span>Subtotal (excl. GST)</span>
+              <span>₹{(items.reduce((sum, item) => sum + (item.spSnapshot || 0) * item.quantity, 0) / 100).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-zinc-400 text-sm">
+              <span>Total GST</span>
+              <span>₹{(items.reduce((sum, item) => sum + Math.round((item.spSnapshot || 0) * item.quantity * (item.product.gstRate / 100)), 0) / 100).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-lg font-bold text-brand-orange pt-3 border-t border-premium-border">
+              <span>Grand Total</span>
+              <span>
+                ₹{((
+                  items.reduce((sum, item) => sum + (item.spSnapshot || 0) * item.quantity, 0) +
+                  items.reduce((sum, item) => sum + Math.round((item.spSnapshot || 0) * item.quantity * (item.product.gstRate / 100)), 0)
+                ) / 100).toFixed(2)}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex justify-end gap-4">
         <button 
           onClick={() => handleSubmit("DRAFT")}

@@ -218,38 +218,45 @@ export function QuotationActions({
           `}
         </style>
         
-        <div ref={emailTableRef} style={{ color: "#1f2937", width: "100%", maxWidth: "800px", margin: "0 auto", padding: "40px", boxSizing: "border-box", fontSize: "12px", lineHeight: "1.4" }}>
+        <div ref={emailTableRef} style={{ color: "#1f2937", width: "100%", maxWidth: "800px", margin: "0 auto", padding: "40px", boxSizing: "border-box", fontSize: "12px", lineHeight: "1.4", fontFamily: "Arial, sans-serif" }}>
           
           {/* Header */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "2px solid #f3f4f6", paddingBottom: "16px", marginBottom: "24px" }}>
-            <div style={{ maxWidth: "50%" }}>
-              {settings?.logoUrl ? (
-                <img src={settings.logoUrl} alt={settings.companyName} style={{ maxHeight: "48px", marginBottom: "12px" }} />
-              ) : (
-                <h1 style={{ margin: "0 0 12px 0", fontSize: "20px", fontWeight: "700", color: "#111827" }}>{settings?.companyName || "Company Name"}</h1>
-              )}
-            </div>
-            <div style={{ textAlign: "right", maxWidth: "50%" }}>
-              <h2 style={{ margin: "0 0 6px 0", fontSize: "22px", fontWeight: "800", color: "#f97316", textTransform: "uppercase", letterSpacing: "1px" }}>Quotation</h2>
-              <p style={{ margin: "0 0 2px 0", color: "#4b5563" }}><strong>Date:</strong> {new Date(quotation.createdAt).toLocaleDateString()}</p>
-              <p style={{ margin: "0", color: "#4b5563", wordBreak: "break-all" }}><strong>Quote No:</strong> {quotation.id}</p>
-            </div>
-          </div>
+          <table width="100%" border={0} cellPadding={0} cellSpacing={0} style={{ borderBottom: "2px solid #f3f4f6", paddingBottom: "16px", marginBottom: "24px" }}>
+            <tbody>
+              <tr>
+                <td valign="top" width="50%">
+                  {settings?.logoUrl ? (
+                    <img src={settings.logoUrl} alt={settings.companyName} style={{ maxHeight: "48px", marginBottom: "12px" }} />
+                  ) : (
+                    <h1 style={{ margin: "0 0 12px 0", fontSize: "20px", fontWeight: "700", color: "#111827" }}>{settings?.companyName || "Company Name"}</h1>
+                  )}
+                </td>
+                <td valign="top" width="50%" align="right">
+                  <h2 style={{ margin: "0 0 6px 0", fontSize: "22px", fontWeight: "800", color: "#f97316", textTransform: "uppercase", letterSpacing: "1px" }}>Quotation</h2>
+                  <p style={{ margin: "0 0 2px 0", color: "#4b5563" }}><strong>Date:</strong> {new Date(quotation.createdAt).toLocaleDateString()}</p>
+                  <p style={{ margin: "0", color: "#4b5563", wordBreak: "break-all" }}><strong>Quote No:</strong> {quotation.id}</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
 
           {/* Details */}
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "24px" }}>
-            <div style={{ flex: 1, paddingRight: "16px" }}>
-              <h3 style={{ margin: "0 0 6px 0", fontSize: "10px", textTransform: "uppercase", color: "#9ca3af", letterSpacing: "0.5px" }}>Quote To</h3>
-              <p style={{ margin: "0 0 2px 0", fontSize: "14px", fontWeight: "600", color: "#111827" }}>{quotation.client.name}</p>
-              {quotation.client.email && <p style={{ margin: "0 0 2px 0", color: "#4b5563" }}>{quotation.client.email}</p>}
-            </div>
-            
-            <div style={{ flex: 1, paddingLeft: "16px", borderLeft: "1px solid #f3f4f6" }}>
-              <h3 style={{ margin: "0 0 6px 0", fontSize: "10px", textTransform: "uppercase", color: "#9ca3af", letterSpacing: "0.5px" }}>Reference</h3>
-              {quotation.prNo && <p style={{ margin: "0 0 2px 0" }}><strong style={{ color: "#4b5563" }}>PR No:</strong> {quotation.prNo}</p>}
-              {quotation.rfqNo && <p style={{ margin: "0 0 2px 0" }}><strong style={{ color: "#4b5563" }}>RFQ No:</strong> {quotation.rfqNo}</p>}
-            </div>
-          </div>
+          <table width="100%" border={0} cellPadding={0} cellSpacing={0} style={{ marginBottom: "24px" }}>
+            <tbody>
+              <tr>
+                <td valign="top" width="50%" style={{ paddingRight: "16px" }}>
+                  <h3 style={{ margin: "0 0 6px 0", fontSize: "10px", textTransform: "uppercase", color: "#9ca3af", letterSpacing: "0.5px" }}>Quote To</h3>
+                  <p style={{ margin: "0 0 2px 0", fontSize: "14px", fontWeight: "600", color: "#111827" }}>{quotation.client.name}</p>
+                  {quotation.client.email && <p style={{ margin: "0 0 2px 0", color: "#4b5563" }}>{quotation.client.email}</p>}
+                </td>
+                <td valign="top" width="50%" style={{ paddingLeft: "16px", borderLeft: "1px solid #f3f4f6" }}>
+                  <h3 style={{ margin: "0 0 6px 0", fontSize: "10px", textTransform: "uppercase", color: "#9ca3af", letterSpacing: "0.5px" }}>Reference</h3>
+                  {quotation.prNo && <p style={{ margin: "0 0 2px 0" }}><strong style={{ color: "#4b5563" }}>PR No:</strong> {quotation.prNo}</p>}
+                  {quotation.rfqNo && <p style={{ margin: "0 0 2px 0" }}><strong style={{ color: "#4b5563" }}>RFQ No:</strong> {quotation.rfqNo}</p>}
+                </td>
+              </tr>
+            </tbody>
+          </table>
 
           {settings?.quotationMessage && (
             <div style={{ marginBottom: "24px", padding: "12px", backgroundColor: "#f9fafb", borderRadius: "6px", color: "#374151" }}>
@@ -258,39 +265,39 @@ export function QuotationActions({
           )}
 
           {/* Table */}
-          <table style={{ width: "100%", maxWidth: "800px", borderCollapse: "collapse", marginBottom: "24px", tableLayout: "fixed" }}>
-            <thead>
+          <table width="100%" border={0} cellPadding={0} cellSpacing={0} style={{ borderCollapse: "collapse", border: "1px solid #d1d5db", marginBottom: "24px", tableLayout: "fixed" }}>
+            <thead style={{ backgroundColor: "#f9fafb" }}>
               <tr>
-                <th style={{ padding: "8px 4px", borderBottom: "2px solid #e5e7eb", textAlign: "left", color: "#6b7280", fontSize: "10px", textTransform: "uppercase", fontWeight: "600", width: "15%" }}>Code</th>
-                <th style={{ padding: "8px 4px", borderBottom: "2px solid #e5e7eb", textAlign: "left", color: "#6b7280", fontSize: "10px", textTransform: "uppercase", fontWeight: "600", width: "45%" }}>Description</th>
-                <th style={{ padding: "8px 4px", borderBottom: "2px solid #e5e7eb", textAlign: "center", color: "#6b7280", fontSize: "10px", textTransform: "uppercase", fontWeight: "600", width: "10%" }}>Qty</th>
-                <th style={{ padding: "8px 4px", borderBottom: "2px solid #e5e7eb", textAlign: "right", color: "#6b7280", fontSize: "10px", textTransform: "uppercase", fontWeight: "600", width: "15%" }}>Rate</th>
-                <th style={{ padding: "8px 4px", borderBottom: "2px solid #e5e7eb", textAlign: "right", color: "#6b7280", fontSize: "10px", textTransform: "uppercase", fontWeight: "600", width: "15%" }}>Amount</th>
+                <th style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "left", color: "#374151", fontSize: "11px", textTransform: "uppercase", fontWeight: "700", width: "15%" }}>Code</th>
+                <th style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "left", color: "#374151", fontSize: "11px", textTransform: "uppercase", fontWeight: "700", width: "45%" }}>Description</th>
+                <th style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "center", color: "#374151", fontSize: "11px", textTransform: "uppercase", fontWeight: "700", width: "10%" }}>Qty</th>
+                <th style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "right", color: "#374151", fontSize: "11px", textTransform: "uppercase", fontWeight: "700", width: "15%" }}>Rate</th>
+                <th style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "right", color: "#374151", fontSize: "11px", textTransform: "uppercase", fontWeight: "700", width: "15%" }}>Amount</th>
               </tr>
             </thead>
             <tbody>
               {quotation.items.filter((item: any) => item.spSnapshot > 0).map((item: any) => (
                 <tr key={item.id}>
-                  <td style={{ padding: "8px 4px", borderBottom: "1px solid #f3f4f6", verticalAlign: "top", wordBreak: "break-word" }}>
+                  <td style={{ border: "1px solid #d1d5db", padding: "10px 8px", verticalAlign: "top", wordBreak: "break-word" }}>
                     <span style={{ fontFamily: "monospace", color: "#4b5563" }}>{item.product.materialCode}</span>
                   </td>
-                  <td style={{ padding: "8px 4px", borderBottom: "1px solid #f3f4f6", verticalAlign: "top", wordBreak: "break-word" }}>
-                    <div style={{ fontWeight: "600", color: "#111827", marginBottom: "2px" }}>{item.product.materialDescription}</div>
+                  <td style={{ border: "1px solid #d1d5db", padding: "10px 8px", verticalAlign: "top", wordBreak: "break-word" }}>
+                    <div style={{ fontWeight: "600", color: "#111827", marginBottom: "4px", fontSize: "13px" }}>{item.product.materialDescription}</div>
                     {item.product.specification && (
-                      <div style={{ fontSize: "10px", color: "#6b7280", whiteSpace: "pre-wrap", marginBottom: "2px" }}>{item.product.specification}</div>
+                      <div style={{ fontSize: "11px", color: "#6b7280", whiteSpace: "pre-wrap", marginBottom: "4px" }}>{item.product.specification}</div>
                     )}
                     {item.comment && (
-                      <div style={{ fontSize: "10px", color: "#555", fontStyle: "italic", whiteSpace: "pre-wrap", marginTop: "2px" }}>{item.comment}</div>
+                      <div style={{ fontSize: "11px", color: "#555", fontStyle: "italic", whiteSpace: "pre-wrap", marginTop: "4px" }}>{item.comment}</div>
                     )}
                   </td>
-                  <td style={{ padding: "8px 4px", borderBottom: "1px solid #f3f4f6", textAlign: "center", verticalAlign: "top" }}>
-                    <span style={{ fontWeight: "500", color: "#374151" }}>{item.quantity}</span>
+                  <td style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "center", verticalAlign: "top" }}>
+                    <span style={{ fontWeight: "600", color: "#374151", fontSize: "13px" }}>{item.quantity}</span>
                     <span style={{ fontSize: "10px", color: "#9ca3af", marginLeft: "4px" }}>{item.product.unit}</span>
                   </td>
-                  <td style={{ padding: "8px 4px", borderBottom: "1px solid #f3f4f6", textAlign: "right", verticalAlign: "top" }}>
+                  <td style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "right", verticalAlign: "top", fontSize: "13px" }}>
                     ₹{(item.spSnapshot / 100).toFixed(2)}
                   </td>
-                  <td style={{ padding: "8px 4px", borderBottom: "1px solid #f3f4f6", textAlign: "right", verticalAlign: "top", fontWeight: "500", color: "#111827" }}>
+                  <td style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "right", verticalAlign: "top", fontWeight: "600", color: "#111827", fontSize: "13px" }}>
                     ₹{(Math.round(item.spSnapshot * item.quantity) / 100).toFixed(2)}
                   </td>
                 </tr>
@@ -298,23 +305,32 @@ export function QuotationActions({
             </tbody>
           </table>
 
-          {/* Totals */}
-          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "40px" }}>
-            <div style={{ width: "300px", padding: "24px", backgroundColor: "#f9fafb", borderRadius: "8px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px", color: "#4b5563" }}>
-                <span>Subtotal</span>
-                <span style={{ fontWeight: "500", color: "#111827" }}>₹{(quotation.totalAmount / 100).toFixed(2)}</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px", color: "#4b5563" }}>
-                <span>Total GST</span>
-                <span style={{ fontWeight: "500", color: "#111827" }}>₹{(quotation.totalGst / 100).toFixed(2)}</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", borderTop: "2px solid #e5e7eb", paddingTop: "16px", fontSize: "18px", fontWeight: "700", color: "#111827" }}>
-                <span>Grand Total</span>
-                <span style={{ color: "#f97316" }}>₹{((quotation.totalAmount + quotation.totalGst) / 100).toFixed(2)}</span>
-              </div>
-            </div>
-          </div>
+          {/* Totals - Email Safe */}
+          <table width="100%" border={0} cellPadding={0} cellSpacing={0} style={{ marginBottom: "40px" }}>
+            <tbody>
+              <tr>
+                <td width="40%"></td>
+                <td width="60%" align="right">
+                  <table width="100%" border={0} cellPadding={0} cellSpacing={0} style={{ border: "1px solid #d1d5db", backgroundColor: "#f9fafb", borderCollapse: "collapse" }}>
+                    <tbody>
+                      <tr>
+                        <td style={{ padding: "12px 16px", color: "#4b5563", textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Subtotal</td>
+                        <td style={{ padding: "12px 16px", fontWeight: "600", color: "#111827", textAlign: "right", borderBottom: "1px solid #e5e7eb" }}>₹{(quotation.totalAmount / 100).toFixed(2)}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: "12px 16px", color: "#4b5563", textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Total GST</td>
+                        <td style={{ padding: "12px 16px", fontWeight: "600", color: "#111827", textAlign: "right", borderBottom: "1px solid #e5e7eb" }}>₹{(quotation.totalGst / 100).toFixed(2)}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: "16px", fontSize: "16px", fontWeight: "800", color: "#111827", textAlign: "left" }}>Grand Total</td>
+                        <td style={{ padding: "16px", fontSize: "16px", fontWeight: "800", color: "#f97316", textAlign: "right" }}>₹{((quotation.totalAmount + quotation.totalGst) / 100).toFixed(2)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </td>
+              </tr>
+            </tbody>
+          </table>
 
           {/* Footer */}
           {settings?.bottomDetails && (

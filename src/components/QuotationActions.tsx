@@ -147,14 +147,14 @@ export function QuotationActions({
           <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "20px" }}>
             <thead>
               <tr style={{ backgroundColor: "#556270", color: "white" }}>
-                <th style={{ padding: "10px", border: "1px solid #ddd", textAlign: "left" }}>Code</th>
-                <th style={{ padding: "10px", border: "1px solid #ddd", textAlign: "left" }}>Description</th>
-                <th style={{ padding: "10px", border: "1px solid #ddd", textAlign: "center" }}>UOM</th>
-                <th style={{ padding: "10px", border: "1px solid #ddd", textAlign: "center" }}>Qty</th>
+                <th style={{ padding: "10px", border: "1px solid #ddd", textAlign: "left", width: "120px" }}>Code</th>
+                <th style={{ padding: "10px", border: "1px solid #ddd", textAlign: "left", minWidth: "300px" }}>Description</th>
+                <th style={{ padding: "10px", border: "1px solid #ddd", textAlign: "center", width: "80px" }}>UOM</th>
+                <th style={{ padding: "10px", border: "1px solid #ddd", textAlign: "center", width: "80px" }}>Qty</th>
                 {quotation.status !== "DRAFT" && (
                   <>
-                    <th style={{ padding: "10px", border: "1px solid #ddd", textAlign: "right" }}>Rate (₹)</th>
-                    <th style={{ padding: "10px", border: "1px solid #ddd", textAlign: "right" }}>Amount (₹)</th>
+                    <th style={{ padding: "10px", border: "1px solid #ddd", textAlign: "right", width: "120px" }}>Rate (₹)</th>
+                    <th style={{ padding: "10px", border: "1px solid #ddd", textAlign: "right", width: "120px" }}>Amount (₹)</th>
                   </>
                 )}
               </tr>

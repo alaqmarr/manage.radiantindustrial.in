@@ -82,12 +82,12 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
           <table className="w-full text-sm text-left border-collapse">
             <thead className="text-xs uppercase bg-white/5 text-zinc-400 border-y border-premium-border">
               <tr>
-                <th className="py-3 px-4 font-medium">Code</th>
-                <th className="py-3 px-4 font-medium">Description</th>
-                <th className="py-3 px-4 font-medium text-center">UOM</th>
-                <th className="py-3 px-4 font-medium text-center">Qty</th>
-                <th className="py-3 px-4 font-medium text-right">Rate</th>
-                <th className="py-3 px-4 font-medium text-right">Amount</th>
+                <th className="py-3 px-4 font-medium w-32">Code</th>
+                <th className="py-3 px-4 font-medium min-w-[300px] w-auto">Description</th>
+                <th className="py-3 px-4 font-medium text-center w-20">UOM</th>
+                <th className="py-3 px-4 font-medium text-center w-24">Qty</th>
+                <th className="py-3 px-4 font-medium text-right w-32">Rate</th>
+                <th className="py-3 px-4 font-medium text-right w-32">Amount</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-premium-border">

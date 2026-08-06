@@ -463,14 +463,14 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-zinc-400 uppercase bg-premium-surface/50 border-b border-premium-border">
                 <tr>
-                  <th className="px-4 py-3">Code</th>
-                  <th className="px-4 py-3">Description</th>
-                  <th className="px-4 py-3">UOM</th>
-                  <th className="px-4 py-3">CP (₹)</th>
-                  <th className="px-4 py-3">SP (₹)</th>
-                  <th className="px-4 py-3">GST %</th>
-                  <th className="px-4 py-3 w-32">Qty</th>
-                  <th className="px-4 py-3 w-16"></th>
+                  <th className="px-4 py-3 w-32">Code</th>
+                  <th className="px-4 py-3 min-w-[300px] w-[350px]">Description</th>
+                  <th className="px-4 py-3 w-20">UOM</th>
+                  <th className="px-4 py-3 w-32">CP (₹)</th>
+                  <th className="px-4 py-3 w-32">SP (₹)</th>
+                  <th className="px-4 py-3 w-24">GST %</th>
+                  <th className="px-4 py-3 w-24">Qty</th>
+                  <th className="px-4 py-3 w-12"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-premium-border">
@@ -490,7 +490,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                         />
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex flex-col gap-1 w-full min-w-[200px]">
+                        <div className="flex flex-col gap-1 w-full">
                           <div className="flex items-center gap-2">
                             <input 
                               type="text"
@@ -505,7 +505,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                             )}
                           </div>
                           {item.product.specification && (
-                            <div className="text-[10px] text-zinc-500 px-1 truncate" title={item.product.specification}>
+                            <div className="text-[10px] text-zinc-500 px-1 whitespace-pre-wrap break-words">
                               {item.product.specification}
                             </div>
                           )}

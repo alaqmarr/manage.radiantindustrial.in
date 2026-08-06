@@ -109,7 +109,8 @@ export async function createQuotation(data: {
             spSnapshot: item.spSnapshot,
             cpSnapshot: item.cpSnapshot || null,
             gstSnapshot: item.product.gstRate,
-            supplierId: item.supplierId || null
+            supplierId: item.supplierId || null,
+            comment: item.comment || null
           }))
         }
       }

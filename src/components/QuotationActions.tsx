@@ -125,7 +125,13 @@ export function QuotationActions({
       </div>
 
       {/* Print Template & Hidden Email Table */}
-      <div className="hidden print:block w-full bg-white text-black p-8">
+      <div className="hidden print:block w-full bg-white text-black p-4">
+        <style type="text/css" media="print">
+          {`
+            @page { margin: 20mm; }
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          `}
+        </style>
         <div ref={emailTableRef} style={{ fontFamily: "sans-serif", color: "#333", maxWidth: "800px", margin: "0 auto" }}>
           {settings?.logoUrl && (
             <div style={{ marginBottom: "20px" }}>
@@ -165,7 +171,7 @@ export function QuotationActions({
                       <div style={{ fontSize: "0.85em", color: "#666", whiteSpace: "pre-wrap" }}>{item.product.specification}</div>
                     )}
                     {item.comment && (
-                      <div style={{ fontSize: "0.85em", color: "#f48c36", fontStyle: "italic", whiteSpace: "pre-wrap", marginTop: "4px" }}>{item.comment}</div>
+                      <div style={{ fontSize: "0.85em", color: "#555", fontStyle: "italic", whiteSpace: "pre-wrap", marginTop: "4px" }}>{item.comment}</div>
                     )}
                   </td>
                   <td style={{ padding: "10px", border: "1px solid #ddd", textAlign: "center" }}>{item.product.unit}</td>

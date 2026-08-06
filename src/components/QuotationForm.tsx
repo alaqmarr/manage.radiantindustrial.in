@@ -32,14 +32,16 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
     itemsNo?: string,
     cpSnapshot?: number,
     spSnapshot?: number,
-    supplierId?: string
+    supplierId?: string,
+    comment?: string
   }[]>(initialData?.items?.map((item: any) => ({
     product: item.product,
     quantity: item.quantity,
     itemsNo: item.itemsNo || undefined,
     cpSnapshot: item.cpSnapshot || undefined,
     spSnapshot: item.spSnapshot || 0,
-    supplierId: item.supplierId || undefined
+    supplierId: item.supplierId || undefined,
+    comment: item.comment || undefined
   })) || [])
   
   // Client Modal
@@ -168,10 +170,18 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
   }
 
   const handleQuantityChange = (productId: string, quantity: number) => {
-    setItems(items.map(i => i.product.id === productId ? { ...i, quantity } : i))
+    setItems(prev => prev.map(item => 
+      item.product.id === productId ? { ...item, quantity } : item
+    ))
   }
 
-  const handleProductChange = (productId: string, field: keyof Product, value: any) => {
+  const handleCommentChange = (productId: string, comment: string) => {
+    setItems(prev => prev.map(item => 
+      item.product.id === productId ? { ...item, comment } : item
+    ))
+  }
+
+  const handleProductChange = (productId: string, field: 'materialCode' | 'materialDescription' | 'unit' | 'gstRate', value: any) => {
     setItems(items.map(i => i.product.id === productId ? { 
       ...i, 
       product: { ...i.product, [field]: value } 
@@ -509,6 +519,15 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                               {item.product.specification}
                             </div>
                           )}
+                          <div className="mt-2">
+                            <input
+                              type="text"
+                              placeholder="Add comment (optional)..."
+                              value={item.comment || ""}
+                              onChange={(e) => handleCommentChange(item.product.id, e.target.value)}
+                              className="w-full bg-zinc-950/50 border border-transparent hover:border-premium-border focus:border-brand-slate px-2 py-1 text-xs text-zinc-400 focus:text-zinc-300 rounded focus:outline-none transition-colors"
+                            />
+                          </div>
                         </div>
                       </td>
                       <td className="px-4 py-3">
@@ -563,9 +582,10 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                     <td className="px-4 py-3">
                       <input 
                         type="number" 
-                        min="1"
+                        min="0"
+                        step="any"
                         value={item.quantity}
-                        onChange={e => handleQuantityChange(item.product.id, parseInt(e.target.value) || 1)}
+                        onChange={e => handleQuantityChange(item.product.id, parseFloat(e.target.value) || 0)}
                         className="w-full bg-zinc-950 border border-premium-border rounded px-2 py-1 text-white text-center focus:outline-none focus:ring-1 focus:ring-brand-slate"
                       />
                     </td>
@@ -593,20 +613,15 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
           <div className="w-80 glass-panel p-6 rounded-2xl space-y-3">
             <div className="flex justify-between text-zinc-400 text-sm">
               <span>Subtotal (excl. GST)</span>
-              <span>₹{(items.reduce((sum, item) => sum + (item.spSnapshot || 0) * item.quantity, 0) / 100).toFixed(2)}</span>
+              <span>₹{(items.reduce((sum, item) => sum + Math.round((item.spSnapshot || 0) * item.quantity), 0) / 100).toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-zinc-400 text-sm">
               <span>Total GST</span>
-              <span>₹{(items.reduce((sum, item) => sum + Math.round((item.spSnapshot || 0) * item.quantity * (item.product.gstRate / 100)), 0) / 100).toFixed(2)}</span>
+              <span>₹{(items.reduce((sum, item) => sum + Math.round(Math.round((item.spSnapshot || 0) * item.quantity) * (item.product.gstRate / 100)), 0) / 100).toFixed(2)}</span>
             </div>
-            <div className="flex justify-between text-lg font-bold text-brand-orange pt-3 border-t border-premium-border">
+            <div className="flex justify-between text-lg font-bold text-white pt-3 border-t border-premium-border">
               <span>Grand Total</span>
-              <span>
-                ₹{((
-                  items.reduce((sum, item) => sum + (item.spSnapshot || 0) * item.quantity, 0) +
-                  items.reduce((sum, item) => sum + Math.round((item.spSnapshot || 0) * item.quantity * (item.product.gstRate / 100)), 0)
-                ) / 100).toFixed(2)}
-              </span>
+              <span>₹{((items.reduce((sum, item) => sum + Math.round((item.spSnapshot || 0) * item.quantity), 0) + items.reduce((sum, item) => sum + Math.round(Math.round((item.spSnapshot || 0) * item.quantity) * (item.product.gstRate / 100)), 0)) / 100).toFixed(2)}</span>
             </div>
           </div>
         </div>

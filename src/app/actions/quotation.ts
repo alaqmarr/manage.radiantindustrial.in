@@ -16,6 +16,7 @@ type QuotationItemData = {
   spSnapshot: number // paise
   cpSnapshot?: number // paise
   supplierId?: string
+  comment?: string
 }
 
 export async function getQuotationUpdatedAt(id: string) {
@@ -58,7 +59,7 @@ export async function createQuotation(data: {
     let totalGst = 0
     
     for (const item of data.items) {
-      const amount = item.quantity * item.spSnapshot
+      const amount = Math.round(item.quantity * item.spSnapshot)
       const gst = Math.round(amount * (item.product.gstRate / 100))
       
       totalAmount += amount
@@ -152,7 +153,7 @@ export async function upsertDraftQuotation(data: {
     let totalGst = 0
     
     for (const item of data.items) {
-      const amount = item.quantity * item.spSnapshot
+      const amount = Math.round(item.quantity * item.spSnapshot)
       const gst = Math.round(amount * (item.product.gstRate / 100))
       
       totalAmount += amount
@@ -206,7 +207,8 @@ export async function upsertDraftQuotation(data: {
               spSnapshot: item.spSnapshot,
               cpSnapshot: item.cpSnapshot || null,
               gstSnapshot: item.product.gstRate,
-              supplierId: item.supplierId || null
+              supplierId: item.supplierId || null,
+              comment: item.comment || null
             }))
           }
         }
@@ -236,7 +238,8 @@ export async function upsertDraftQuotation(data: {
               spSnapshot: item.spSnapshot,
               cpSnapshot: item.cpSnapshot || null,
               gstSnapshot: item.product.gstRate,
-              supplierId: item.supplierId || null
+              supplierId: item.supplierId || null,
+              comment: item.comment || null
             }))
           }
         }

@@ -156,13 +156,16 @@ export function QuotationActions({
               </tr>
             </thead>
             <tbody>
-              {quotation.items.map((item: any) => (
+              {quotation.items.filter((item: any) => item.spSnapshot > 0).map((item: any) => (
                 <tr key={item.id}>
                   <td style={{ padding: "10px", border: "1px solid #ddd" }}>{item.product.materialCode}</td>
                   <td style={{ padding: "10px", border: "1px solid #ddd" }}>
                     <div style={{ fontWeight: "500", marginBottom: "4px" }}>{item.product.materialDescription}</div>
                     {item.product.specification && (
                       <div style={{ fontSize: "0.85em", color: "#666", whiteSpace: "pre-wrap" }}>{item.product.specification}</div>
+                    )}
+                    {item.comment && (
+                      <div style={{ fontSize: "0.85em", color: "#f48c36", fontStyle: "italic", whiteSpace: "pre-wrap", marginTop: "4px" }}>{item.comment}</div>
                     )}
                   </td>
                   <td style={{ padding: "10px", border: "1px solid #ddd", textAlign: "center" }}>{item.product.unit}</td>
@@ -171,7 +174,7 @@ export function QuotationActions({
                         {(item.spSnapshot / 100).toFixed(2)}
                       </td>
                       <td style={{ padding: "10px", border: "1px solid #ddd", textAlign: "right" }}>
-                        {((item.spSnapshot * item.quantity) / 100).toFixed(2)}
+                        {(Math.round(item.spSnapshot * item.quantity) / 100).toFixed(2)}
                       </td>
                 </tr>
               ))}

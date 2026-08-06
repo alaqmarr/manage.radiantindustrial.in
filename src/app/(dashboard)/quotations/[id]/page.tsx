@@ -102,20 +102,23 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
                     {item.product.specification && (
                       <div className="text-xs text-zinc-500 mt-1 whitespace-pre-wrap">{item.product.specification}</div>
                     )}
+                    {item.comment && (
+                      <div className="text-xs text-brand-orange/80 mt-1 italic whitespace-pre-wrap break-words">{item.comment}</div>
+                    )}
                   </td>
                   <td className="py-4 px-4 text-center text-zinc-400 text-xs font-mono">{item.product.unit}</td>
                   <td className="py-4 px-4 text-center text-zinc-300">{item.quantity}</td>
                   
                   <td className="py-4 px-4 text-right text-zinc-300">{formatRupee(item.spSnapshot)}</td>
-                  <td className="py-4 px-4 text-right text-white font-medium">{formatRupee(item.spSnapshot * item.quantity)}</td>
+                  <td className="py-4 px-4 text-right text-white font-medium">{formatRupee(Math.round(item.spSnapshot * item.quantity))}</td>
                   <td className="py-4 px-4 text-right text-amber-500/80">
-                    {formatRupee((item.cpSnapshot || 0) * item.quantity)}
+                    {formatRupee(Math.round((item.cpSnapshot || 0) * item.quantity))}
                   </td>
                   <td className="py-4 px-4 text-right text-amber-500/80">
-                    {formatRupee(((item.cpSnapshot || 0) * item.quantity) * (item.gstSnapshot / 100))}
+                    {formatRupee(Math.round(Math.round((item.cpSnapshot || 0) * item.quantity) * (item.gstSnapshot / 100)))}
                   </td>
                   <td className="py-4 px-4 text-right text-emerald-500 font-medium">
-                    {formatRupee((item.spSnapshot - (item.cpSnapshot || 0)) * item.quantity)}
+                    {formatRupee(Math.round((item.spSnapshot - (item.cpSnapshot || 0)) * item.quantity))}
                   </td>
                 </tr>
               ))}
@@ -143,7 +146,7 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
                 <span>
                   {formatRupee(
                     quotation.items.reduce((sum, item) => {
-                      return sum + (item.cpSnapshot || 0) * item.quantity;
+                      return sum + Math.round((item.cpSnapshot || 0) * item.quantity);
                     }, 0)
                   )}
                 </span>
@@ -153,7 +156,7 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
                 <span>
                   {formatRupee(
                     quotation.items.reduce((sum, item) => {
-                      return sum + ((item.cpSnapshot || 0) * item.quantity) * (item.gstSnapshot / 100);
+                      return sum + Math.round(Math.round((item.cpSnapshot || 0) * item.quantity) * (item.gstSnapshot / 100));
                     }, 0)
                   )}
                 </span>
@@ -163,7 +166,7 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
                 <span>
                   {formatRupee(
                     quotation.items.reduce((sum, item) => {
-                      return sum + (item.spSnapshot - (item.cpSnapshot || 0)) * item.quantity;
+                      return sum + Math.round((item.spSnapshot - (item.cpSnapshot || 0)) * item.quantity);
                     }, 0)
                   )}
                 </span>

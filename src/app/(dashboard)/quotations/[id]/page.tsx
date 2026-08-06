@@ -88,6 +88,8 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
                 <th className="py-3 px-4 font-medium text-center w-24">Qty</th>
                 <th className="py-3 px-4 font-medium text-right w-32">Rate</th>
                 <th className="py-3 px-4 font-medium text-right w-32">Amount</th>
+                <th className="py-3 px-4 font-medium text-right w-32 text-amber-500/80">P. Cost</th>
+                <th className="py-3 px-4 font-medium text-right w-32 text-amber-500/80">P. GST</th>
                 <th className="py-3 px-4 font-medium text-right w-32 text-emerald-500/80">Profit</th>
               </tr>
             </thead>
@@ -106,6 +108,12 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
                   
                   <td className="py-4 px-4 text-right text-zinc-300">{formatRupee(item.spSnapshot)}</td>
                   <td className="py-4 px-4 text-right text-white font-medium">{formatRupee(item.spSnapshot * item.quantity)}</td>
+                  <td className="py-4 px-4 text-right text-amber-500/80">
+                    {formatRupee((item.cpSnapshot || 0) * item.quantity)}
+                  </td>
+                  <td className="py-4 px-4 text-right text-amber-500/80">
+                    {formatRupee(((item.cpSnapshot || 0) * item.quantity) * (item.gstSnapshot / 100))}
+                  </td>
                   <td className="py-4 px-4 text-right text-emerald-500 font-medium">
                     {formatRupee((item.spSnapshot - (item.cpSnapshot || 0)) * item.quantity)}
                   </td>
@@ -129,6 +137,26 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
               <div className="flex justify-between text-lg font-bold text-brand-orange pt-3 border-t border-premium-border">
                 <span>Grand Total</span>
                 <span>{formatRupee(quotation.totalAmount + quotation.totalGst)}</span>
+              </div>
+              <div className="flex justify-between text-amber-500/80 font-medium pt-3 border-t border-premium-border/50">
+                <span>Total P. Cost</span>
+                <span>
+                  {formatRupee(
+                    quotation.items.reduce((sum, item) => {
+                      return sum + (item.cpSnapshot || 0) * item.quantity;
+                    }, 0)
+                  )}
+                </span>
+              </div>
+              <div className="flex justify-between text-amber-500/80 font-medium">
+                <span>Total P. GST</span>
+                <span>
+                  {formatRupee(
+                    quotation.items.reduce((sum, item) => {
+                      return sum + ((item.cpSnapshot || 0) * item.quantity) * (item.gstSnapshot / 100);
+                    }, 0)
+                  )}
+                </span>
               </div>
               <div className="flex justify-between text-emerald-500 font-medium pt-3 border-t border-premium-border/50">
                 <span>Est. Total Profit</span>

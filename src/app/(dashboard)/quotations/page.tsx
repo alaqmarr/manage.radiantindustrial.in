@@ -67,13 +67,14 @@ export default async function QuotationsPage(props: { searchParams: Promise<{ se
                 <th className="px-6 py-5 font-medium tracking-wider">PR No</th>
                 <th className="px-6 py-5 font-medium tracking-wider">Status</th>
                 <th className="px-6 py-5 font-medium tracking-wider">Total Amount</th>
+                <th className="px-6 py-5 font-medium tracking-wider">Est. Profit</th>
                 <th className="px-6 py-5 font-medium tracking-wider text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-premium-border">
               {quotations.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-zinc-500">
+                  <td colSpan={8} className="px-6 py-8 text-center text-zinc-500">
                     No quotations found.
                   </td>
                 </tr>
@@ -98,6 +99,15 @@ export default async function QuotationsPage(props: { searchParams: Promise<{ se
                       </span>
                     </td>
                     <td className="px-6 py-4 font-medium text-white">{formatRupee(quote.totalAmount)}</td>
+                    <td className="px-6 py-4 font-medium text-emerald-500">
+                      {formatRupee(
+                        quote.items.reduce((sum, item) => {
+                          const cp = item.cpSnapshot || 0;
+                          const sp = item.spSnapshot || 0;
+                          return sum + (sp - cp) * item.quantity;
+                        }, 0)
+                      )}
+                    </td>
                     <td className="px-6 py-4 text-right">
                       <Link href={`/quotations/${quote.id}`} className="text-brand-slate hover:text-slate-400 font-medium">View</Link>
                     </td>

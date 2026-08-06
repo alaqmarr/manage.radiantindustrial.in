@@ -88,6 +88,7 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
                 <th className="py-3 px-4 font-medium text-center w-24">Qty</th>
                 <th className="py-3 px-4 font-medium text-right w-32">Rate</th>
                 <th className="py-3 px-4 font-medium text-right w-32">Amount</th>
+                <th className="py-3 px-4 font-medium text-right w-32 text-emerald-500/80">Profit</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-premium-border">
@@ -105,6 +106,9 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
                   
                   <td className="py-4 px-4 text-right text-zinc-300">{formatRupee(item.spSnapshot)}</td>
                   <td className="py-4 px-4 text-right text-white font-medium">{formatRupee(item.spSnapshot * item.quantity)}</td>
+                  <td className="py-4 px-4 text-right text-emerald-500 font-medium">
+                    {formatRupee((item.spSnapshot - (item.cpSnapshot || 0)) * item.quantity)}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -125,6 +129,16 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
               <div className="flex justify-between text-lg font-bold text-brand-orange pt-3 border-t border-premium-border">
                 <span>Grand Total</span>
                 <span>{formatRupee(quotation.totalAmount + quotation.totalGst)}</span>
+              </div>
+              <div className="flex justify-between text-emerald-500 font-medium pt-3 border-t border-premium-border/50">
+                <span>Est. Total Profit</span>
+                <span>
+                  {formatRupee(
+                    quotation.items.reduce((sum, item) => {
+                      return sum + (item.spSnapshot - (item.cpSnapshot || 0)) * item.quantity;
+                    }, 0)
+                  )}
+                </span>
               </div>
             </div>
           </div>

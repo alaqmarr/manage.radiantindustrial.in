@@ -90,9 +90,92 @@ export function QuotationActions({
     }
   }
 
+  const handleExportExcel = async () => {
+    try {
+      const XLSX = await import("xlsx");
+      
+      const rows = quotation.items.filter((item: any) => item.spSnapshot > 0).map((item: any, index: number) => ({
+        "SR NO": index + 1,
+        "Code": item.product.materialCode,
+        "Description": item.product.materialDescription,
+        "Specification": item.product.specification || "",
+        "Comment": item.comment || "",
+        "Qty": item.quantity,
+        "UOM": item.product.unit,
+        "Rate": (item.spSnapshot / 100).toFixed(2),
+        "Amount": (Math.round(item.spSnapshot * item.quantity) / 100).toFixed(2)
+      }));
+      
+      // Calculate totals
+      rows.push({
+        "SR NO": "",
+        "Code": "",
+        "Description": "Subtotal",
+        "Specification": "",
+        "Comment": "",
+        "Qty": "",
+        "UOM": "",
+        "Rate": "",
+        "Amount": (quotation.totalAmount / 100).toFixed(2)
+      } as any);
+      rows.push({
+        "SR NO": "",
+        "Code": "",
+        "Description": "Total GST",
+        "Specification": "",
+        "Comment": "",
+        "Qty": "",
+        "UOM": "",
+        "Rate": "",
+        "Amount": (quotation.totalGst / 100).toFixed(2)
+      } as any);
+      rows.push({
+        "SR NO": "",
+        "Code": "",
+        "Description": "Grand Total",
+        "Specification": "",
+        "Comment": "",
+        "Qty": "",
+        "UOM": "",
+        "Rate": "",
+        "Amount": ((quotation.totalAmount + quotation.totalGst) / 100).toFixed(2)
+      } as any);
+
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+      
+      // Auto-size columns roughly
+      const columnWidths = [
+        { wch: 8 },  // SR NO
+        { wch: 20 }, // Code
+        { wch: 50 }, // Description
+        { wch: 30 }, // Specification
+        { wch: 30 }, // Comment
+        { wch: 8 },  // Qty
+        { wch: 8 },  // UOM
+        { wch: 12 }, // Rate
+        { wch: 15 }, // Amount
+      ];
+      worksheet['!cols'] = columnWidths;
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Quotation");
+      
+      XLSX.writeFile(workbook, `Quotation_${quotation.id.slice(-6)}.xlsx`);
+    } catch (err) {
+      console.error("Failed to export to Excel", err);
+      alert("Failed to export to Excel.");
+    }
+  }
+
   return (
     <>
       <div className="flex gap-3 print:hidden">
+        <button 
+          onClick={handleExportExcel}
+          className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 font-medium rounded-lg transition-colors border border-emerald-500/20 active:scale-95"
+        >
+          <span className="text-sm">Export Excel</span>
+        </button>
         <button 
           onClick={() => router.push(`/quotations/${quotation.id}/edit`)}
           className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-white font-medium rounded-lg transition-colors border border-premium-border active:scale-95"
@@ -103,14 +186,14 @@ export function QuotationActions({
         <button 
           onClick={handleDelete}
           disabled={isDeleting}
-          className="flex items-center gap-2 px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 font-medium rounded-lg transition-colors border border-rose-500/20 active:scale-95 disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 disabled:opacity-50 text-red-500 font-medium rounded-lg transition-colors border border-red-500/20 active:scale-95"
         >
           <Trash2 className="w-4 h-4" />
           <span className="text-sm">{isDeleting ? "Deleting..." : "Delete"}</span>
         </button>
         <button 
           onClick={handleCopyEmail}
-          className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-white font-medium rounded-lg transition-colors border border-premium-border active:scale-95"
+          className="flex items-center gap-2 px-4 py-2 bg-brand-slate hover:bg-brand-slate/80 text-white font-medium rounded-lg transition-colors border border-brand-slate/50 active:scale-95"
         >
           {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
           <span className="text-sm">{copied ? "Copied!" : "Copy for Email"}</span>

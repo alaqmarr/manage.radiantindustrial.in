@@ -163,7 +163,12 @@ export function QuotationActions({
               {quotation.items.map((item: any) => (
                 <tr key={item.id}>
                   <td style={{ padding: "10px", border: "1px solid #ddd" }}>{item.product.materialCode}</td>
-                  <td style={{ padding: "10px", border: "1px solid #ddd" }}>{item.product.materialDescription}</td>
+                  <td style={{ padding: "10px", border: "1px solid #ddd" }}>
+                    <div style={{ fontWeight: "500", marginBottom: "4px" }}>{item.product.materialDescription}</div>
+                    {item.product.specification && (
+                      <div style={{ fontSize: "0.85em", color: "#666", whiteSpace: "pre-wrap" }}>{item.product.specification}</div>
+                    )}
+                  </td>
                   <td style={{ padding: "10px", border: "1px solid #ddd", textAlign: "center" }}>{item.product.unit}</td>
                   <td style={{ padding: "10px", border: "1px solid #ddd", textAlign: "center" }}>{item.quantity}</td>
                   {quotation.status !== "DRAFT" && (

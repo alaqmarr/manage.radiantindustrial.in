@@ -94,7 +94,12 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
               {quotation.items.map((item) => (
                 <tr key={item.id} className="hover:bg-white/5 even:bg-white/[0.02] transition-colors">
                   <td className="py-4 px-4 text-white font-mono text-xs">{item.product.materialCode}</td>
-                  <td className="py-4 px-4 text-zinc-300">{item.product.materialDescription}</td>
+                  <td className="py-4 px-4">
+                    <div className="text-zinc-300">{item.product.materialDescription}</div>
+                    {item.product.specification && (
+                      <div className="text-xs text-zinc-500 mt-1 whitespace-pre-wrap">{item.product.specification}</div>
+                    )}
+                  </td>
                   <td className="py-4 px-4 text-center text-zinc-400 text-xs font-mono">{item.product.unit}</td>
                   <td className="py-4 px-4 text-center text-zinc-300">{item.quantity}</td>
                   

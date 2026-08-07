@@ -25,6 +25,8 @@ export async function saveCompanySettings(formData: FormData) {
     const ifscCode = formData.get("ifscCode") ? String(formData.get("ifscCode")) : null
     const swiftCode = formData.get("swiftCode") ? String(formData.get("swiftCode")) : null
     const bankAddress = formData.get("bankAddress") ? String(formData.get("bankAddress")) : null
+    
+    const imageUrl = formData.get("logoUrl") as string | null
 
     const updateData = {
         companyName, address, email, phone, quotationMessage, bottomDetails,

@@ -10,16 +10,22 @@ import {
   IndianRupee,
   ShoppingCart,
   ReceiptText,
-  Sparkles
+  Sparkles,
+  FileText,
+  CheckCircle2,
+  Clock,
+  XCircle
 } from "lucide-react"
 import { DashboardCharts } from "@/components/DashboardCharts"
+import Link from "next/link"
 
 async function getDashboardData() {
-  const acceptedQuotations = await prisma.quotation.findMany({
-    where: { status: 'ACCEPTED' },
+  const allQuotations = await prisma.quotation.findMany({
     include: { items: true },
     orderBy: { createdAt: 'asc' }
   })
+  
+  const acceptedQuotations = allQuotations.filter(q => q.status === 'ACCEPTED')
   
   // Basic totals
   let totalSales = 0
@@ -84,7 +90,13 @@ async function getDashboardData() {
     totalPurchases,
     profits,
     gstToPay,
-    chartData
+    chartData,
+    quotationCounts: {
+      draft: allQuotations.filter(q => q.status === 'DRAFT').length,
+      pending: allQuotations.filter(q => q.status === 'PENDING').length,
+      accepted: acceptedQuotations.length,
+      rejected: allQuotations.filter(q => q.status === 'REJECTED').length,
+    }
   }
 }
 
@@ -106,7 +118,7 @@ export default async function DashboardPage() {
           <Sparkles className="w-6 h-6 text-brand-orange" />
         </div>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-white">Dashboard Overview</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-white font-heading">Dashboard Overview</h1>
           <p className="text-zinc-400 mt-1 text-sm">Welcome back. Here's what's happening with your business today.</p>
         </div>
       </div>
@@ -139,6 +151,33 @@ export default async function DashboardPage() {
         />
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <MetricCard 
+          title="Draft Quotations" 
+          value={data.quotationCounts.draft.toString()} 
+          icon={<FileText className="w-5 h-5 text-zinc-400" />} 
+          href="/quotations?status=DRAFT"
+        />
+        <MetricCard 
+          title="Pending Approval" 
+          value={data.quotationCounts.pending.toString()} 
+          icon={<Clock className="w-5 h-5 text-blue-500" />} 
+          href="/quotations?status=PENDING"
+        />
+        <MetricCard 
+          title="Accepted Quotations" 
+          value={data.quotationCounts.accepted.toString()} 
+          icon={<CheckCircle2 className="w-5 h-5 text-emerald-500" />} 
+          href="/quotations?status=ACCEPTED"
+        />
+        <MetricCard 
+          title="Rejected Quotations" 
+          value={data.quotationCounts.rejected.toString()} 
+          icon={<XCircle className="w-5 h-5 text-rose-500" />} 
+          href="/quotations?status=REJECTED"
+        />
+      </div>
+
       <DashboardCharts data={data} />
     </div>
   )
@@ -150,17 +189,19 @@ function MetricCard({
   icon, 
   trend, 
   trendUp,
-  subtext
+  subtext,
+  href
 }: { 
   title: string, 
   value: string, 
   icon: React.ReactNode, 
   trend?: string, 
   trendUp?: boolean,
-  subtext?: string
+  subtext?: string,
+  href?: string
 }) {
-  return (
-    <div className="glass-panel p-6 rounded-md relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
+  const content = (
+    <div className={`glass-panel p-6 rounded-md relative overflow-hidden group transition-all duration-300 ${href ? 'hover:-translate-y-1 hover:border-brand-slate hover:shadow-lg cursor-pointer' : 'hover:-translate-y-1'}`}>
       <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-white/5 rounded-full blur-2xl group-hover:bg-brand-orange/10 transition-colors" />
       <div className="flex items-center justify-between mb-4 relative z-10">
         <h3 className="text-zinc-400 font-medium tracking-wide text-sm">{title}</h3>
@@ -181,5 +222,10 @@ function MetricCard({
       )}
     </div>
   )
+
+  if (href) {
+    return <Link href={href} className="block outline-none">{content}</Link>
+  }
+  return content
 }
 

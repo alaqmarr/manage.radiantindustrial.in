@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { QuotationActions } from "@/components/QuotationActions"
+import { QuotationStatusBadge } from "@/components/QuotationStatusBadge"
 import { Metadata } from "next"
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
@@ -51,8 +52,11 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="print:hidden">
-          <h1 className="text-3xl font-bold tracking-tight text-white">Quotation {quotation.id.slice(-6).toUpperCase()}</h1>
-          <p className="text-zinc-400 mt-2">Status: <span className="text-white font-medium">{quotation.status}</span></p>
+          <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Quotation {quotation.id.slice(-6).toUpperCase()}</h1>
+          <div className="flex items-center gap-3">
+            <span className="text-zinc-400">Status:</span>
+            <QuotationStatusBadge id={quotation.id} currentStatus={quotation.status} />
+          </div>
         </div>
         <QuotationActions quotation={quotation} settings={settings} />
       </div>

@@ -273,3 +273,24 @@ export async function deleteQuotation(id: string) {
     return { error: error.message || "Failed to delete quotation" }
   }
 }
+
+export async function updateQuotationStatus(id: string, newStatus: string) {
+  try {
+    const session = await auth()
+    if (!session?.user) {
+      return { error: "Unauthorized" }
+    }
+
+    await prisma.quotation.update({
+      where: { id },
+      data: { status: newStatus }
+    })
+
+    revalidatePath("/quotations")
+    revalidatePath("/")
+    return { success: true }
+  } catch (error: any) {
+    console.error("Update Quotation Status Error:", error)
+    return { error: error.message || "Failed to update quotation status" }
+  }
+}

@@ -14,6 +14,8 @@ import { deleteQuotations } from "@/app/actions/batchDelete"
 import { SearchBar } from "@/components/SearchBar"
 import { ClickableRow } from "@/components/ClickableRow"
 
+import { QuotationStatusBadge } from "@/components/QuotationStatusBadge"
+
 function formatRupee(paise: number) {
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
@@ -22,17 +24,24 @@ function formatRupee(paise: number) {
   }).format(paise / 100)
 }
 
-export default async function QuotationsPage(props: { searchParams: Promise<{ search?: string }> }) {
+export default async function QuotationsPage(props: { searchParams: Promise<{ search?: string, status?: string }> }) {
   const searchParams = await props.searchParams
   const search = searchParams.search || ""
+  const statusFilter = searchParams.status || ""
 
-  const where = search ? {
-    OR: [
+  const where: any = {}
+  
+  if (search) {
+    where.OR = [
       { prNo: { contains: search } },
       { rfqNo: { contains: search } },
       { client: { name: { contains: search } } },
     ]
-  } : {}
+  }
+
+  if (statusFilter) {
+    where.status = statusFilter
+  }
 
   const quotations = await prisma.quotation.findMany({
     where,
@@ -95,13 +104,7 @@ export default async function QuotationsPage(props: { searchParams: Promise<{ se
                     <td className="px-6 py-4 text-zinc-300 font-medium group-hover:text-brand-orange transition-colors">{quote.client.name}</td>
                     <td className="px-6 py-4 text-zinc-300">{quote.prNo || '-'}</td>
                     <td className="px-6 py-4">
-                      <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${
-                        quote.status === 'ACCEPTED' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 
-                        quote.status === 'REJECTED' ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20' :
-                        'bg-blue-500/10 text-blue-500 border border-blue-500/20'
-                      }`}>
-                        {quote.status}
-                      </span>
+                      <QuotationStatusBadge id={quote.id} currentStatus={quote.status} />
                     </td>
                     <td className="px-6 py-4 font-medium text-white">{formatRupee(quote.totalAmount)}</td>
                     <td className="px-6 py-4 font-medium text-emerald-500">

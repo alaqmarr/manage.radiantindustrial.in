@@ -11,7 +11,8 @@ import {
   ShoppingCart,
   Settings,
   LogOut,
-  ChevronRight
+  ChevronRight,
+  Mail
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 
@@ -27,6 +28,7 @@ const menuGroups = [
     items: [
       { icon: FileText, label: "Quotations", href: "/quotations" },
       { icon: Users, label: "Clients", href: "/clients" },
+      { icon: Mail, label: "Email Templates", href: "/emails" },
     ]
   },
   {

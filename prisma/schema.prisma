@@ -70,6 +70,19 @@ model CompanySettings {
   phone            String?
   quotationMessage String?
   bottomDetails    String?
+  
+  // Email / SMTP Settings
+  smtpEmail        String?
+  smtpPassword     String?
+
+  // Banking Details
+  bankName         String?
+  accountName      String?
+  accountNumber    String?
+  ifscCode         String?
+  swiftCode        String?
+  bankAddress      String?
+
   updatedAt        DateTime @updatedAt
 }
 

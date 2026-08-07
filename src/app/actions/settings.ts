@@ -16,29 +16,32 @@ export async function saveCompanySettings(formData: FormData) {
     const phone = formData.get("phone") ? String(formData.get("phone")) : null
     const quotationMessage = formData.get("quotationMessage") ? String(formData.get("quotationMessage")) : null
     const bottomDetails = formData.get("bottomDetails") ? String(formData.get("bottomDetails")) : null
-    const imageUrl = formData.get("logoUrl") as string | null
+    const smtpEmail = formData.get("smtpEmail") ? String(formData.get("smtpEmail")) : null
+    const smtpPassword = formData.get("smtpPassword") ? String(formData.get("smtpPassword")) : null
+    
+    const bankName = formData.get("bankName") ? String(formData.get("bankName")) : null
+    const accountName = formData.get("accountName") ? String(formData.get("accountName")) : null
+    const accountNumber = formData.get("accountNumber") ? String(formData.get("accountNumber")) : null
+    const ifscCode = formData.get("ifscCode") ? String(formData.get("ifscCode")) : null
+    const swiftCode = formData.get("swiftCode") ? String(formData.get("swiftCode")) : null
+    const bankAddress = formData.get("bankAddress") ? String(formData.get("bankAddress")) : null
+
+    const updateData = {
+        companyName, address, email, phone, quotationMessage, bottomDetails,
+        smtpEmail, smtpPassword, bankName, accountName, accountNumber, ifscCode, swiftCode, bankAddress,
+        ...(imageUrl ? { logoUrl: imageUrl } : {}),
+    }
+
+    const createData = {
+        id: "default", companyName, address, email, phone, quotationMessage, bottomDetails,
+        smtpEmail, smtpPassword, bankName, accountName, accountNumber, ifscCode, swiftCode, bankAddress,
+        logoUrl: imageUrl,
+    }
 
     await prisma.companySettings.upsert({
       where: { id: "default" },
-      update: {
-        companyName,
-        address,
-        email,
-        phone,
-        quotationMessage,
-        bottomDetails,
-        ...(imageUrl ? { logoUrl: imageUrl } : {}), // Update logo only if a new one is provided
-      },
-      create: {
-        id: "default",
-        companyName,
-        address,
-        email,
-        phone,
-        quotationMessage,
-        bottomDetails,
-        logoUrl: imageUrl,
-      },
+      update: updateData,
+      create: createData,
     })
 
     revalidatePath("/settings")

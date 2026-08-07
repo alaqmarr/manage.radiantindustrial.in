@@ -113,6 +113,54 @@ export function SettingsForm({ settings }: { settings: any }) {
             <textarea defaultValue={settings?.bottomDetails || ""} name="bottomDetails" rows={3} placeholder="Terms and conditions, validity, etc." className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
           </div>
         </div>
+        
+        {/* Email / SMTP Integration */}
+        <div className="pt-6 border-t border-zinc-800">
+          <h3 className="text-lg font-semibold text-white mb-4">Email Sending Settings (SMTP)</h3>
+          <p className="text-sm text-zinc-400 mb-4">Provide your Gmail credentials to send emails directly from the app. Use a generated <strong>App Password</strong>, not your regular login password.</p>
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-zinc-400 mb-1">SMTP Email Address</label>
+              <input defaultValue={settings?.smtpEmail || ""} name="smtpEmail" type="email" placeholder="e.g. sales@yourcompany.com" className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-400 mb-1">SMTP App Password</label>
+              <input defaultValue={settings?.smtpPassword || ""} name="smtpPassword" type="password" placeholder="16-character App Password" className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+            </div>
+          </div>
+        </div>
+
+        {/* Banking Details */}
+        <div className="pt-6 border-t border-zinc-800">
+          <h3 className="text-lg font-semibold text-white mb-4">Banking Details</h3>
+          <p className="text-sm text-zinc-400 mb-4">These details can be used in your email templates (e.g. when requesting payment).</p>
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-zinc-400 mb-1">Bank Name</label>
+              <input defaultValue={settings?.bankName || ""} name="bankName" type="text" className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-400 mb-1">Account Name</label>
+              <input defaultValue={settings?.accountName || ""} name="accountName" type="text" className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-400 mb-1">Account Number</label>
+              <input defaultValue={settings?.accountNumber || ""} name="accountNumber" type="text" className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-400 mb-1">IFSC Code</label>
+              <input defaultValue={settings?.ifscCode || ""} name="ifscCode" type="text" className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-400 mb-1">SWIFT Code</label>
+              <input defaultValue={settings?.swiftCode || ""} name="swiftCode" type="text" className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-400 mb-1">Branch / Address</label>
+              <input defaultValue={settings?.bankAddress || ""} name="bankAddress" type="text" className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="flex justify-end pt-4 border-t border-zinc-800">

@@ -260,9 +260,10 @@ export function QuotationActions({
           </table>
 
           {settings?.quotationMessage && (
-            <div style={{ marginBottom: "24px", padding: "12px", backgroundColor: "#f9fafb", borderRadius: "6px", color: "#374151" }}>
-              <p style={{ margin: "0", whiteSpace: "pre-wrap" }}>{settings.quotationMessage}</p>
-            </div>
+            <div 
+              style={{ marginBottom: "24px", padding: "12px", backgroundColor: "#f9fafb", borderRadius: "6px", color: "#374151" }}
+              dangerouslySetInnerHTML={{ __html: settings.quotationMessage }}
+            />
           )}
 
           {/* Table */}

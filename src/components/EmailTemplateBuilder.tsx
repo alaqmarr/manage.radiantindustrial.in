@@ -347,6 +347,13 @@ export function EmailTemplateBuilder({ settings }: EmailTemplateBuilderProps) {
                 </tbody>
               </table>
 
+              {/* Terms and Conditions / Additional Footer */}
+              {settings?.bottomDetails && (
+                <div 
+                  style={{ marginTop: "24px", paddingTop: "20px", borderTop: "1px solid #e5e7eb", fontSize: "12px", color: "#6b7280", lineHeight: "1.6" }}
+                  dangerouslySetInnerHTML={{ __html: settings.bottomDetails }}
+                />
+              )}
             </div>
           </div>
         </div>

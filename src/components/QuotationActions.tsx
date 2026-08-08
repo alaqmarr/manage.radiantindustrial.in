@@ -335,9 +335,10 @@ export function QuotationActions({
 
           {/* Footer */}
           {settings?.bottomDetails && (
-            <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: "24px", fontSize: "12px", color: "#6b7280", whiteSpace: "pre-wrap", lineHeight: "1.6" }}>
-              {settings.bottomDetails}
-            </div>
+            <div 
+              style={{ borderTop: "1px solid #e5e7eb", paddingTop: "24px", fontSize: "12px", color: "#6b7280", lineHeight: "1.6" }}
+              dangerouslySetInnerHTML={{ __html: settings.bottomDetails }}
+            />
           )}
         </div>
       </div>

@@ -500,6 +500,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                   <th className="px-4 py-3 w-20">UOM</th>
                   <th className="px-4 py-3 w-32">CP (₹)</th>
                   <th className="px-4 py-3 w-32">SP (₹)</th>
+                  <th className="px-4 py-3 w-32">Profit (₹)</th>
                   <th className="px-4 py-3 w-24">GST %</th>
                   <th className="px-4 py-3 w-24">Qty</th>
                   <th className="px-4 py-3 w-12"></th>
@@ -589,6 +590,20 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                         >
                           {sp > 0 ? (sp / 100).toFixed(2) : 'Set SP'}
                         </button>
+                      </td>
+                      <td className="px-4 py-3">
+                        {sp > 0 && cp ? (
+                          <div className="flex flex-col">
+                            <span className={`font-mono ${sp - cp >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                              {((sp - cp) / 100).toFixed(2)}
+                            </span>
+                            <span className={`text-[10px] ${sp - cp >= 0 ? 'text-emerald-500/70' : 'text-rose-500/70'}`}>
+                              {(((sp - cp) / sp) * 100).toFixed(1)}%
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-zinc-600 font-mono">-</span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center">

@@ -11,6 +11,14 @@ export function ProductForm({ suppliers, initialData }: { suppliers: any[], init
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(initialData?.imageUrl || null)
 
+  const [costPrice, setCostPrice] = useState(initialData?.costPrice ? String(initialData.costPrice / 100) : "")
+  const [sellingPrice, setSellingPrice] = useState(initialData?.sellingPrice ? String(initialData.sellingPrice / 100) : "")
+
+  const cpNum = parseFloat(costPrice) || 0
+  const spNum = parseFloat(sellingPrice) || 0
+  const profit = spNum - cpNum
+  const profitMargin = spNum > 0 ? ((profit / spNum) * 100).toFixed(1) : "0.0"
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -104,12 +112,19 @@ export function ProductForm({ suppliers, initialData }: { suppliers: any[], init
 
         <div>
           <label className="block text-sm font-medium text-zinc-400 mb-1">Supplier</label>
-          <select name="supplierId" defaultValue={initialData?.supplierId || ""} className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate">
-            <option value="">No Supplier (Direct)</option>
-            {suppliers.map(s => (
-              <option key={s.id} value={s.id}>{s.name}</option>
+          <input 
+            list="supplier-list"
+            name="supplierName" 
+            defaultValue={initialData?.supplier?.name || suppliers.find((s: any) => s.id === initialData?.supplierId)?.name || ""}
+            placeholder="Type supplier name..."
+            className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
+            autoComplete="off"
+          />
+          <datalist id="supplier-list">
+            {suppliers.map((s: any) => (
+              <option key={s.id} value={s.name} />
             ))}
-          </select>
+          </datalist>
         </div>
 
         <div className="grid grid-cols-3 gap-4 col-span-2">
@@ -127,12 +142,34 @@ export function ProductForm({ suppliers, initialData }: { suppliers: any[], init
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 col-span-2">
+        <div className="grid grid-cols-2 gap-4 col-span-2">
           <div>
             <label className="block text-sm font-medium text-zinc-400 mb-1">Cost Price (Rupees) *</label>
-            <input required name="costPrice" type="number" step="0.01" min="0" defaultValue={initialData?.costPrice ? initialData.costPrice / 100 : undefined} className="w-full max-w-md bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+            <input required name="costPrice" type="number" step="0.01" min="0" value={costPrice} onChange={e => setCostPrice(e.target.value)} className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-zinc-400 mb-1">Selling Price (Rupees) *</label>
+            <input required name="sellingPrice" type="number" step="0.01" min="0" value={sellingPrice} onChange={e => setSellingPrice(e.target.value)} className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
           </div>
         </div>
+
+        {/* Real-time Profit Display */}
+        {(cpNum > 0 || spNum > 0) && (
+          <div className="col-span-2 flex items-center justify-between p-4 bg-zinc-950/50 border border-premium-border rounded-md mt-2">
+            <div>
+              <div className="text-xs text-zinc-500 uppercase font-bold tracking-widest mb-1">Est. Profit</div>
+              <div className={`text-xl font-bold ${profit >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                ₹{profit.toFixed(2)}
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-xs text-zinc-500 uppercase font-bold tracking-widest mb-1">Margin</div>
+              <div className={`text-xl font-bold ${profit >= 0 ? 'text-emerald-500/80' : 'text-rose-500/80'}`}>
+                {profitMargin}%
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex justify-end pt-4 border-t border-premium-border">

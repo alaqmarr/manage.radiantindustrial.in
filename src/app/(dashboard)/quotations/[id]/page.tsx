@@ -50,7 +50,7 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between sticky top-0 z-50 bg-zinc-950/80 backdrop-blur-xl py-4 -mx-8 px-8 border-b border-premium-border/50 mb-6 print:static print:bg-transparent print:border-none print:p-0 print:m-0 print:mb-6">
         <div className="print:hidden">
           <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Quotation {quotation.id.slice(-6).toUpperCase()}</h1>
           <div className="flex items-center gap-3">
@@ -84,9 +84,10 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
 
         {/* Message */}
         {settings?.quotationMessage && (
-          <p className="text-zinc-300 mb-8 whitespace-pre-wrap">
-            {settings.quotationMessage}
-          </p>
+          <p 
+            className="text-zinc-300 mb-8 whitespace-pre-wrap"
+            dangerouslySetInnerHTML={{ __html: settings.quotationMessage }}
+          />
         )}
 
         {/* Items Table */}
@@ -139,7 +140,47 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
         </div>
 
         {/* Totals */}
-        <div className="flex justify-end mb-12">
+        <div className="h-32 print:hidden"></div>
+        <div className="fixed bottom-0 left-0 md:left-64 right-0 z-40 bg-zinc-950/90 backdrop-blur-xl border-t border-premium-border/50 p-4 md:px-8 flex flex-wrap items-center justify-start gap-6 md:gap-12 shadow-[0_-10px_40px_rgba(0,0,0,0.3)] animate-in slide-in-from-bottom-4 print:hidden">
+          {(() => {
+            const totalAmount = quotation.totalAmount;
+            const totalGst = quotation.totalGst;
+            const totalPCost = quotation.items.reduce((sum, item) => sum + Math.round((item.cpSnapshot || 0) * item.quantity), 0);
+            const totalProfit = totalAmount - totalPCost;
+            const marginPercent = totalAmount > 0 ? (totalProfit / totalAmount) * 100 : 0;
+            
+            return (
+              <>
+                <div className="space-y-1">
+                  <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Subtotal</div>
+                  <div className="text-lg font-bold text-white">{formatRupee(totalAmount)}</div>
+                </div>
+                
+                <div className="space-y-1">
+                  <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Total P. Cost</div>
+                  <div className="text-lg font-bold text-amber-500/90">{formatRupee(totalPCost)}</div>
+                </div>
+                
+                <div className="space-y-1">
+                  <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Est. Profit</div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-lg font-bold text-emerald-500">{formatRupee(totalProfit)}</span>
+                    {totalProfit > 0 && <span className="text-xs text-emerald-500/70 font-medium">({marginPercent.toFixed(1)}%)</span>}
+                  </div>
+                </div>
+                
+                <div className="hidden lg:block w-px h-10 bg-premium-border/50"></div>
+                
+                <div className="space-y-1">
+                  <div className="text-[10px] text-brand-orange/80 uppercase font-bold tracking-widest">Grand Total (inc. GST)</div>
+                  <div className="text-2xl font-black text-brand-orange">{formatRupee(totalAmount + totalGst)}</div>
+                </div>
+              </>
+            );
+          })()}
+        </div>
+
+        <div className="hidden print:flex justify-end mb-12">
             <div className="w-72 space-y-3 text-sm">
               <div className="flex justify-between text-zinc-400">
                 <span>Subtotal (excl. GST)</span>
@@ -188,9 +229,10 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
 
         {/* Bottom Details */}
         {settings?.bottomDetails && (
-          <div className="pt-8 border-t border-premium-border text-sm text-zinc-500 whitespace-pre-wrap relative z-10">
-            {settings.bottomDetails}
-          </div>
+          <div 
+            className="pt-8 border-t border-premium-border text-sm text-zinc-500 whitespace-pre-wrap relative z-10"
+            dangerouslySetInnerHTML={{ __html: settings.bottomDetails }}
+          />
         )}
 
       </div>

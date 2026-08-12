@@ -17,9 +17,28 @@ export async function createProduct(formData: FormData) {
     
     // Convert inputs from rupees to paise
     const cp = Math.round(parseFloat(String(formData.get("costPrice"))) * 100)
-    const sp = 0 // Selling price is no longer set at the product level
+    const sp = Math.round(parseFloat(String(formData.get("sellingPrice"))) * 100) || 0
 
-    const supplierId = formData.get("supplierId") as string | null
+    const supplierName = String(formData.get("supplierName") || "").trim()
+    let finalSupplierId = null
+
+    if (supplierName) {
+      const allSuppliers = await prisma.supplier.findMany()
+      const existing = allSuppliers.find(s => s.name.toLowerCase() === supplierName.toLowerCase())
+      
+      if (existing) {
+        finalSupplierId = existing.id
+      } else {
+        const newSupplier = await prisma.supplier.create({
+          data: {
+            id: `SUP-${Math.floor(1000 + Math.random() * 9000)}`,
+            name: supplierName
+          }
+        })
+        finalSupplierId = newSupplier.id
+      }
+    }
+
     const imageUrl = formData.get("imageUrl") as string | null
 
     // Generate slug ID based on material code and description
@@ -37,7 +56,7 @@ export async function createProduct(formData: FormData) {
         costPrice: cp,
         sellingPrice: sp,
         gstRate: 18.0,
-        supplierId: supplierId || null,
+        supplierId: finalSupplierId,
       }
     })
 
@@ -58,7 +77,28 @@ export async function updateProduct(id: string, formData: FormData) {
     const materialDescription = String(formData.get("materialDescription"))
     
     const cp = Math.round(parseFloat(String(formData.get("costPrice"))) * 100)
-    const supplierId = formData.get("supplierId") as string | null
+    const sp = Math.round(parseFloat(String(formData.get("sellingPrice"))) * 100) || 0
+
+    const supplierName = String(formData.get("supplierName") || "").trim()
+    let finalSupplierId = null
+
+    if (supplierName) {
+      const allSuppliers = await prisma.supplier.findMany()
+      const existing = allSuppliers.find(s => s.name.toLowerCase() === supplierName.toLowerCase())
+      
+      if (existing) {
+        finalSupplierId = existing.id
+      } else {
+        const newSupplier = await prisma.supplier.create({
+          data: {
+            id: `SUP-${Math.floor(1000 + Math.random() * 9000)}`,
+            name: supplierName
+          }
+        })
+        finalSupplierId = newSupplier.id
+      }
+    }
+    
     const imageUrl = formData.get("imageUrl") as string | null
 
     const data: any = {
@@ -68,7 +108,8 @@ export async function updateProduct(id: string, formData: FormData) {
       modelNo: formData.get("modelNo") ? String(formData.get("modelNo")) : null,
       unit: formData.get("unit") ? String(formData.get("unit")) : "NUM",
       costPrice: cp,
-      supplierId: supplierId || null,
+      sellingPrice: sp,
+      supplierId: finalSupplierId,
     }
 
     if (imageUrl) {

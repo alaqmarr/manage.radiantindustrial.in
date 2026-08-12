@@ -595,7 +595,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                         {sp > 0 && cp ? (
                           <div className="flex flex-col">
                             <span className={`font-mono ${sp - cp >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                              {((sp - cp) / 100).toFixed(2)}
+                              {(((sp - cp) * item.quantity) / 100).toFixed(2)}
                             </span>
                             <span className={`text-[10px] ${sp - cp >= 0 ? 'text-emerald-500/70' : 'text-rose-500/70'}`}>
                               {(((sp - cp) / sp) * 100).toFixed(1)}%

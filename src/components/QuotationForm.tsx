@@ -562,34 +562,48 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                         />
                       </td>
                       <td className="px-4 py-3">
-                        <button 
-                          onClick={() => setVendorDialogItem({
-                            productId: item.product.id,
-                            productName: item.product.materialDescription,
-                            currentCp: item.cpSnapshot,
-                            currentSp: sp
-                          })}
-                          className={`flex items-center justify-center px-3 py-1 rounded border transition-colors ${
-                            cp 
-                              ? 'bg-zinc-950 border-zinc-700 text-zinc-300 hover:border-brand-slate' 
-                              : 'bg-brand-orange/10 border-brand-orange/50 text-brand-orange hover:bg-brand-orange hover:text-white'
-                          }`}
-                        >
-                          {cp ? (cp / 100).toFixed(2) : 'Set Vendor'}
-                        </button>
+                        <div className="flex flex-col items-start gap-1">
+                          <button 
+                            onClick={() => setVendorDialogItem({
+                              productId: item.product.id,
+                              productName: item.product.materialDescription,
+                              currentCp: item.cpSnapshot,
+                              currentSp: sp
+                            })}
+                            className={`flex items-center justify-center px-3 py-1 rounded border transition-colors ${
+                              cp 
+                                ? 'bg-zinc-950 border-zinc-700 text-zinc-300 hover:border-brand-slate' 
+                                : 'bg-brand-orange/10 border-brand-orange/50 text-brand-orange hover:bg-brand-orange hover:text-white'
+                            }`}
+                          >
+                            {cp ? (cp / 100).toFixed(2) : 'Set Vendor'}
+                          </button>
+                          {cp && item.quantity > 0 ? (
+                            <span className="text-[10px] text-amber-500/70 font-mono ml-1">
+                              Σ ₹{((cp * item.quantity) / 100).toFixed(2)}
+                            </span>
+                          ) : null}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
-                        <button
-                          onClick={() => setVendorDialogItem({
-                            productId: item.product.id,
-                            productName: item.product.materialDescription,
-                            currentCp: item.cpSnapshot,
-                            currentSp: sp
-                          })}
-                          className={`font-mono ${sp === 0 ? 'text-rose-500' : 'text-zinc-300 hover:text-white'}`}
-                        >
-                          {sp > 0 ? (sp / 100).toFixed(2) : 'Set SP'}
-                        </button>
+                        <div className="flex flex-col items-start gap-1">
+                          <button
+                            onClick={() => setVendorDialogItem({
+                              productId: item.product.id,
+                              productName: item.product.materialDescription,
+                              currentCp: item.cpSnapshot,
+                              currentSp: sp
+                            })}
+                            className={`font-mono ${sp === 0 ? 'text-rose-500' : 'text-zinc-300 hover:text-white'}`}
+                          >
+                            {sp > 0 ? (sp / 100).toFixed(2) : 'Set SP'}
+                          </button>
+                          {sp > 0 && item.quantity > 0 ? (
+                            <span className="text-[10px] text-zinc-500 font-mono">
+                              Σ ₹{((sp * item.quantity) / 100).toFixed(2)}
+                            </span>
+                          ) : null}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         {sp > 0 && cp ? (

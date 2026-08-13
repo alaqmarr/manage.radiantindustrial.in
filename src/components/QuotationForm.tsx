@@ -726,11 +726,16 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
               const marginPercent = totalAmount > 0 ? (totalProfit / totalAmount) * 100 : 0;
               
               const totalCommCost = items.reduce((sum, item) => {
-                if (item.commissionCpSnapshot) return sum + Math.round(item.commissionCpSnapshot * item.quantity);
-                return sum;
+                const commCp = (item.commissionCpSnapshot !== undefined && item.commissionCpSnapshot !== null) 
+                  ? item.commissionCpSnapshot 
+                  : (item.cpSnapshot || 0);
+                return sum + Math.round(commCp * item.quantity);
               }, 0);
               const totalCommProfit = totalAmount - totalCommCost;
               const commMarginPercent = totalAmount > 0 ? (totalCommProfit / totalAmount) * 100 : 0;
+              
+              // Only show commission split if there's an actual difference (i.e. at least one item has a different comm CP)
+              const hasCommSplit = totalCommCost !== totalPCost;
               
               return (
                 <>
@@ -744,7 +749,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                       <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Act. P. Cost</div>
                       <div className="text-lg font-bold text-amber-500/90">₹{(totalPCost / 100).toFixed(2)}</div>
                     </div>
-                    {totalCommCost > 0 && (
+                    {hasCommSplit && (
                       <div className="space-y-1">
                         <div className="text-[10px] text-brand-orange/80 uppercase font-bold tracking-widest">Comm. P. Cost</div>
                         <div className="text-lg font-bold text-brand-orange/90">₹{(totalCommCost / 100).toFixed(2)}</div>
@@ -760,7 +765,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                         {totalProfit > 0 && <span className="text-xs text-emerald-500/70 font-medium">({marginPercent.toFixed(1)}%)</span>}
                       </div>
                     </div>
-                    {totalCommCost > 0 && (
+                    {hasCommSplit && (
                       <div className="space-y-1">
                         <div className="text-[10px] text-brand-orange/80 uppercase font-bold tracking-widest">Comm. Profit</div>
                         <div className="flex items-baseline gap-2">

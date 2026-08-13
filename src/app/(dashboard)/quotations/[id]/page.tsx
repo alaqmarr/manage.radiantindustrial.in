@@ -185,32 +185,31 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
                   )}
                 </span>
               </div>
-              {quotation.items.some(i => i.commissionCpSnapshot !== null) && (
-                <>
-                  <div className="flex justify-between text-brand-orange/90 font-medium pt-3 border-t border-premium-border/50">
-                    <span>Comm. P. Cost</span>
-                    <span>
-                      {formatRupee(
-                        quotation.items.reduce((sum, item) => {
-                          if (item.commissionCpSnapshot) return sum + Math.round(item.commissionCpSnapshot * item.quantity);
-                          return sum;
-                        }, 0)
-                      )}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-emerald-500 font-medium">
-                    <span>Comm. Profit</span>
-                    <span>
-                      {formatRupee(
-                        quotation.totalAmount - quotation.items.reduce((sum, item) => {
-                          if (item.commissionCpSnapshot) return sum + Math.round(item.commissionCpSnapshot * item.quantity);
-                          return sum;
-                        }, 0)
-                      )}
-                    </span>
-                  </div>
-                </>
-              )}
+              {(() => {
+                const totalPCost = quotation.items.reduce((sum, item) => sum + Math.round((item.cpSnapshot || 0) * item.quantity), 0);
+                const totalCommCost = quotation.items.reduce((sum, item) => {
+                  const commCp = (item.commissionCpSnapshot !== undefined && item.commissionCpSnapshot !== null) 
+                    ? item.commissionCpSnapshot 
+                    : (item.cpSnapshot || 0);
+                  return sum + Math.round(commCp * item.quantity);
+                }, 0);
+                
+                if (totalCommCost !== totalPCost) {
+                  return (
+                    <>
+                      <div className="flex justify-between text-brand-orange/90 font-medium pt-3 border-t border-premium-border/50">
+                        <span>Comm. P. Cost</span>
+                        <span>{formatRupee(totalCommCost)}</span>
+                      </div>
+                      <div className="flex justify-between text-emerald-500 font-medium">
+                        <span>Comm. Profit</span>
+                        <span>{formatRupee(quotation.totalAmount - totalCommCost)}</span>
+                      </div>
+                    </>
+                  )
+                }
+                return null;
+              })()}
             </div>
           </div>
 
@@ -235,11 +234,15 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
           const marginPercent = totalAmount > 0 ? (totalProfit / totalAmount) * 100 : 0;
           
           const totalCommCost = quotation.items.reduce((sum, item) => {
-            if (item.commissionCpSnapshot) return sum + Math.round(item.commissionCpSnapshot * item.quantity);
-            return sum;
+            const commCp = (item.commissionCpSnapshot !== undefined && item.commissionCpSnapshot !== null) 
+              ? item.commissionCpSnapshot 
+              : (item.cpSnapshot || 0);
+            return sum + Math.round(commCp * item.quantity);
           }, 0);
           const totalCommProfit = totalAmount - totalCommCost;
           const commMarginPercent = totalAmount > 0 ? (totalCommProfit / totalAmount) * 100 : 0;
+          
+          const hasCommSplit = totalCommCost !== totalPCost;
           
           return (
             <>
@@ -253,7 +256,7 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
                   <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Act. P. Cost</div>
                   <div className="text-lg font-bold text-amber-500/90">{formatRupee(totalPCost)}</div>
                 </div>
-                {totalCommCost > 0 && (
+                {hasCommSplit && (
                   <div className="space-y-1">
                     <div className="text-[10px] text-brand-orange/80 uppercase font-bold tracking-widest">Comm. P. Cost</div>
                     <div className="text-lg font-bold text-brand-orange/90">{formatRupee(totalCommCost)}</div>
@@ -269,7 +272,7 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
                     {totalProfit > 0 && <span className="text-xs text-emerald-500/70 font-medium">({marginPercent.toFixed(1)}%)</span>}
                   </div>
                 </div>
-                {totalCommCost > 0 && (
+                {hasCommSplit && (
                   <div className="space-y-1">
                     <div className="text-[10px] text-brand-orange/80 uppercase font-bold tracking-widest">Comm. Profit</div>
                     <div className="flex items-baseline gap-2">

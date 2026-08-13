@@ -15,6 +15,7 @@ type QuotationItemData = {
   quantity: number
   spSnapshot: number // paise
   cpSnapshot?: number // paise
+  commissionCpSnapshot?: number // paise
   supplierId?: string
   comment?: string
 }
@@ -108,6 +109,7 @@ export async function createQuotation(data: {
             quantity: item.quantity,
             spSnapshot: item.spSnapshot,
             cpSnapshot: item.cpSnapshot || null,
+            commissionCpSnapshot: item.commissionCpSnapshot || null,
             gstSnapshot: item.product.gstRate,
             supplierId: item.supplierId || null,
             comment: item.comment || null
@@ -207,6 +209,7 @@ export async function upsertDraftQuotation(data: {
               quantity: item.quantity,
               spSnapshot: item.spSnapshot,
               cpSnapshot: item.cpSnapshot || null,
+              commissionCpSnapshot: item.commissionCpSnapshot || null,
               gstSnapshot: item.product.gstRate,
               supplierId: item.supplierId || null,
               comment: item.comment || null
@@ -238,6 +241,7 @@ export async function upsertDraftQuotation(data: {
               quantity: item.quantity,
               spSnapshot: item.spSnapshot,
               cpSnapshot: item.cpSnapshot || null,
+              commissionCpSnapshot: item.commissionCpSnapshot || null,
               gstSnapshot: item.product.gstRate,
               supplierId: item.supplierId || null,
               comment: item.comment || null

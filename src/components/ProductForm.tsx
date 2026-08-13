@@ -12,12 +12,18 @@ export function ProductForm({ suppliers, initialData }: { suppliers: any[], init
   const [imagePreview, setImagePreview] = useState<string | null>(initialData?.imageUrl || null)
 
   const [costPrice, setCostPrice] = useState(initialData?.costPrice ? String(initialData.costPrice / 100) : "")
+  const [commissionCostPrice, setCommissionCostPrice] = useState(initialData?.commissionCostPrice ? String(initialData.commissionCostPrice / 100) : "")
   const [sellingPrice, setSellingPrice] = useState(initialData?.sellingPrice ? String(initialData.sellingPrice / 100) : "")
 
   const cpNum = parseFloat(costPrice) || 0
+  const commCpNum = parseFloat(commissionCostPrice) || 0
   const spNum = parseFloat(sellingPrice) || 0
+  
   const profit = spNum - cpNum
   const profitMargin = spNum > 0 ? ((profit / spNum) * 100).toFixed(1) : "0.0"
+
+  const commProfit = spNum - commCpNum
+  const commProfitMargin = spNum > 0 && commCpNum > 0 ? ((commProfit / spNum) * 100).toFixed(1) : "0.0"
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -142,10 +148,14 @@ export function ProductForm({ suppliers, initialData }: { suppliers: any[], init
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 col-span-2">
+        <div className="grid grid-cols-3 gap-4 col-span-2">
           <div>
             <label className="block text-sm font-medium text-zinc-400 mb-1">Cost Price (Rupees) *</label>
             <input required name="costPrice" type="number" step="0.01" min="0" value={costPrice} onChange={e => setCostPrice(e.target.value)} className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-zinc-400 mb-1">Commission CP (Optional)</label>
+            <input name="commissionCostPrice" type="number" step="0.01" min="0" value={commissionCostPrice} onChange={e => setCommissionCostPrice(e.target.value)} className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
           </div>
           <div>
             <label className="block text-sm font-medium text-zinc-400 mb-1">Selling Price (Rupees) *</label>
@@ -154,20 +164,39 @@ export function ProductForm({ suppliers, initialData }: { suppliers: any[], init
         </div>
 
         {/* Real-time Profit Display */}
-        {(cpNum > 0 || spNum > 0) && (
-          <div className="col-span-2 flex items-center justify-between p-4 bg-zinc-950/50 border border-premium-border rounded-md mt-2">
-            <div>
-              <div className="text-xs text-zinc-500 uppercase font-bold tracking-widest mb-1">Est. Profit</div>
-              <div className={`text-xl font-bold ${profit >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                ₹{profit.toFixed(2)}
+        {(cpNum > 0 || spNum > 0 || commCpNum > 0) && (
+          <div className="col-span-2 grid grid-cols-2 gap-4">
+            <div className="flex items-center justify-between p-4 bg-zinc-950/50 border border-premium-border rounded-md mt-2">
+              <div>
+                <div className="text-xs text-zinc-500 uppercase font-bold tracking-widest mb-1">Actual Profit</div>
+                <div className={`text-xl font-bold ${profit >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                  ₹{profit.toFixed(2)}
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-xs text-zinc-500 uppercase font-bold tracking-widest mb-1">Margin</div>
+                <div className={`text-xl font-bold ${profit >= 0 ? 'text-emerald-500/80' : 'text-rose-500/80'}`}>
+                  {profitMargin}%
+                </div>
               </div>
             </div>
-            <div className="text-right">
-              <div className="text-xs text-zinc-500 uppercase font-bold tracking-widest mb-1">Margin</div>
-              <div className={`text-xl font-bold ${profit >= 0 ? 'text-emerald-500/80' : 'text-rose-500/80'}`}>
-                {profitMargin}%
+            
+            {commCpNum > 0 && (
+              <div className="flex items-center justify-between p-4 bg-brand-orange/5 border border-brand-orange/20 rounded-md mt-2">
+                <div>
+                  <div className="text-xs text-brand-orange/80 uppercase font-bold tracking-widest mb-1">Commission Profit</div>
+                  <div className={`text-xl font-bold ${commProfit >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                    ₹{commProfit.toFixed(2)}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs text-brand-orange/80 uppercase font-bold tracking-widest mb-1">Margin</div>
+                  <div className={`text-xl font-bold ${commProfit >= 0 ? 'text-emerald-500/80' : 'text-rose-500/80'}`}>
+                    {commProfitMargin}%
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
       </div>

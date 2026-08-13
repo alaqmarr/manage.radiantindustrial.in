@@ -8,7 +8,7 @@ import { VendorPriceDialog } from "./VendorPriceDialog"
 import { Loader2, Plus, Trash2, Upload, X, Check, AlertCircle } from "lucide-react"
 
 type Client = { id: string, name: string }
-type Product = { id: string, materialCode: string, materialDescription: string, sellingPrice: number, gstRate: number, unit: string, specification?: string | null }
+type Product = { id: string, materialCode: string, materialDescription: string, sellingPrice: number, gstRate: number, unit: string, specification?: string | null, commissionCostPrice?: number | null }
 
 
 export function QuotationForm({ clients: initialClients, products, initialData, initialUpdatedAt }: { clients: Client[], products: Product[], initialData?: any, initialUpdatedAt?: Date }) {
@@ -31,6 +31,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
     quantity: number, 
     itemsNo?: string,
     cpSnapshot?: number,
+    commissionCpSnapshot?: number,
     spSnapshot?: number,
     supplierId?: string,
     comment?: string
@@ -39,6 +40,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
     quantity: item.quantity,
     itemsNo: item.itemsNo || undefined,
     cpSnapshot: item.cpSnapshot || undefined,
+    commissionCpSnapshot: item.commissionCpSnapshot || undefined,
     spSnapshot: item.spSnapshot || 0,
     supplierId: item.supplierId || undefined,
     comment: item.comment || undefined
@@ -157,6 +159,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
         product, 
         quantity, 
         itemsNo,
+        commissionCpSnapshot: product.commissionCostPrice || undefined,
         spSnapshot: 0 // Default to 0, requires manual entry
       }]
     })
@@ -186,6 +189,12 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
       ...i, 
       product: { ...i.product, [field]: value } 
     } : i))
+  }
+
+  const handleCommissionCpChange = (productId: string, value: number) => {
+    setItems(prev => prev.map(item => 
+      item.product.id === productId ? { ...item, commissionCpSnapshot: value } : item
+    ))
   }
 
   const handleVendorPriceSave = (cp: number, sp: number, supplierId: string) => {
@@ -577,28 +586,48 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
 
                     {/* Cost Price */}
                     <div>
-                      <label className="block text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-2">Cost Price</label>
-                      <div className="flex flex-col items-start gap-1">
-                        <button 
-                          onClick={() => setVendorDialogItem({
-                            productId: item.product.id,
-                            productName: item.product.materialDescription,
-                            currentCp: item.cpSnapshot,
-                            currentSp: sp
-                          })}
-                          className={`flex items-center justify-center px-3 py-1.5 rounded border text-sm font-medium transition-colors ${
-                            cp 
-                              ? 'bg-zinc-950 border-zinc-700 text-zinc-300 hover:border-brand-slate hover:text-white' 
-                              : 'bg-brand-orange/10 border-brand-orange/50 text-brand-orange hover:bg-brand-orange hover:text-white'
-                          }`}
-                        >
-                          {cp ? `₹${(cp / 100).toFixed(2)}` : 'Set Vendor'}
-                        </button>
-                        {cp && item.quantity > 0 ? (
-                          <span className="text-sm text-amber-500/90 font-mono font-bold pl-1">
-                            Σ ₹{((cp * item.quantity) / 100).toFixed(2)}
-                          </span>
-                        ) : null}
+                      <label className="block text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-2">Cost Price & Comm. CP</label>
+                      <div className="flex flex-col items-start gap-3">
+                        <div className="flex flex-col items-start gap-1">
+                          <button 
+                            onClick={() => setVendorDialogItem({
+                              productId: item.product.id,
+                              productName: item.product.materialDescription,
+                              currentCp: item.cpSnapshot,
+                              currentSp: sp
+                            })}
+                            className={`flex items-center justify-center px-3 py-1 rounded border text-xs font-medium transition-colors ${
+                              cp 
+                                ? 'bg-zinc-950 border-zinc-700 text-zinc-300 hover:border-brand-slate hover:text-white' 
+                                : 'bg-brand-orange/10 border-brand-orange/50 text-brand-orange hover:bg-brand-orange hover:text-white'
+                            }`}
+                          >
+                            {cp ? `Act: ₹${(cp / 100).toFixed(2)}` : 'Set Act. CP'}
+                          </button>
+                          {cp && item.quantity > 0 ? (
+                            <span className="text-[11px] text-amber-500/90 font-mono font-bold pl-1">
+                              Σ ₹{((cp * item.quantity) / 100).toFixed(2)}
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="flex flex-col items-start gap-1 w-full max-w-[120px]">
+                           <div className="relative w-full">
+                             <span className="absolute left-2 top-1/2 -translate-y-1/2 text-zinc-500 text-xs font-mono">₹</span>
+                             <input 
+                               type="number"
+                               min="0" step="any"
+                               value={item.commissionCpSnapshot !== undefined ? item.commissionCpSnapshot / 100 : ''}
+                               onChange={e => handleCommissionCpChange(item.product.id, Math.round(parseFloat(e.target.value) * 100) || 0)}
+                               placeholder="Comm CP"
+                               className="w-full bg-brand-orange/5 border border-brand-orange/20 rounded pl-5 pr-2 py-1 text-xs font-medium text-brand-orange focus:outline-none focus:border-brand-orange/50 transition-colors"
+                             />
+                           </div>
+                           {item.commissionCpSnapshot && item.quantity > 0 ? (
+                             <span className="text-[11px] text-brand-orange/80 font-mono font-bold pl-1">
+                               Σ ₹{((item.commissionCpSnapshot * item.quantity) / 100).toFixed(2)}
+                             </span>
+                           ) : null}
+                        </div>
                       </div>
                     </div>
 
@@ -628,18 +657,36 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                     {/* Profit */}
                     <div>
                       <label className="block text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-2">Est. Profit</label>
-                      {sp > 0 && cp ? (
-                        <div className="flex flex-col items-start gap-0.5">
-                          <span className={`text-lg font-mono font-bold ${sp - cp >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                            ₹{(((sp - cp) * item.quantity) / 100).toFixed(2)}
-                          </span>
-                          <span className={`text-xs font-medium ${sp - cp >= 0 ? 'text-emerald-500/80' : 'text-rose-500/80'}`}>
-                            {(((sp - cp) / sp) * 100).toFixed(1)}% margin
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-zinc-600 font-mono text-sm">-</span>
-                      )}
+                      <div className="flex flex-col gap-3">
+                        {sp > 0 && cp ? (
+                          <div className="flex flex-col items-start gap-0.5">
+                            <span className="text-[10px] text-zinc-500 font-bold tracking-wider">ACTUAL</span>
+                            <span className={`text-sm font-mono font-bold ${sp - cp >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                              ₹{(((sp - cp) * item.quantity) / 100).toFixed(2)}
+                            </span>
+                            <span className={`text-[10px] font-medium ${sp - cp >= 0 ? 'text-emerald-500/80' : 'text-rose-500/80'}`}>
+                              {(((sp - cp) / sp) * 100).toFixed(1)}% margin
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-start gap-0.5">
+                            <span className="text-[10px] text-zinc-500 font-bold tracking-wider">ACTUAL</span>
+                            <span className="text-zinc-600 font-mono text-sm">-</span>
+                          </div>
+                        )}
+                        
+                        {sp > 0 && item.commissionCpSnapshot ? (
+                          <div className="flex flex-col items-start gap-0.5">
+                            <span className="text-[10px] text-brand-orange/80 font-bold tracking-wider">COMMISSION</span>
+                            <span className={`text-sm font-mono font-bold ${sp - item.commissionCpSnapshot >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                              ₹{(((sp - item.commissionCpSnapshot) * item.quantity) / 100).toFixed(2)}
+                            </span>
+                            <span className={`text-[10px] font-medium ${sp - item.commissionCpSnapshot >= 0 ? 'text-emerald-500/80' : 'text-rose-500/80'}`}>
+                              {(((sp - item.commissionCpSnapshot) / sp) * 100).toFixed(1)}% margin
+                            </span>
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
 
                     {/* GST */}
@@ -672,9 +719,17 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
             {(() => {
               const totalAmount = items.reduce((sum, item) => sum + Math.round((item.spSnapshot || 0) * item.quantity), 0);
               const totalGst = items.reduce((sum, item) => sum + Math.round(Math.round((item.spSnapshot || 0) * item.quantity) * (item.product.gstRate / 100)), 0);
+              
               const totalPCost = items.reduce((sum, item) => sum + Math.round((item.cpSnapshot || 0) * item.quantity), 0);
               const totalProfit = totalAmount - totalPCost;
               const marginPercent = totalAmount > 0 ? (totalProfit / totalAmount) * 100 : 0;
+              
+              const totalCommCost = items.reduce((sum, item) => {
+                if (item.commissionCpSnapshot) return sum + Math.round(item.commissionCpSnapshot * item.quantity);
+                return sum;
+              }, 0);
+              const totalCommProfit = totalAmount - totalCommCost;
+              const commMarginPercent = totalAmount > 0 ? (totalCommProfit / totalAmount) * 100 : 0;
               
               return (
                 <>
@@ -683,17 +738,36 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                     <div className="text-lg font-bold text-white">₹{(totalAmount / 100).toFixed(2)}</div>
                   </div>
                   
-                  <div className="space-y-1">
-                    <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Total P. Cost</div>
-                    <div className="text-lg font-bold text-amber-500/90">₹{(totalPCost / 100).toFixed(2)}</div>
+                  <div className="flex gap-4">
+                    <div className="space-y-1">
+                      <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Act. P. Cost</div>
+                      <div className="text-lg font-bold text-amber-500/90">₹{(totalPCost / 100).toFixed(2)}</div>
+                    </div>
+                    {totalCommCost > 0 && (
+                      <div className="space-y-1">
+                        <div className="text-[10px] text-brand-orange/80 uppercase font-bold tracking-widest">Comm. P. Cost</div>
+                        <div className="text-lg font-bold text-brand-orange/90">₹{(totalCommCost / 100).toFixed(2)}</div>
+                      </div>
+                    )}
                   </div>
                   
-                  <div className="space-y-1">
-                    <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Est. Profit</div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-lg font-bold text-emerald-500">₹{(totalProfit / 100).toFixed(2)}</span>
-                      {totalProfit > 0 && <span className="text-xs text-emerald-500/70 font-medium">({marginPercent.toFixed(1)}%)</span>}
+                  <div className="flex gap-4">
+                    <div className="space-y-1">
+                      <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Act. Profit</div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-lg font-bold text-emerald-500">₹{(totalProfit / 100).toFixed(2)}</span>
+                        {totalProfit > 0 && <span className="text-xs text-emerald-500/70 font-medium">({marginPercent.toFixed(1)}%)</span>}
+                      </div>
                     </div>
+                    {totalCommCost > 0 && (
+                      <div className="space-y-1">
+                        <div className="text-[10px] text-brand-orange/80 uppercase font-bold tracking-widest">Comm. Profit</div>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-lg font-bold text-emerald-500">₹{(totalCommProfit / 100).toFixed(2)}</span>
+                          {totalCommProfit > 0 && <span className="text-xs text-emerald-500/70 font-medium">({commMarginPercent.toFixed(1)}%)</span>}
+                        </div>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="hidden lg:block w-px h-10 bg-premium-border/50"></div>

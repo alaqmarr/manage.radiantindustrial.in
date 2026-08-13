@@ -17,6 +17,8 @@ export async function createProduct(formData: FormData) {
     
     // Convert inputs from rupees to paise
     const cp = Math.round(parseFloat(String(formData.get("costPrice"))) * 100)
+    const commCpStr = formData.get("commissionCostPrice")
+    const commissionCp = commCpStr ? Math.round(parseFloat(String(commCpStr)) * 100) : null
     const sp = Math.round(parseFloat(String(formData.get("sellingPrice"))) * 100) || 0
 
     const supplierName = String(formData.get("supplierName") || "").trim()
@@ -54,6 +56,7 @@ export async function createProduct(formData: FormData) {
         modelNo: formData.get("modelNo") ? String(formData.get("modelNo")) : null,
         unit: formData.get("unit") ? String(formData.get("unit")) : "NUM",
         costPrice: cp,
+        commissionCostPrice: commissionCp,
         sellingPrice: sp,
         gstRate: 18.0,
         supplierId: finalSupplierId,
@@ -77,6 +80,8 @@ export async function updateProduct(id: string, formData: FormData) {
     const materialDescription = String(formData.get("materialDescription"))
     
     const cp = Math.round(parseFloat(String(formData.get("costPrice"))) * 100)
+    const commCpStr = formData.get("commissionCostPrice")
+    const commissionCp = commCpStr ? Math.round(parseFloat(String(commCpStr)) * 100) : null
     const sp = Math.round(parseFloat(String(formData.get("sellingPrice"))) * 100) || 0
 
     const supplierName = String(formData.get("supplierName") || "").trim()
@@ -108,6 +113,7 @@ export async function updateProduct(id: string, formData: FormData) {
       modelNo: formData.get("modelNo") ? String(formData.get("modelNo")) : null,
       unit: formData.get("unit") ? String(formData.get("unit")) : "NUM",
       costPrice: cp,
+      commissionCostPrice: commissionCp,
       sellingPrice: sp,
       supplierId: finalSupplierId,
     }

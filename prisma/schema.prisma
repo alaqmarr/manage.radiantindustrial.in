@@ -117,6 +117,7 @@ model Product {
   modelNo             String?
   unit                String             // e.g., NUM, KG
   costPrice           Int                // stored in paise
+  commissionCostPrice Int?               // faked cost price for commission calculations (paise)
   sellingPrice        Int                // stored in paise
   gstRate             Float              // e.g., 18.0
   supplierId          String?
@@ -152,6 +153,7 @@ model QuotationItem {
   itemsNo      String?   // Items No from excel
   spSnapshot   Int       // Selling price at the time of quotation (paise)
   cpSnapshot   Int?      // Cost price at the time of quotation (paise)
+  commissionCpSnapshot Int? // Faked cost price for commission at time of quotation (paise)
   gstSnapshot  Float
   supplierId   String?
   supplier     Supplier? @relation(fields: [supplierId], references: [id])

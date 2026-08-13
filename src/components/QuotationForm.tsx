@@ -595,7 +595,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                           {cp ? `₹${(cp / 100).toFixed(2)}` : 'Set Vendor'}
                         </button>
                         {cp && item.quantity > 0 ? (
-                          <span className="text-[10px] text-amber-500/80 font-mono pl-1">
+                          <span className="text-sm text-amber-500/90 font-mono font-bold pl-1">
                             Σ ₹{((cp * item.quantity) / 100).toFixed(2)}
                           </span>
                         ) : null}
@@ -618,7 +618,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                           {sp > 0 ? `₹${(sp / 100).toFixed(2)}` : 'Set SP'}
                         </button>
                         {sp > 0 && item.quantity > 0 ? (
-                          <span className="text-[10px] text-zinc-400 font-mono pl-1">
+                          <span className="text-sm text-zinc-300 font-mono font-bold pl-1">
                             Σ ₹{((sp * item.quantity) / 100).toFixed(2)}
                           </span>
                         ) : null}
@@ -630,10 +630,10 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                       <label className="block text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-2">Est. Profit</label>
                       {sp > 0 && cp ? (
                         <div className="flex flex-col items-start gap-0.5">
-                          <span className={`text-sm font-mono font-bold ${sp - cp >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                          <span className={`text-lg font-mono font-bold ${sp - cp >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                             ₹{(((sp - cp) * item.quantity) / 100).toFixed(2)}
                           </span>
-                          <span className={`text-[10px] font-medium ${sp - cp >= 0 ? 'text-emerald-500/70' : 'text-rose-500/70'}`}>
+                          <span className={`text-xs font-medium ${sp - cp >= 0 ? 'text-emerald-500/80' : 'text-rose-500/80'}`}>
                             {(((sp - cp) / sp) * 100).toFixed(1)}% margin
                           </span>
                         </div>

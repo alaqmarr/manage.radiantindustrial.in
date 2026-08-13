@@ -491,169 +491,175 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
         </div>
 
         {items.length > 0 && (
-          <div className="glass-panel border border-premium-border rounded-md overflow-hidden mt-4">
-            <table className="w-full text-sm text-left">
-              <thead className="text-xs text-zinc-400 uppercase bg-premium-surface/50 border-b border-premium-border">
-                <tr>
-                  <th className="px-4 py-3 w-32">Code</th>
-                  <th className="px-4 py-3 min-w-[300px] w-[350px]">Description</th>
-                  <th className="px-4 py-3 w-20">UOM</th>
-                  <th className="px-4 py-3 w-32">CP (₹)</th>
-                  <th className="px-4 py-3 w-32">SP (₹)</th>
-                  <th className="px-4 py-3 w-32">Profit (₹)</th>
-                  <th className="px-4 py-3 w-24">GST %</th>
-                  <th className="px-4 py-3 w-24">Qty</th>
-                  <th className="px-4 py-3 w-12"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-premium-border">
-                {items.map((item) => {
-                  const sp = item.spSnapshot ?? 0
-                  const cp = item.cpSnapshot
-                  const isPending = !cp || !sp
-                  
-                  return (
-                    <tr key={item.product.id} className="hover:bg-white/5 even:bg-white/[0.02] transition-colors group">
-                      <td className="px-4 py-3">
+          <div className="space-y-4 mt-4">
+            {items.map((item) => {
+              const sp = item.spSnapshot ?? 0
+              const cp = item.cpSnapshot
+              const isPending = !cp || !sp
+              
+              return (
+                <div key={item.product.id} className="glass-panel border border-premium-border rounded-lg p-5 group hover:bg-white/[0.03] transition-colors relative">
+                  {/* Top Row: Product Info & Remove */}
+                  <div className="flex items-start justify-between gap-4 mb-4">
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-3">
                         <input 
                           type="text"
                           value={item.product.materialCode}
                           onChange={e => handleProductChange(item.product.id, 'materialCode', e.target.value)}
-                          className="w-full bg-transparent border-b border-transparent hover:border-premium-border focus:border-brand-slate px-1 py-0.5 font-mono text-xs text-white focus:outline-none focus:bg-zinc-950/50 transition-colors rounded"
+                          placeholder="Code"
+                          className="w-32 bg-zinc-950/50 border border-transparent hover:border-premium-border focus:border-brand-slate px-2 py-1 font-mono text-sm text-white focus:outline-none transition-colors rounded"
                         />
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-col gap-1 w-full">
-                          <div className="flex items-center gap-2">
-                            <input 
-                              type="text"
-                              value={item.product.materialDescription}
-                              onChange={e => handleProductChange(item.product.id, 'materialDescription', e.target.value)}
-                              className="w-full bg-transparent border-b border-transparent hover:border-premium-border focus:border-brand-slate px-1 py-0.5 text-sm text-zinc-300 focus:outline-none focus:bg-zinc-950/50 transition-colors rounded"
-                            />
-                            {isPending && (
-                              <span className="flex-shrink-0 inline-flex items-center gap-1 text-[10px] uppercase tracking-wider bg-rose-500/10 text-rose-400 px-2 py-0.5 rounded border border-rose-500/20">
-                                <AlertCircle className="w-3 h-3" /> Price Pending
-                              </span>
-                            )}
-                          </div>
-                          {item.product.specification && (
-                            <div className="text-[10px] text-zinc-500 px-1 whitespace-pre-wrap break-words">
-                              {item.product.specification}
-                            </div>
-                          )}
-                          <div className="mt-2">
-                            <input
-                              type="text"
-                              placeholder="Add comment (optional)..."
-                              value={item.comment || ""}
-                              onChange={(e) => handleCommentChange(item.product.id, e.target.value)}
-                              className="w-full bg-zinc-950/50 border border-transparent hover:border-premium-border focus:border-brand-slate px-2 py-1 text-xs text-red-500 font-bold focus:text-red-400 rounded focus:outline-none transition-colors placeholder:text-zinc-600 placeholder:font-normal"
-                            />
-                          </div>
+                        <input 
+                          type="text"
+                          value={item.product.materialDescription}
+                          onChange={e => handleProductChange(item.product.id, 'materialDescription', e.target.value)}
+                          placeholder="Description"
+                          className="flex-1 bg-zinc-950/50 border border-transparent hover:border-premium-border focus:border-brand-slate px-2 py-1 text-sm font-medium text-white focus:outline-none transition-colors rounded"
+                        />
+                        {isPending && (
+                          <span className="flex-shrink-0 inline-flex items-center gap-1 text-[10px] uppercase tracking-wider bg-rose-500/10 text-rose-400 px-2 py-1 rounded border border-rose-500/20">
+                            <AlertCircle className="w-3 h-3" /> Price Pending
+                          </span>
+                        )}
+                      </div>
+                      
+                      {item.product.specification && (
+                        <div className="text-xs text-zinc-500 px-2 line-clamp-2">
+                          {item.product.specification}
                         </div>
-                      </td>
-                      <td className="px-4 py-3">
+                      )}
+                      
+                      <div>
+                        <input
+                          type="text"
+                          placeholder="Add internal comment (optional)..."
+                          value={item.comment || ""}
+                          onChange={(e) => handleCommentChange(item.product.id, e.target.value)}
+                          className="w-full bg-zinc-950/30 border border-transparent hover:border-premium-border focus:border-brand-slate px-2 py-1.5 text-xs text-red-400 focus:text-red-300 rounded focus:outline-none transition-colors placeholder:text-zinc-600"
+                        />
+                      </div>
+                    </div>
+                    
+                    <button 
+                      type="button" 
+                      onClick={() => handleRemoveItem(item.product.id)}
+                      className="text-zinc-500 hover:text-rose-500 hover:bg-rose-500/10 p-2 rounded-md transition-all active:scale-95"
+                      title="Remove Item"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Bottom Row: Financials & Metrics */}
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-6 pt-4 border-t border-premium-border/30">
+                    
+                    {/* Quantity & UOM */}
+                    <div>
+                      <label className="block text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-2">Quantity</label>
+                      <div className="flex items-center gap-2">
+                        <input 
+                          type="number" 
+                          min="0"
+                          step="any"
+                          value={item.quantity}
+                          onChange={e => handleQuantityChange(item.product.id, parseFloat(e.target.value) || 0)}
+                          className="w-20 bg-zinc-950 border border-premium-border rounded px-2 py-1.5 text-white font-medium focus:outline-none focus:ring-1 focus:ring-brand-slate"
+                        />
                         <input 
                           type="text"
                           value={item.product.unit}
                           onChange={e => handleProductChange(item.product.id, 'unit', e.target.value)}
-                          className="w-16 bg-transparent border-b border-transparent hover:border-premium-border focus:border-brand-slate px-1 py-0.5 font-mono text-xs text-zinc-400 text-center focus:outline-none focus:bg-zinc-950/50 transition-colors rounded uppercase"
+                          className="w-14 bg-zinc-950/50 border border-transparent hover:border-premium-border focus:border-brand-slate px-1 py-1.5 font-mono text-xs text-zinc-400 text-center focus:outline-none transition-colors rounded uppercase"
                         />
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-col items-start gap-1">
-                          <button 
-                            onClick={() => setVendorDialogItem({
-                              productId: item.product.id,
-                              productName: item.product.materialDescription,
-                              currentCp: item.cpSnapshot,
-                              currentSp: sp
-                            })}
-                            className={`flex items-center justify-center px-3 py-1 rounded border transition-colors ${
-                              cp 
-                                ? 'bg-zinc-950 border-zinc-700 text-zinc-300 hover:border-brand-slate' 
-                                : 'bg-brand-orange/10 border-brand-orange/50 text-brand-orange hover:bg-brand-orange hover:text-white'
-                            }`}
-                          >
-                            {cp ? (cp / 100).toFixed(2) : 'Set Vendor'}
-                          </button>
-                          {cp && item.quantity > 0 ? (
-                            <span className="text-[10px] text-amber-500/70 font-mono ml-1">
-                              Σ ₹{((cp * item.quantity) / 100).toFixed(2)}
-                            </span>
-                          ) : null}
+                      </div>
+                    </div>
+
+                    {/* Cost Price */}
+                    <div>
+                      <label className="block text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-2">Cost Price</label>
+                      <div className="flex flex-col items-start gap-1">
+                        <button 
+                          onClick={() => setVendorDialogItem({
+                            productId: item.product.id,
+                            productName: item.product.materialDescription,
+                            currentCp: item.cpSnapshot,
+                            currentSp: sp
+                          })}
+                          className={`flex items-center justify-center px-3 py-1.5 rounded border text-sm font-medium transition-colors ${
+                            cp 
+                              ? 'bg-zinc-950 border-zinc-700 text-zinc-300 hover:border-brand-slate hover:text-white' 
+                              : 'bg-brand-orange/10 border-brand-orange/50 text-brand-orange hover:bg-brand-orange hover:text-white'
+                          }`}
+                        >
+                          {cp ? `₹${(cp / 100).toFixed(2)}` : 'Set Vendor'}
+                        </button>
+                        {cp && item.quantity > 0 ? (
+                          <span className="text-[10px] text-amber-500/80 font-mono pl-1">
+                            Σ ₹{((cp * item.quantity) / 100).toFixed(2)}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    {/* Selling Price */}
+                    <div>
+                      <label className="block text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-2">Selling Price</label>
+                      <div className="flex flex-col items-start gap-1">
+                        <button
+                          onClick={() => setVendorDialogItem({
+                            productId: item.product.id,
+                            productName: item.product.materialDescription,
+                            currentCp: item.cpSnapshot,
+                            currentSp: sp
+                          })}
+                          className={`text-sm font-mono font-medium hover:underline ${sp === 0 ? 'text-rose-500' : 'text-white'}`}
+                        >
+                          {sp > 0 ? `₹${(sp / 100).toFixed(2)}` : 'Set SP'}
+                        </button>
+                        {sp > 0 && item.quantity > 0 ? (
+                          <span className="text-[10px] text-zinc-400 font-mono pl-1">
+                            Σ ₹{((sp * item.quantity) / 100).toFixed(2)}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    {/* Profit */}
+                    <div>
+                      <label className="block text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-2">Est. Profit</label>
+                      {sp > 0 && cp ? (
+                        <div className="flex flex-col items-start gap-0.5">
+                          <span className={`text-sm font-mono font-bold ${sp - cp >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                            ₹{(((sp - cp) * item.quantity) / 100).toFixed(2)}
+                          </span>
+                          <span className={`text-[10px] font-medium ${sp - cp >= 0 ? 'text-emerald-500/70' : 'text-rose-500/70'}`}>
+                            {(((sp - cp) / sp) * 100).toFixed(1)}% margin
+                          </span>
                         </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-col items-start gap-1">
-                          <button
-                            onClick={() => setVendorDialogItem({
-                              productId: item.product.id,
-                              productName: item.product.materialDescription,
-                              currentCp: item.cpSnapshot,
-                              currentSp: sp
-                            })}
-                            className={`font-mono ${sp === 0 ? 'text-rose-500' : 'text-zinc-300 hover:text-white'}`}
-                          >
-                            {sp > 0 ? (sp / 100).toFixed(2) : 'Set SP'}
-                          </button>
-                          {sp > 0 && item.quantity > 0 ? (
-                            <span className="text-[10px] text-zinc-500 font-mono">
-                              Σ ₹{((sp * item.quantity) / 100).toFixed(2)}
-                            </span>
-                          ) : null}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        {sp > 0 && cp ? (
-                          <div className="flex flex-col">
-                            <span className={`font-mono ${sp - cp >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                              {(((sp - cp) * item.quantity) / 100).toFixed(2)}
-                            </span>
-                            <span className={`text-[10px] ${sp - cp >= 0 ? 'text-emerald-500/70' : 'text-rose-500/70'}`}>
-                              {(((sp - cp) / sp) * 100).toFixed(1)}%
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-zinc-600 font-mono">-</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center">
-                          <input 
-                            type="number"
-                            value={item.product.gstRate}
-                            onChange={e => handleProductChange(item.product.id, 'gstRate', parseFloat(e.target.value) || 0)}
-                            className="w-12 bg-transparent border-b border-transparent hover:border-premium-border focus:border-brand-slate px-1 py-0.5 text-sm text-zinc-300 text-right focus:outline-none focus:bg-zinc-950/50 transition-colors rounded"
-                          />
-                          <span className="text-zinc-500 text-xs ml-1">%</span>
-                        </div>
-                      </td>
-                    <td className="px-4 py-3">
-                      <input 
-                        type="number" 
-                        min="0"
-                        step="any"
-                        value={item.quantity}
-                        onChange={e => handleQuantityChange(item.product.id, parseFloat(e.target.value) || 0)}
-                        className="w-full bg-zinc-950 border border-premium-border rounded px-2 py-1 text-white text-center focus:outline-none focus:ring-1 focus:ring-brand-slate"
-                      />
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <button 
-                        type="button" 
-                        onClick={() => handleRemoveItem(item.product.id)}
-                        className="text-rose-500 hover:text-rose-400 p-1"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+                      ) : (
+                        <span className="text-zinc-600 font-mono text-sm">-</span>
+                      )}
+                    </div>
+
+                    {/* GST */}
+                    <div>
+                      <label className="block text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-2">GST Rate</label>
+                      <div className="flex items-center">
+                        <input 
+                          type="number"
+                          value={item.product.gstRate}
+                          onChange={e => handleProductChange(item.product.id, 'gstRate', parseFloat(e.target.value) || 0)}
+                          className="w-14 bg-zinc-950/50 border border-transparent hover:border-premium-border focus:border-brand-slate px-2 py-1.5 text-sm text-white focus:outline-none transition-colors rounded"
+                        />
+                        <span className="text-zinc-500 text-xs ml-2">%</span>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              )
+            })}
           </div>
         )}
       </div>

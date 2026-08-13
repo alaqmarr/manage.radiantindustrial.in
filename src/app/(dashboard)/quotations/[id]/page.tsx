@@ -139,46 +139,7 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
           </table>
         </div>
 
-        {/* Totals */}
-        <div className="h-32 print:hidden"></div>
-        <div className="fixed bottom-0 left-0 md:left-64 right-0 z-40 bg-zinc-950/90 backdrop-blur-xl border-t border-premium-border/50 p-4 md:px-8 flex flex-wrap items-center justify-start gap-6 md:gap-12 shadow-[0_-10px_40px_rgba(0,0,0,0.3)] animate-in slide-in-from-bottom-4 print:hidden">
-          {(() => {
-            const totalAmount = quotation.totalAmount;
-            const totalGst = quotation.totalGst;
-            const totalPCost = quotation.items.reduce((sum, item) => sum + Math.round((item.cpSnapshot || 0) * item.quantity), 0);
-            const totalProfit = totalAmount - totalPCost;
-            const marginPercent = totalAmount > 0 ? (totalProfit / totalAmount) * 100 : 0;
-            
-            return (
-              <>
-                <div className="space-y-1">
-                  <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Subtotal</div>
-                  <div className="text-lg font-bold text-white">{formatRupee(totalAmount)}</div>
-                </div>
-                
-                <div className="space-y-1">
-                  <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Total P. Cost</div>
-                  <div className="text-lg font-bold text-amber-500/90">{formatRupee(totalPCost)}</div>
-                </div>
-                
-                <div className="space-y-1">
-                  <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Est. Profit</div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-lg font-bold text-emerald-500">{formatRupee(totalProfit)}</span>
-                    {totalProfit > 0 && <span className="text-xs text-emerald-500/70 font-medium">({marginPercent.toFixed(1)}%)</span>}
-                  </div>
-                </div>
-                
-                <div className="hidden lg:block w-px h-10 bg-premium-border/50"></div>
-                
-                <div className="space-y-1">
-                  <div className="text-[10px] text-brand-orange/80 uppercase font-bold tracking-widest">Grand Total (inc. GST)</div>
-                  <div className="text-2xl font-black text-brand-orange">{formatRupee(totalAmount + totalGst)}</div>
-                </div>
-              </>
-            );
-          })()}
-        </div>
+
 
         <div className="hidden print:flex justify-end mb-12">
             <div className="w-72 space-y-3 text-sm">
@@ -235,6 +196,47 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
           />
         )}
 
+      </div>
+
+      {/* Totals (Sticky Bottom Bar) */}
+      <div className="h-32 print:hidden"></div>
+      <div className="fixed bottom-0 left-0 md:left-64 right-0 z-40 bg-zinc-950/90 backdrop-blur-xl border-t border-premium-border/50 p-4 md:px-8 flex flex-wrap items-center justify-start gap-6 md:gap-12 shadow-[0_-10px_40px_rgba(0,0,0,0.3)] animate-in slide-in-from-bottom-4 print:hidden">
+        {(() => {
+          const totalAmount = quotation.totalAmount;
+          const totalGst = quotation.totalGst;
+          const totalPCost = quotation.items.reduce((sum, item) => sum + Math.round((item.cpSnapshot || 0) * item.quantity), 0);
+          const totalProfit = totalAmount - totalPCost;
+          const marginPercent = totalAmount > 0 ? (totalProfit / totalAmount) * 100 : 0;
+          
+          return (
+            <>
+              <div className="space-y-1">
+                <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Subtotal</div>
+                <div className="text-lg font-bold text-white">{formatRupee(totalAmount)}</div>
+              </div>
+              
+              <div className="space-y-1">
+                <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Total P. Cost</div>
+                <div className="text-lg font-bold text-amber-500/90">{formatRupee(totalPCost)}</div>
+              </div>
+              
+              <div className="space-y-1">
+                <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Est. Profit</div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-lg font-bold text-emerald-500">{formatRupee(totalProfit)}</span>
+                  {totalProfit > 0 && <span className="text-xs text-emerald-500/70 font-medium">({marginPercent.toFixed(1)}%)</span>}
+                </div>
+              </div>
+              
+              <div className="hidden lg:block w-px h-10 bg-premium-border/50"></div>
+              
+              <div className="space-y-1">
+                <div className="text-[10px] text-brand-orange/80 uppercase font-bold tracking-widest">Grand Total (inc. GST)</div>
+                <div className="text-2xl font-black text-brand-orange">{formatRupee(totalAmount + totalGst)}</div>
+              </div>
+            </>
+          );
+        })()}
       </div>
     </div>
   )

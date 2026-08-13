@@ -270,6 +270,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
           quantity: item.quantity,
           spSnapshot: item.spSnapshot ?? 0,
           cpSnapshot: item.cpSnapshot,
+          commissionCpSnapshot: item.commissionCpSnapshot,
           supplierId: item.supplierId,
           comment: item.comment
         }))

@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react"
 import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import { createPurchase, updatePurchase } from "@/app/actions/purchase"
 import { Loader2, X, Plus, Search, Trash2 } from "lucide-react"
+import { formatRupee } from "@/lib/utils"
 
 type Supplier = { id: string, name: string }
 type Product = { id: string, materialCode: string, materialDescription: string, costPrice: number }
@@ -270,7 +271,11 @@ export function PurchaseModal({
                         />
                       </td>
                       <td className="px-4 py-3 text-right font-medium text-white">
-                        {((item.cpSnapshot * item.quantity) / 100).toFixed(2)}
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="text-sm font-bold text-emerald-500">
+                            {formatRupee(item.cpSnapshot * item.quantity)}
+                          </span>
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-right">
                         <button 
@@ -286,10 +291,12 @@ export function PurchaseModal({
                 </tbody>
               </table>
               <div className="p-4 bg-white/5 border-t border-premium-border flex justify-end">
-                <div className="text-right">
-                  <span className="text-sm text-zinc-400">Total Purchase Amount:</span>
-                  <div className="text-xl font-medium text-brand-orange">
-                    ₹{(items.reduce((sum, item) => sum + (item.cpSnapshot * item.quantity), 0) / 100).toFixed(2)}
+                <div className="flex gap-12">
+                  <div>
+                    <div className="text-xs text-zinc-500 font-bold tracking-wider mb-1">TOTAL AMOUNT</div>
+                    <div className="text-2xl font-black text-emerald-500">
+                      {formatRupee(items.reduce((sum, item) => sum + (item.cpSnapshot * item.quantity), 0))}
+                    </div>
                   </div>
                 </div>
               </div>

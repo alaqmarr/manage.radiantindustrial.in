@@ -16,6 +16,7 @@ import {
   Clock,
   XCircle
 } from "lucide-react"
+import { formatRupee } from "@/lib/utils"
 import { DashboardCharts } from "@/components/DashboardCharts"
 import Link from "next/link"
 
@@ -100,13 +101,7 @@ async function getDashboardData() {
   }
 }
 
-function formatRupee(paise: number) {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    minimumFractionDigits: 2
-  }).format(paise / 100)
-}
+
 
 export default async function DashboardPage() {
   const data = await getDashboardData()

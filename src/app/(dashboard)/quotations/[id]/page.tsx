@@ -4,20 +4,13 @@ import { redirect } from "next/navigation"
 import { QuotationActions } from "@/components/QuotationActions"
 import { QuotationStatusBadge } from "@/components/QuotationStatusBadge"
 import { Metadata } from "next"
+import { formatRupee, numberToWordsRupees } from "@/lib/utils"
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
   return {
     title: `Quotation ${id}`
   }
-}
-
-function formatRupee(paise: number) {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    minimumFractionDigits: 2
-  }).format(paise / 100)
 }
 
 export default async function QuotationViewPage({ params }: { params: Promise<{ id: string }> }) {
@@ -220,6 +213,10 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
             dangerouslySetInnerHTML={{ __html: settings.bottomDetails }}
           />
         )}
+        
+        <div className="pt-4 text-sm font-medium text-zinc-400">
+          Amount in words: <span className="text-white">{numberToWordsRupees(quotation.totalAmount + quotation.totalGst)}</span>
+        </div>
 
       </div>
 

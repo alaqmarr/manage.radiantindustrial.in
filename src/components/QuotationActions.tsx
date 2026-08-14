@@ -3,6 +3,7 @@ import { Printer, Copy, Check, Edit, Trash2 } from "lucide-react"
 import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { deleteQuotation } from "@/app/actions/quotation"
+import { formatRupee, numberToWordsRupees } from "@/lib/utils"
 
 export function QuotationActions({ 
   quotation, 
@@ -102,8 +103,8 @@ export function QuotationActions({
         "Comment": item.comment || "",
         "Qty": item.quantity,
         "UOM": item.product.unit,
-        "Rate": (item.spSnapshot / 100).toFixed(2),
-        "Amount": (Math.round(item.spSnapshot * item.quantity) / 100).toFixed(2)
+        "Rate": item.spSnapshot / 100,
+        "Amount": Math.round(item.spSnapshot * item.quantity) / 100
       }));
       
       // Calculate totals
@@ -116,7 +117,7 @@ export function QuotationActions({
         "Qty": "",
         "UOM": "",
         "Rate": "",
-        "Amount": (quotation.totalAmount / 100).toFixed(2)
+        "Amount": quotation.totalAmount / 100
       } as any);
       rows.push({
         "SR NO": "",
@@ -127,7 +128,7 @@ export function QuotationActions({
         "Qty": "",
         "UOM": "",
         "Rate": "",
-        "Amount": (quotation.totalGst / 100).toFixed(2)
+        "Amount": quotation.totalGst / 100
       } as any);
       rows.push({
         "SR NO": "",
@@ -138,7 +139,7 @@ export function QuotationActions({
         "Qty": "",
         "UOM": "",
         "Rate": "",
-        "Amount": ((quotation.totalAmount + quotation.totalGst) / 100).toFixed(2)
+        "Amount": (quotation.totalAmount + quotation.totalGst) / 100
       } as any);
 
       const worksheet = XLSX.utils.json_to_sheet(rows);
@@ -297,10 +298,10 @@ export function QuotationActions({
                     <span style={{ fontSize: "10px", color: "#9ca3af", marginLeft: "4px" }}>{item.product.unit}</span>
                   </td>
                   <td style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "right", verticalAlign: "top", fontSize: "13px", fontVariantNumeric: "tabular-nums" }}>
-                    ₹{(item.spSnapshot / 100).toFixed(2)}
+                    {formatRupee(item.spSnapshot)}
                   </td>
                   <td style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "right", verticalAlign: "top", fontWeight: "600", color: "#111827", fontSize: "13px", fontVariantNumeric: "tabular-nums" }}>
-                    ₹{(Math.round(item.spSnapshot * item.quantity) / 100).toFixed(2)}
+                    {formatRupee(Math.round(item.spSnapshot * item.quantity))}
                   </td>
                 </tr>
               ))}
@@ -317,18 +318,22 @@ export function QuotationActions({
                     <tbody>
                       <tr>
                         <td style={{ padding: "12px 16px", color: "#4b5563", textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Subtotal</td>
-                        <td style={{ padding: "12px 16px", fontWeight: "600", color: "#111827", textAlign: "right", borderBottom: "1px solid #e5e7eb", fontVariantNumeric: "tabular-nums" }}>₹{(quotation.totalAmount / 100).toFixed(2)}</td>
+                        <td style={{ padding: "12px 16px", fontWeight: "600", color: "#111827", textAlign: "right", borderBottom: "1px solid #e5e7eb", fontVariantNumeric: "tabular-nums" }}>{formatRupee(quotation.totalAmount)}</td>
                       </tr>
                       <tr>
                         <td style={{ padding: "12px 16px", color: "#4b5563", textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Total GST</td>
-                        <td style={{ padding: "12px 16px", fontWeight: "600", color: "#111827", textAlign: "right", borderBottom: "1px solid #e5e7eb", fontVariantNumeric: "tabular-nums" }}>₹{(quotation.totalGst / 100).toFixed(2)}</td>
+                        <td style={{ padding: "12px 16px", fontWeight: "600", color: "#111827", textAlign: "right", borderBottom: "1px solid #e5e7eb", fontVariantNumeric: "tabular-nums" }}>{formatRupee(quotation.totalGst)}</td>
                       </tr>
                       <tr>
                         <td style={{ padding: "16px", fontSize: "16px", fontWeight: "800", color: "#111827", textAlign: "left" }}>Grand Total</td>
-                        <td style={{ padding: "16px", fontSize: "16px", fontWeight: "800", color: "#f97316", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>₹{((quotation.totalAmount + quotation.totalGst) / 100).toFixed(2)}</td>
+                        <td style={{ padding: "16px", fontSize: "16px", fontWeight: "800", color: "#f97316", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{formatRupee(quotation.totalAmount + quotation.totalGst)}</td>
                       </tr>
                     </tbody>
                   </table>
+                  
+                  <div style={{ marginTop: "12px", fontSize: "12px", color: "#4b5563", textAlign: "right", fontStyle: "italic" }}>
+                    Amount in words: <span style={{ fontWeight: "600" }}>{numberToWordsRupees(quotation.totalAmount + quotation.totalGst)}</span>
+                  </div>
                 </td>
               </tr>
             </tbody>

@@ -1,6 +1,7 @@
 "use client"
 import { useState, useEffect } from "react"
 import { Loader2, X, Plus, Check } from "lucide-react"
+import { formatRupee } from "@/lib/utils"
 import { getProductSuppliers, addProductSupplier, updateProductSupplierPrice } from "@/app/actions/supplier"
 import { Edit2 } from "lucide-react"
 
@@ -228,8 +229,8 @@ export function VendorPriceDialog({
                             </button>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-3">
-                            <span className="font-mono text-sm">₹{(s.costPrice / 100).toFixed(2)}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-sm">{formatRupee(s.costPrice)}</span>
                             <button 
                               onClick={(e) => {
                                 e.stopPropagation()
@@ -269,7 +270,9 @@ export function VendorPriceDialog({
                 <p className="text-xs mt-2 text-zinc-500 flex justify-between">
                   <span>Margin:</span>
                   <span className={Number(spInput) * 100 > Number(selectedCp) ? 'text-emerald-500' : 'text-rose-500'}>
-                    ₹{((Number(spInput) * 100 - Number(selectedCp)) / 100).toFixed(2)}
+                    <div className="text-sm font-bold text-emerald-500">
+                      {formatRupee(Number(spInput) * 100 - Number(selectedCp))}
+                    </div>
                     {' '}
                     ({(((Number(spInput) * 100 - Number(selectedCp)) / Number(selectedCp)) * 100).toFixed(1)}%)
                   </span>

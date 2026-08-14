@@ -6,6 +6,7 @@ export const metadata: Metadata = {
 }
 import { Plus } from "lucide-react"
 import Link from "next/link"
+import { formatRupee } from "@/lib/utils"
 import { SelectionProvider } from "@/components/selection/SelectionContext"
 import { SelectAllCheckbox } from "@/components/selection/SelectAllCheckbox"
 import { RowCheckbox } from "@/components/selection/RowCheckbox"
@@ -16,13 +17,7 @@ import { ClickableRow } from "@/components/ClickableRow"
 
 import { QuotationStatusBadge } from "@/components/QuotationStatusBadge"
 
-function formatRupee(paise: number) {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    minimumFractionDigits: 2
-  }).format(paise / 100)
-}
+
 
 export default async function QuotationsPage(props: { searchParams: Promise<{ search?: string, status?: string }> }) {
   const searchParams = await props.searchParams

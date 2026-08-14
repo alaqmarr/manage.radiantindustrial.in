@@ -5,6 +5,7 @@ import { upsertDraftQuotation, getQuotationUpdatedAt } from "@/app/actions/quota
 import { createClient } from "@/app/actions/client"
 import { parseQuotationExcelAction } from "@/app/actions/import"
 import { VendorPriceDialog } from "./VendorPriceDialog"
+import { formatRupee, numberToWordsRupees } from "@/lib/utils"
 import { Loader2, Plus, Trash2, Upload, X, Check, AlertCircle } from "lucide-react"
 
 type Client = { id: string, name: string }
@@ -603,11 +604,11 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                                 : 'bg-brand-orange/10 border-brand-orange/50 text-brand-orange hover:bg-brand-orange hover:text-white'
                             }`}
                           >
-                            {cp ? `Act: ₹${(cp / 100).toFixed(2)}` : 'Set Act. CP'}
+                            {cp ? `Act: ${formatRupee(cp)}` : 'Set Act. CP'}
                           </button>
                           {cp && item.quantity > 0 ? (
                             <span className="text-[11px] text-amber-500/90 font-mono font-bold pl-1">
-                              Σ ₹{((cp * item.quantity) / 100).toFixed(2)}
+                              Σ {formatRupee(cp * item.quantity)}
                             </span>
                           ) : null}
                         </div>
@@ -625,7 +626,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                            </div>
                            {item.commissionCpSnapshot && item.quantity > 0 ? (
                              <span className="text-[11px] text-brand-orange/80 font-mono font-bold pl-1">
-                               Σ ₹{((item.commissionCpSnapshot * item.quantity) / 100).toFixed(2)}
+                               Σ {formatRupee((item.commissionCpSnapshot * item.quantity) / 100)}
                              </span>
                            ) : null}
                         </div>
@@ -645,11 +646,11 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                           })}
                           className={`text-sm font-mono font-medium hover:underline ${sp === 0 ? 'text-rose-500' : 'text-white'}`}
                         >
-                          {sp > 0 ? `₹${(sp / 100).toFixed(2)}` : 'Set SP'}
+                          {sp > 0 ? formatRupee(sp) : 'Set SP'}
                         </button>
                         {sp > 0 && item.quantity > 0 ? (
                           <span className="text-sm text-zinc-300 font-mono font-bold pl-1">
-                            Σ ₹{((sp * item.quantity) / 100).toFixed(2)}
+                            Σ {formatRupee(sp * item.quantity)}
                           </span>
                         ) : null}
                       </div>
@@ -663,7 +664,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                           <div className="flex flex-col items-start gap-0.5">
                             <span className="text-[10px] text-zinc-500 font-bold tracking-wider">ACTUAL</span>
                             <span className={`text-sm font-mono font-bold ${sp - cp >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                              ₹{(((sp - cp) * item.quantity) / 100).toFixed(2)}
+                              {formatRupee((sp - cp) * item.quantity)}
                             </span>
                             <span className={`text-[10px] font-medium ${sp - cp >= 0 ? 'text-emerald-500/80' : 'text-rose-500/80'}`}>
                               {(((sp - cp) / sp) * 100).toFixed(1)}% margin
@@ -680,7 +681,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                           <div className="flex flex-col items-start gap-0.5">
                             <span className="text-[10px] text-brand-orange/80 font-bold tracking-wider">COMMISSION</span>
                             <span className={`text-sm font-mono font-bold ${sp - item.commissionCpSnapshot >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                              ₹{(((sp - item.commissionCpSnapshot) * item.quantity) / 100).toFixed(2)}
+                              {formatRupee((sp - item.commissionCpSnapshot) * item.quantity)}
                             </span>
                             <span className={`text-[10px] font-medium ${sp - item.commissionCpSnapshot >= 0 ? 'text-emerald-500/80' : 'text-rose-500/80'}`}>
                               {(((sp - item.commissionCpSnapshot) / sp) * 100).toFixed(1)}% margin
@@ -741,18 +742,18 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                 <>
                   <div className="space-y-1">
                     <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Subtotal</div>
-                    <div className="text-lg font-bold text-white">₹{(totalAmount / 100).toFixed(2)}</div>
+                    <div className="text-lg font-bold text-white">{formatRupee(totalAmount)}</div>
                   </div>
                   
                   <div className="flex gap-4">
                     <div className="space-y-1">
                       <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Act. P. Cost</div>
-                      <div className="text-lg font-bold text-amber-500/90">₹{(totalPCost / 100).toFixed(2)}</div>
+                      <div className="text-lg font-bold text-amber-500/90">{formatRupee(totalPCost)}</div>
                     </div>
                     {hasCommSplit && (
                       <div className="space-y-1">
                         <div className="text-[10px] text-brand-orange/80 uppercase font-bold tracking-widest">Comm. P. Cost</div>
-                        <div className="text-lg font-bold text-brand-orange/90">₹{(totalCommCost / 100).toFixed(2)}</div>
+                        <div className="text-lg font-bold text-brand-orange/90">{formatRupee(totalCommCost)}</div>
                       </div>
                     )}
                   </div>
@@ -761,7 +762,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                     <div className="space-y-1">
                       <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Act. Profit</div>
                       <div className="flex items-baseline gap-2">
-                        <span className="text-lg font-bold text-emerald-500">₹{(totalProfit / 100).toFixed(2)}</span>
+                        <span className="text-lg font-bold text-emerald-500">{formatRupee(totalProfit)}</span>
                         {totalProfit > 0 && <span className="text-xs text-emerald-500/70 font-medium">({marginPercent.toFixed(1)}%)</span>}
                       </div>
                     </div>
@@ -769,7 +770,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                       <div className="space-y-1">
                         <div className="text-[10px] text-brand-orange/80 uppercase font-bold tracking-widest">Comm. Profit</div>
                         <div className="flex items-baseline gap-2">
-                          <span className="text-lg font-bold text-emerald-500">₹{(totalCommProfit / 100).toFixed(2)}</span>
+                          <span className="text-lg font-bold text-emerald-500">{formatRupee(totalCommProfit)}</span>
                           {totalCommProfit > 0 && <span className="text-xs text-emerald-500/70 font-medium">({commMarginPercent.toFixed(1)}%)</span>}
                         </div>
                       </div>
@@ -778,9 +779,10 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                   
                   <div className="hidden lg:block w-px h-10 bg-premium-border/50"></div>
                   
-                  <div className="space-y-1">
-                    <div className="text-[10px] text-brand-orange/80 uppercase font-bold tracking-widest">Grand Total (inc. GST)</div>
-                    <div className="text-2xl font-black text-brand-orange">₹{((totalAmount + totalGst) / 100).toFixed(2)}</div>
+                  <div className="space-y-1 flex flex-col items-end">
+                    <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Grand Total</div>
+                    <div className="text-2xl font-black text-brand-orange">{formatRupee(totalAmount + totalGst)}</div>
+                    <div className="text-xs text-zinc-400 font-medium">{numberToWordsRupees(totalAmount + totalGst)}</div>
                   </div>
                 </>
               );

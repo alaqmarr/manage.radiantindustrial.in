@@ -1,6 +1,7 @@
 "use client"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { formatRupee } from "@/lib/utils"
 import { createProduct, updateProduct } from "@/app/actions/product"
 import { getPresignedUrl } from "@/app/actions/upload"
 import { Loader2, ImagePlus } from "lucide-react"
@@ -170,7 +171,7 @@ export function ProductForm({ suppliers, initialData }: { suppliers: any[], init
               <div>
                 <div className="text-xs text-zinc-500 uppercase font-bold tracking-widest mb-1">Actual Profit</div>
                 <div className={`text-xl font-bold ${profit >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                  ₹{profit.toFixed(2)}
+                  {formatRupee(profit)}
                 </div>
               </div>
               <div className="text-right">
@@ -186,7 +187,7 @@ export function ProductForm({ suppliers, initialData }: { suppliers: any[], init
                 <div>
                   <div className="text-xs text-brand-orange/80 uppercase font-bold tracking-widest mb-1">Commission Profit</div>
                   <div className={`text-xl font-bold ${commProfit >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                    ₹{commProfit.toFixed(2)}
+                    {formatRupee(commProfit)}
                   </div>
                 </div>
                 <div className="text-right">

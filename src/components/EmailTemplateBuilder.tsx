@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { Copy, Check, Mail, Sparkles, Send, PartyPopper, Landmark, X, Loader2 } from "lucide-react"
+import { Copy, Check, Mail, Sparkles, Send, PartyPopper, Landmark, X, Loader2, CheckCircle2, AlertCircle, XCircle } from "lucide-react"
 import { sendEmailAction } from "@/app/actions/email"
 
 type TemplateType = 'custom' | 'intro' | 'followup' | 'festive' | 'bank'
@@ -24,8 +24,52 @@ export function EmailTemplateBuilder({ settings }: EmailTemplateBuilderProps) {
 
   // Send Modal State
   const [isSendModalOpen, setIsSendModalOpen] = useState(false)
-  const [recipientEmails, setRecipientEmails] = useState("")
+  const [validEmails, setValidEmails] = useState<string[]>([])
+  const [emailInput, setEmailInput] = useState("")
   const [isSending, setIsSending] = useState(false)
+  const [sendResults, setSendResults] = useState<{email: string, status: 'success'|'failed', error?: string}[] | null>(null)
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  const parseEmails = (input: string) => {
+    const parts = input.split(/[\s,;]+/);
+    const newValidEmails = [...validEmails];
+    let hasChanges = false;
+
+    parts.forEach(part => {
+      const trimmed = part.trim();
+      if (trimmed && emailRegex.test(trimmed)) {
+        if (!newValidEmails.includes(trimmed)) {
+          newValidEmails.push(trimmed);
+          hasChanges = true;
+        }
+      }
+    });
+
+    if (hasChanges) {
+      setValidEmails(newValidEmails);
+    }
+  };
+
+  const handleEmailInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setEmailInput(val);
+    
+    if (val.endsWith(' ') || val.endsWith(',') || val.endsWith(';')) {
+      parseEmails(val);
+      setEmailInput('');
+    }
+  };
+
+  const handleEmailInputPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData('text');
+    parseEmails(pastedText);
+  };
+
+  const removeEmail = (emailToRemove: string) => {
+    setValidEmails(validEmails.filter(e => e !== emailToRemove));
+  };
 
   const handleCopyEmail = async () => {
     if (!emailContainerRef.current) return;
@@ -52,12 +96,21 @@ export function EmailTemplateBuilder({ settings }: EmailTemplateBuilderProps) {
 
   const handleSendEmail = async () => {
     if (!emailContainerRef.current) return;
-    if (!recipientEmails.trim()) {
-      alert("Please enter at least one recipient email address.");
+    
+    let finalEmails = [...validEmails];
+    if (emailInput.trim() && emailRegex.test(emailInput.trim())) {
+      if (!finalEmails.includes(emailInput.trim())) finalEmails.push(emailInput.trim());
+    }
+
+    if (finalEmails.length === 0) {
+      alert("Please enter at least one valid recipient email address.");
       return;
     }
 
+    setValidEmails(finalEmails);
+    setEmailInput('');
     setIsSending(true);
+    setSendResults(null);
     try {
       const htmlContent = emailContainerRef.current.innerHTML;
       
@@ -70,21 +123,19 @@ export function EmailTemplateBuilder({ settings }: EmailTemplateBuilderProps) {
       }
 
       const result = await sendEmailAction({
-        to: recipientEmails,
+        to: finalEmails,
         subject: finalSubject,
         html: htmlContent
       });
 
-      if (result.error) {
+      if (result.error && !result.results) {
         alert(result.error);
-      } else {
-        alert("Email sent successfully!");
-        setIsSendModalOpen(false);
-        setRecipientEmails("");
+      } else if (result.results) {
+        setSendResults(result.results as any);
       }
     } catch (err) {
       console.error("Failed to send email", err);
-      alert("Failed to send email.");
+      alert("Failed to send email due to a network error.");
     } finally {
       setIsSending(false);
     }
@@ -202,7 +253,10 @@ export function EmailTemplateBuilder({ settings }: EmailTemplateBuilderProps) {
               <span>{copied ? "Copied!" : "Copy HTML"}</span>
             </button>
             <button 
-              onClick={() => setIsSendModalOpen(true)}
+              onClick={() => {
+                setIsSendModalOpen(true)
+                setSendResults(null)
+              }}
               className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-brand-orange to-brand-orange-dark hover:from-brand-orange-dark hover:to-brand-orange shadow-lg shadow-brand-orange/20 text-white font-medium rounded-md transition-all active:scale-95"
             >
               <Send className="w-5 h-5" />
@@ -361,38 +415,161 @@ export function EmailTemplateBuilder({ settings }: EmailTemplateBuilderProps) {
 
       {/* Send Email Modal */}
       {isSendModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-          <div className="bg-premium-dark border border-premium-border rounded-lg w-full max-w-md p-6 shadow-2xl relative">
-            <button 
-              onClick={() => setIsSendModalOpen(false)}
-              className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            <h3 className="text-xl font-bold text-white mb-2 font-heading">Send Email Directly</h3>
-            <p className="text-zinc-400 text-sm mb-6">Enter the recipient email addresses (comma separated) to send this HTML template via your configured Gmail SMTP.</p>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">To:</label>
-                <input
-                  type="text"
-                  value={recipientEmails}
-                  onChange={(e) => setRecipientEmails(e.target.value)}
-                  placeholder="client@example.com, other@test.com"
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2.5 text-white focus:outline-none focus:border-brand-orange focus:ring-1 focus:ring-brand-orange transition-all"
-                  autoFocus
-                />
-              </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-premium-dark border border-premium-border rounded-lg w-full max-w-2xl p-6 shadow-2xl relative max-h-[90vh] flex flex-col">
+            {!isSending && (
               <button 
-                onClick={handleSendEmail}
-                disabled={isSending}
-                className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-brand-orange to-brand-orange-dark hover:from-brand-orange-dark hover:to-brand-orange shadow-lg shadow-brand-orange/20 text-white font-medium rounded-md transition-all active:scale-95 disabled:opacity-50"
+                onClick={() => setIsSendModalOpen(false)}
+                className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors"
               >
-                {isSending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-                <span>{isSending ? "Sending..." : "Send Email"}</span>
+                <X className="w-5 h-5" />
               </button>
+            )}
+            
+            <h3 className="text-xl font-bold text-white mb-2 font-heading">
+              {sendResults ? 'Sending Complete' : isSending ? 'Sending Emails...' : 'Send Email Directly'}
+            </h3>
+            
+            {!sendResults && !isSending && (
+              <p className="text-zinc-400 text-sm mb-6">
+                Paste or type recipient email addresses. Invalid emails will be automatically ignored.
+              </p>
+            )}
+
+            <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-6">
+              
+              {!sendResults && !isSending ? (
+                /* Input Mode */
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">To:</label>
+                    <div className="w-full bg-zinc-950 border border-zinc-800 rounded-md p-2 flex flex-wrap gap-2 items-start min-h-[100px] focus-within:border-brand-orange focus-within:ring-1 focus-within:ring-brand-orange transition-all cursor-text" onClick={() => document.getElementById('email-input')?.focus()}>
+                      
+                      {validEmails.map(email => (
+                        <div key={email} className="flex items-center gap-1 bg-brand-orange/20 text-brand-orange px-2 py-1 rounded-md text-sm">
+                          <span>{email}</span>
+                          <button onClick={(e) => { e.stopPropagation(); removeEmail(email); }} className="hover:text-white transition-colors">
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                      
+                      <input
+                        id="email-input"
+                        type="text"
+                        value={emailInput}
+                        onChange={handleEmailInputChange}
+                        onPaste={handleEmailInputPaste}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (emailInput.trim()) {
+                              parseEmails(emailInput);
+                              setEmailInput('');
+                            }
+                          } else if (e.key === 'Backspace' && !emailInput && validEmails.length > 0) {
+                            const newEmails = [...validEmails];
+                            newEmails.pop();
+                            setValidEmails(newEmails);
+                          }
+                        }}
+                        placeholder={validEmails.length === 0 ? "client@example.com, other@test.com" : ""}
+                        className="flex-1 bg-transparent border-none outline-none text-white min-w-[200px] py-1 text-sm"
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* Progress & Results Mode */
+                <div className="space-y-6 py-4">
+                  {/* Summary Stats */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="bg-premium-surface/50 border border-premium-border rounded-md p-4 text-center">
+                      <div className="text-3xl font-black text-white">{validEmails.length + (emailInput.trim() && emailRegex.test(emailInput.trim()) && !validEmails.includes(emailInput.trim()) ? 1 : 0)}</div>
+                      <div className="text-xs text-zinc-400 font-bold uppercase tracking-widest mt-1">Total</div>
+                    </div>
+                    <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-md p-4 text-center">
+                      <div className="text-3xl font-black text-emerald-500">
+                        {sendResults ? sendResults.filter(r => r.status === 'success').length : (isSending ? '-' : '0')}
+                      </div>
+                      <div className="text-xs text-emerald-500/70 font-bold uppercase tracking-widest mt-1">Sent</div>
+                    </div>
+                    <div className="bg-rose-500/10 border border-rose-500/20 rounded-md p-4 text-center">
+                      <div className="text-3xl font-black text-rose-500">
+                        {sendResults ? sendResults.filter(r => r.status === 'failed').length : (isSending ? '-' : '0')}
+                      </div>
+                      <div className="text-xs text-rose-500/70 font-bold uppercase tracking-widest mt-1">Failed</div>
+                    </div>
+                  </div>
+
+                  {isSending && !sendResults && (
+                    <div className="flex flex-col items-center justify-center py-8 space-y-4">
+                      <Loader2 className="w-12 h-12 text-brand-orange animate-spin" />
+                      <p className="text-zinc-400 font-medium">Processing your emails, please don't close this window...</p>
+                    </div>
+                  )}
+
+                  {sendResults && (
+                    <div className="mt-6">
+                      <h4 className="text-sm font-bold text-white mb-3 tracking-wide">Detailed Logs</h4>
+                      <div className="border border-premium-border rounded-md overflow-hidden">
+                        <table className="w-full text-left text-sm">
+                          <thead className="bg-premium-surface/80 border-b border-premium-border">
+                            <tr>
+                              <th className="px-4 py-3 font-semibold text-zinc-300">Email</th>
+                              <th className="px-4 py-3 font-semibold text-zinc-300">Status</th>
+                              <th className="px-4 py-3 font-semibold text-zinc-300">Log</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-premium-border bg-black/20">
+                            {sendResults.map((result, idx) => (
+                              <tr key={idx} className="hover:bg-white/5 transition-colors">
+                                <td className="px-4 py-3 text-white font-medium">{result.email}</td>
+                                <td className="px-4 py-3">
+                                  {result.status === 'success' ? (
+                                    <span className="flex items-center gap-1 text-emerald-500 text-xs font-bold uppercase tracking-wider">
+                                      <CheckCircle2 className="w-4 h-4" /> Success
+                                    </span>
+                                  ) : (
+                                    <span className="flex items-center gap-1 text-rose-500 text-xs font-bold uppercase tracking-wider">
+                                      <XCircle className="w-4 h-4" /> Failed
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3 text-zinc-400 text-xs font-mono break-words max-w-[200px]">
+                                  {result.error || 'OK'}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
+
+            <div className="mt-6 pt-6 border-t border-premium-border">
+              {!sendResults && !isSending ? (
+                <button 
+                  onClick={handleSendEmail}
+                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-brand-orange to-brand-orange-dark hover:from-brand-orange-dark hover:to-brand-orange shadow-lg shadow-brand-orange/20 text-white font-medium rounded-md transition-all active:scale-95"
+                >
+                  <Send className="w-5 h-5" />
+                  <span>Send Emails</span>
+                </button>
+              ) : sendResults ? (
+                <button 
+                  onClick={() => setIsSendModalOpen(false)}
+                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-premium-surface/50 border border-premium-border hover:bg-white/5 text-white font-medium rounded-md transition-all active:scale-95"
+                >
+                  Close
+                </button>
+              ) : null}
+            </div>
+
           </div>
         </div>
       )}

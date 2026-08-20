@@ -362,45 +362,6 @@ export function RfqForm({ suppliers: initialSuppliers, products, initialData, in
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-1">GST Number</label>
-                <div className="flex gap-2">
-                  <input 
-                    value={newSupplierGst}
-                    onChange={e => setNewSupplierGst(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate uppercase" 
-                    placeholder="e.g. 22AAAAA0000A1Z5"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleVerifyGST}
-                    disabled={isVerifyingGST}
-                    className="flex items-center gap-1 px-3 py-2 bg-brand-orange/20 text-brand-orange hover:bg-brand-orange/30 disabled:opacity-50 rounded-md transition-colors"
-                  >
-                    {isVerifyingGST ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                    <span className="text-xs font-semibold whitespace-nowrap">Verify</span>
-                  </button>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-1">Supplier Name *</label>
-                <input 
-                  autoFocus
-                  value={newSupplierName}
-                  onChange={e => setNewSupplierName(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
-                  placeholder="Acme Vendor Corp"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-1">Location / Address</label>
-                <input 
-                  value={newSupplierLocation}
-                  onChange={e => setNewSupplierLocation(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
-                  placeholder="City, State, etc."
-                />
-              </div>
-              <div>
                 <label className="block text-sm font-medium text-zinc-400 mb-1">Contact (Email/Phone)</label>
                 <input 
                   value={newSupplierContact}

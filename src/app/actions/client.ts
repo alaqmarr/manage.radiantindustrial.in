@@ -5,7 +5,7 @@ import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import { generateSlug } from "@/lib/slugify"
 
-export async function createClient(data: { name: string; contact?: string }) {
+export async function createClient(data: { name: string; contact?: string; email?: string; gstNumber?: string; location?: string; address?: string }) {
   try {
     const session = await auth()
     if (!session?.user) {
@@ -23,6 +23,10 @@ export async function createClient(data: { name: string; contact?: string }) {
         id,
         name: data.name,
         contact: data.contact,
+        email: data.email,
+        gstNumber: data.gstNumber,
+        location: data.location,
+        address: data.address,
       }
     })
 
@@ -36,7 +40,7 @@ export async function createClient(data: { name: string; contact?: string }) {
   }
 }
 
-export async function updateClient(id: string, data: { name: string; contact?: string }) {
+export async function updateClient(id: string, data: { name: string; contact?: string; email?: string; gstNumber?: string; location?: string; address?: string }) {
   try {
     const session = await auth()
     if (!session?.user) {
@@ -52,6 +56,10 @@ export async function updateClient(id: string, data: { name: string; contact?: s
       data: {
         name: data.name,
         contact: data.contact,
+        email: data.email,
+        gstNumber: data.gstNumber,
+        location: data.location,
+        address: data.address,
       }
     })
 

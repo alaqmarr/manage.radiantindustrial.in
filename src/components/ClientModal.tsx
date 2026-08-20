@@ -29,16 +29,9 @@ export function ClientModal({ clients }: { clients: any[] }) {
       if (res.error) {
         alert(res.error);
       } else if (res.data) {
-        // Autofill fields
-        const form = document.getElementById(isEditing ? "edit-form" : "new-form") as HTMLFormElement;
-        if (form) {
-          const nameInput = form.elements.namedItem("name") as HTMLInputElement;
-          const addressInput = form.elements.namedItem("address") as HTMLInputElement;
-          const locationInput = form.elements.namedItem("location") as HTMLInputElement;
-          if (nameInput) nameInput.value = res.data.name || "";
-          if (addressInput) addressInput.value = res.data.address || "";
-          if (locationInput) locationInput.value = res.data.location || "";
-        }
+        setName(res.data.name || name);
+        setAddress(res.data.address || address);
+        setLocation(res.data.location || location);
         alert("Details fetched successfully! \n" + (res.data.legalName ? "(" + res.data.legalName + ")" : ""));
       }
     } catch (e) {
@@ -52,6 +45,10 @@ export function ClientModal({ clients }: { clients: any[] }) {
 
   const [name, setName] = useState("")
   const [contact, setContact] = useState("")
+  const [email, setEmail] = useState("")
+  const [gstNumber, setGstNumber] = useState("")
+  const [location, setLocation] = useState("")
+  const [address, setAddress] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Reset form when modal opens
@@ -59,6 +56,11 @@ export function ClientModal({ clients }: { clients: any[] }) {
     if (isOpen) {
       setName(clientToEdit?.name || "")
       setContact(clientToEdit?.contact || "")
+      setEmail(clientToEdit?.email || "")
+      setGstNumber(clientToEdit?.gstNumber || "")
+      setGstInput(clientToEdit?.gstNumber || "")
+      setLocation(clientToEdit?.location || "")
+      setAddress(clientToEdit?.address || "")
     }
   }, [isOpen, clientToEdit])
 
@@ -76,7 +78,7 @@ export function ClientModal({ clients }: { clients: any[] }) {
     setIsSubmitting(true)
     
     try {
-      const data = { name, contact }
+      const data = { name, contact, email, gstNumber, location, address }
       const result = isEditing 
         ? await updateClient(editId!, data)
         : await createClient(data)
@@ -95,7 +97,7 @@ export function ClientModal({ clients }: { clients: any[] }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-0">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={close} />
-      <div className="relative bg-zinc-900 border border-premium-border rounded-md shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative bg-zinc-900 border border-premium-border rounded-md shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between p-6 border-b border-premium-border bg-white/[0.02]">
           <h2 className="text-xl font-semibold text-white">
             {isEditing ? "Edit Client" : "Add New Client"}
@@ -105,7 +107,31 @@ export function ClientModal({ clients }: { clients: any[] }) {
           </button>
         </div>
         
-        <form id={isEditing ? "edit-form" : "new-form"} onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1">
+          <div>
+            <label className="block text-sm font-medium text-zinc-400 mb-1">GST Number</label>
+            <div className="flex gap-2">
+              <input 
+                type="text" 
+                value={gstNumber}
+                onChange={(e) => {
+                  setGstNumber(e.target.value);
+                  setGstInput(e.target.value);
+                }}
+                className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate uppercase" 
+                placeholder="22AAAAA0000A1Z5"
+              />
+              <button
+                type="button"
+                onClick={handleVerifyGST}
+                disabled={isVerifyingGST}
+                className="flex items-center gap-1 px-3 py-2 bg-brand-orange/20 text-brand-orange hover:bg-brand-orange/30 disabled:opacity-50 rounded-md transition-colors"
+              >
+                {isVerifyingGST ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                <span className="text-xs font-semibold whitespace-nowrap">Verify</span>
+              </button>
+            </div>
+          </div>
           <div>
             <label className="block text-sm font-medium text-zinc-400 mb-1">Client Name *</label>
             <input 
@@ -118,17 +144,47 @@ export function ClientModal({ clients }: { clients: any[] }) {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-1">Contact Info</label>
+            <label className="block text-sm font-medium text-zinc-400 mb-1">Email</label>
+            <input 
+              type="email" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
+              placeholder="Email address"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-zinc-400 mb-1">Phone / Contact</label>
             <input 
               type="text" 
               value={contact}
               onChange={(e) => setContact(e.target.value)}
               className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
-              placeholder="Email, Phone, etc."
+              placeholder="Phone number"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-zinc-400 mb-1">Location / City</label>
+            <input 
+              type="text" 
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
+              placeholder="e.g. Mumbai, MH"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-zinc-400 mb-1">Full Address</label>
+            <textarea 
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              rows={2}
+              className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
+              placeholder="Full address details"
             />
           </div>
           
-          <div className="flex justify-end pt-4">
+          <div className="flex justify-end pt-4 border-t border-zinc-800">
             <button 
               type="submit" 
               disabled={isSubmitting}
@@ -143,4 +199,3 @@ export function ClientModal({ clients }: { clients: any[] }) {
     </div>
   )
 }
-

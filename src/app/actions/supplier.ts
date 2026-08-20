@@ -134,7 +134,7 @@ export async function updateProductSupplierPrice(
 
 import { revalidatePath } from "next/cache"
 
-export async function createSupplier(data: { name: string; contact?: string }) {
+export async function createSupplier(data: { name: string; contact?: string; email?: string; gstNumber?: string; location?: string }) {
   try {
     const session = await auth()
     if (!session?.user) {
@@ -152,6 +152,9 @@ export async function createSupplier(data: { name: string; contact?: string }) {
         id,
         name: data.name,
         contact: data.contact,
+        email: data.email,
+        gstNumber: data.gstNumber,
+        location: data.location,
       }
     })
 
@@ -163,7 +166,7 @@ export async function createSupplier(data: { name: string; contact?: string }) {
   }
 }
 
-export async function updateSupplier(id: string, data: { name: string; contact?: string }) {
+export async function updateSupplier(id: string, data: { name: string; contact?: string; email?: string; gstNumber?: string; location?: string }) {
   try {
     const session = await auth()
     if (!session?.user) {
@@ -179,6 +182,9 @@ export async function updateSupplier(id: string, data: { name: string; contact?:
       data: {
         name: data.name,
         contact: data.contact,
+        email: data.email,
+        gstNumber: data.gstNumber,
+        location: data.location,
       }
     })
 

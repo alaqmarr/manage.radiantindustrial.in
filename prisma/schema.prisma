@@ -66,6 +66,8 @@ model CompanySettings {
   logoUrl          String?
   companyName      String
   address          String?
+  billingAddress   String?
+  shippingAddress  String?
   email            String?
   phone            String?
   quotationMessage String?
@@ -80,6 +82,9 @@ model CompanySettings {
   accountName      String?
   accountNumber    String?
   ifscCode         String?
+
+  // Integrations
+  gstApiKey        String?
   swiftCode        String?
   bankAddress      String?
 
@@ -90,10 +95,14 @@ model Supplier {
   id        String     @id
   name      String
   contact   String?
+  email     String?
+  gstNumber String?
+  location  String?
   products          Product[]
   productSuppliers  ProductSupplier[]
   quotationItems    QuotationItem[]
   purchases         Purchase[]
+  rfqs              Rfq[]
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 }
@@ -125,6 +134,7 @@ model Product {
   productSuppliers    ProductSupplier[]
   quotationItems      QuotationItem[]
   purchaseItems       PurchaseItem[]
+  rfqItems            RfqItem[]
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
 }
@@ -158,6 +168,7 @@ model QuotationItem {
   supplierId   String?
   supplier     Supplier? @relation(fields: [supplierId], references: [id])
   comment      String?   // User comment for this item in the quotation
+  additionalCost Int?    @default(0) // paise. Internal cost (e.g. freight) borne by us, reduces profit.
 }
 
 model ProductSupplier {
@@ -191,4 +202,28 @@ model PurchaseItem {
   product     Product  @relation(fields: [productId], references: [id])
   quantity    Float
   cpSnapshot  Int      // Cost price at the time of purchase (paise)
+}
+
+model Rfq {
+  id          String    @id
+  supplierId  String
+  supplier    Supplier  @relation(fields: [supplierId], references: [id])
+  status      String    @default("DRAFT") // DRAFT, ISSUED, COMPLETED
+  totalAmount Int       // paise (excluding GST)
+  totalGst    Int       // paise
+  items       RfqItem[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model RfqItem {
+  id          String   @id
+  rfqId       String
+  rfq         Rfq      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  quantity    Float
+  cpSnapshot  Int      // Cost price at the time of RFQ (paise)
+  gstSnapshot Float
+  comment     String?
 }

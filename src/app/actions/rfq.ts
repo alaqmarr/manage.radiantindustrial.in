@@ -4,7 +4,7 @@ import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import { generateSlug } from "@/lib/slugify"
 
-type QuotationItemData = {
+type RfqItemData = {
   product: {
     id: string
     materialCode: string
@@ -13,38 +13,32 @@ type QuotationItemData = {
     gstRate: number
   }
   quantity: number
-  spSnapshot: number // paise
-  cpSnapshot?: number // paise
-  commissionCpSnapshot?: number // paise
-  supplierId?: string
+  cpSnapshot: number // paise
   comment?: string
-  additionalCost?: number // paise
 }
 
-export async function getQuotationUpdatedAt(id: string) {
+export async function getRfqUpdatedAt(id: string) {
   try {
     const session = await auth()
     if (!session?.user) return { error: "Unauthorized" }
 
-    const q = await prisma.quotation.findUnique({
+    const r = await prisma.rfq.findUnique({
       where: { id },
       select: { updatedAt: true }
     })
     
-    if (!q) return { error: "Not found" }
+    if (!r) return { error: "Not found" }
     
-    return { success: true, updatedAt: q.updatedAt }
+    return { success: true, updatedAt: r.updatedAt }
   } catch (e: any) {
     return { error: "Failed to check status" }
   }
 }
 
-export async function createQuotation(data: {
-  clientId: string
-  prNo?: string
-  rfqNo?: string
-  status: string // DRAFT or PENDING
-  items: QuotationItemData[]
+export async function createRfq(data: {
+  supplierId: string
+  status: string // DRAFT or ISSUED
+  items: RfqItemData[]
 }) {
   try {
     const session = await auth()
@@ -53,23 +47,20 @@ export async function createQuotation(data: {
     }
 
     if (data.items.length === 0) {
-      return { error: "Quotation must have at least one item" }
+      return { error: "RFQ must have at least one item" }
     }
 
-    // Calculate totals
     let totalAmount = 0
     let totalGst = 0
     
     for (const item of data.items) {
-      const amount = Math.round(item.quantity * item.spSnapshot)
+      const amount = Math.round(item.quantity * item.cpSnapshot)
       const gst = Math.round(amount * (item.product.gstRate / 100))
       
       totalAmount += amount
       totalGst += gst
     }
 
-    // Generate a unique ID
-    // Upsert all products
     for (const item of data.items) {
       const p = await prisma.product.upsert({
         where: { materialCode: item.product.materialCode },
@@ -91,51 +82,43 @@ export async function createQuotation(data: {
       item.product.id = p.id
     }
 
-    const count = await prisma.quotation.count()
-    const id = generateSlug(`QT-${Date.now()}-${count + 1}`)
+    const count = await prisma.rfq.count()
+    const id = generateSlug(`RFQ-${Date.now()}-${count + 1}`)
 
-    const quotation = await prisma.quotation.create({
+    const rfq = await prisma.rfq.create({
       data: {
         id,
-        clientId: data.clientId,
-        prNo: data.prNo || null,
-        rfqNo: data.rfqNo || null,
+        supplierId: data.supplierId,
         status: data.status,
         totalAmount,
         totalGst,
         items: {
           create: data.items.map((item, index) => ({
-            id: generateSlug(`QTI-${id}-${index}`),
+            id: generateSlug(`RFQI-${id}-${index}`),
             productId: item.product.id,
             quantity: item.quantity,
-            spSnapshot: item.spSnapshot,
-            cpSnapshot: item.cpSnapshot || null,
-            commissionCpSnapshot: item.commissionCpSnapshot || null,
+            cpSnapshot: item.cpSnapshot,
             gstSnapshot: item.product.gstRate,
-            supplierId: item.supplierId || null,
-            comment: item.comment || null,
-            additionalCost: item.additionalCost || 0
+            comment: item.comment || null
           }))
         }
       }
     })
 
-    revalidatePath("/quotations")
-    return { success: true, id: quotation.id }
+    revalidatePath("/rfq")
+    return { success: true, id: rfq.id }
   } catch (error: any) {
-    console.error("Create Quotation Error:", error)
-    return { error: error.message || "Failed to create quotation" }
+    console.error("Create RFQ Error:", error)
+    return { error: error.message || "Failed to create RFQ" }
   }
 }
 
-export async function upsertDraftQuotation(data: {
+export async function upsertDraftRfq(data: {
   id?: string
-  clientId: string
-  prNo?: string
-  rfqNo?: string
+  supplierId: string
   status?: string
   expectedUpdatedAt?: Date
-  items: QuotationItemData[]
+  items: RfqItemData[]
 }) {
   try {
     const session = await auth()
@@ -144,13 +127,13 @@ export async function upsertDraftQuotation(data: {
     }
 
     if (data.id && data.expectedUpdatedAt) {
-      const current = await prisma.quotation.findUnique({
+      const current = await prisma.rfq.findUnique({
         where: { id: data.id },
         select: { updatedAt: true }
       })
       
       if (current && current.updatedAt.getTime() > new Date(data.expectedUpdatedAt).getTime()) {
-        return { error: "CONFLICT: Someone else has updated this quotation since you opened it. Please refresh the page to see the latest changes." }
+        return { error: "CONFLICT: Someone else has updated this RFQ since you opened it. Please refresh the page to see the latest changes." }
       }
     }
 
@@ -158,17 +141,16 @@ export async function upsertDraftQuotation(data: {
     let totalGst = 0
     
     for (const item of data.items) {
-      const amount = Math.round(item.quantity * item.spSnapshot)
+      const amount = Math.round(item.quantity * item.cpSnapshot)
       const gst = Math.round(amount * (item.product.gstRate / 100))
       
       totalAmount += amount
       totalGst += gst
     }
 
-    let quotationId = data.id
+    let rfqId = data.id
     const finalStatus = data.status || "DRAFT"
 
-    // Upsert all products
     for (const item of data.items) {
       const p = await prisma.product.upsert({
         where: { materialCode: item.product.materialCode },
@@ -190,115 +172,98 @@ export async function upsertDraftQuotation(data: {
       item.product.id = p.id
     }
 
-    if (!quotationId) {
-      // Create new draft
-      const count = await prisma.quotation.count()
-      quotationId = generateSlug(`QT-${Date.now()}-${count + 1}`)
+    if (!rfqId) {
+      const count = await prisma.rfq.count()
+      rfqId = generateSlug(`RFQ-${Date.now()}-${count + 1}`)
 
-      await prisma.quotation.create({
+      await prisma.rfq.create({
         data: {
-          id: quotationId,
-          clientId: data.clientId,
-          prNo: data.prNo || null,
-          rfqNo: data.rfqNo || null,
+          id: rfqId,
+          supplierId: data.supplierId,
           status: finalStatus,
           totalAmount,
           totalGst,
           items: {
             create: data.items.map((item, index) => ({
-              id: generateSlug(`QTI-${quotationId}-${index}`),
+              id: generateSlug(`RFQI-${rfqId}-${index}`),
               productId: item.product.id,
               quantity: item.quantity,
-              spSnapshot: item.spSnapshot,
-              cpSnapshot: item.cpSnapshot || null,
-              commissionCpSnapshot: item.commissionCpSnapshot || null,
+              cpSnapshot: item.cpSnapshot,
               gstSnapshot: item.product.gstRate,
-              supplierId: item.supplierId || null,
-              comment: item.comment || null,
-              additionalCost: item.additionalCost || 0
+              comment: item.comment || null
             }))
           }
         }
       })
     } else {
-      // Update existing draft
-      // First, delete all existing items
-      await prisma.quotationItem.deleteMany({
-        where: { quotationId: quotationId }
+      await prisma.rfqItem.deleteMany({
+        where: { rfqId: rfqId }
       })
 
-      // Then update quotation and recreate items
-      await prisma.quotation.update({
-        where: { id: quotationId },
+      await prisma.rfq.update({
+        where: { id: rfqId },
         data: {
-          clientId: data.clientId,
-          prNo: data.prNo || null,
-          rfqNo: data.rfqNo || null,
+          supplierId: data.supplierId,
           status: finalStatus,
           totalAmount,
           totalGst,
           items: {
             create: data.items.map((item, index) => ({
-              id: generateSlug(`QTI-${quotationId}-${index}`),
+              id: generateSlug(`RFQI-${rfqId}-${index}`),
               productId: item.product.id,
               quantity: item.quantity,
-              spSnapshot: item.spSnapshot,
-              cpSnapshot: item.cpSnapshot || null,
-              commissionCpSnapshot: item.commissionCpSnapshot || null,
+              cpSnapshot: item.cpSnapshot,
               gstSnapshot: item.product.gstRate,
-              supplierId: item.supplierId || null,
-              comment: item.comment || null,
-              additionalCost: item.additionalCost || 0
+              comment: item.comment || null
             }))
           }
         }
       })
     }
 
-    revalidatePath("/quotations")
-    return { success: true, id: quotationId }
+    revalidatePath("/rfq")
+    return { success: true, id: rfqId }
   } catch (error: any) {
-    console.error("Upsert Draft Quotation Error:", error)
-    return { error: error.message || "Failed to save draft" }
+    console.error("Upsert Draft RFQ Error:", error)
+    return { error: error.message || "Failed to save RFQ draft" }
   }
 }
 
-export async function deleteQuotation(id: string) {
+export async function deleteRfq(id: string) {
   try {
     const session = await auth()
     if (!session?.user) {
       return { error: "Unauthorized" }
     }
 
-    await prisma.quotation.delete({
+    await prisma.rfq.delete({
       where: { id }
     })
 
-    revalidatePath("/quotations")
+    revalidatePath("/rfq")
     return { success: true }
   } catch (error: any) {
-    console.error("Delete Quotation Error:", error)
-    return { error: error.message || "Failed to delete quotation" }
+    console.error("Delete RFQ Error:", error)
+    return { error: error.message || "Failed to delete RFQ" }
   }
 }
 
-export async function updateQuotationStatus(id: string, newStatus: string) {
+export async function updateRfqStatus(id: string, newStatus: string) {
   try {
     const session = await auth()
     if (!session?.user) {
       return { error: "Unauthorized" }
     }
 
-    await prisma.quotation.update({
+    await prisma.rfq.update({
       where: { id },
       data: { status: newStatus }
     })
 
-    revalidatePath("/quotations")
-    revalidatePath("/")
+    revalidatePath("/rfq")
     return { success: true }
   } catch (error: any) {
-    console.error("Update Quotation Status Error:", error)
-    return { error: error.message || "Failed to update quotation status" }
+    console.error("Update RFQ Status Error:", error)
+    return { error: error.message || "Failed to update RFQ status" }
   }
 }

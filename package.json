@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "update": "git stash && git pull && npx prisma db push && npx prisma generate && npm i --legacy-peer-deps && npm run build && pm2 flush radiantind && pm2 restart radiantind && pm2 save && pm2 startup"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.3",

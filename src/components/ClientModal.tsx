@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createClient, updateClient } from "@/app/actions/client"
-import { Loader2, X } from "lucide-react"
+import { Loader2, X, Search } from "lucide-react"
+import { verifyGSTAction } from "@/app/actions/gst"
 
 export function ClientModal({ clients }: { clients: any[] }) {
   const router = useRouter()
@@ -13,6 +14,39 @@ export function ClientModal({ clients }: { clients: any[] }) {
 
   const isOpen = action === "new-client" || action === "edit-client"
   const isEditing = action === "edit-client"
+
+  const [isVerifyingGST, setIsVerifyingGST] = useState(false)
+  const [gstInput, setGstInput] = useState("")
+
+  const handleVerifyGST = async () => {
+    if (!gstInput.trim() || gstInput.length < 15) {
+      alert("Please enter a valid 15-character GST Number.");
+      return;
+    }
+    setIsVerifyingGST(true);
+    try {
+      const res = await verifyGSTAction(gstInput.trim());
+      if (res.error) {
+        alert(res.error);
+      } else if (res.data) {
+        // Autofill fields
+        const form = document.getElementById(isEditing ? "edit-form" : "new-form") as HTMLFormElement;
+        if (form) {
+          const nameInput = form.elements.namedItem("name") as HTMLInputElement;
+          const addressInput = form.elements.namedItem("address") as HTMLInputElement;
+          const locationInput = form.elements.namedItem("location") as HTMLInputElement;
+          if (nameInput) nameInput.value = res.data.name || "";
+          if (addressInput) addressInput.value = res.data.address || "";
+          if (locationInput) locationInput.value = res.data.location || "";
+        }
+        alert("Details fetched successfully! \n" + (res.data.legalName ? "(" + res.data.legalName + ")" : ""));
+      }
+    } catch (e) {
+      alert("Failed to verify GST.");
+    } finally {
+      setIsVerifyingGST(false);
+    }
+  }
 
   const clientToEdit = isEditing ? clients.find(c => c.id === editId) : null
 
@@ -71,7 +105,7 @@ export function ClientModal({ clients }: { clients: any[] }) {
           </button>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form id={isEditing ? "edit-form" : "new-form"} onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-zinc-400 mb-1">Client Name *</label>
             <input 

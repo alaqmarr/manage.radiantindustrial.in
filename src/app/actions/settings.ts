@@ -12,6 +12,8 @@ export async function saveCompanySettings(formData: FormData) {
 
     const companyName = String(formData.get("companyName"))
     const address = formData.get("address") ? String(formData.get("address")) : null
+    const billingAddress = formData.get("billingAddress") ? String(formData.get("billingAddress")) : null
+    const shippingAddress = formData.get("shippingAddress") ? String(formData.get("shippingAddress")) : null
     const email = formData.get("email") ? String(formData.get("email")) : null
     const phone = formData.get("phone") ? String(formData.get("phone")) : null
     const quotationMessage = formData.get("quotationMessage") ? String(formData.get("quotationMessage")) : null
@@ -26,18 +28,19 @@ export async function saveCompanySettings(formData: FormData) {
     const swiftCode = formData.get("swiftCode") ? String(formData.get("swiftCode")) : null
     const bankAddress = formData.get("bankAddress") ? String(formData.get("bankAddress")) : null
     
+    const gstApiKey = formData.get("gstApiKey") ? String(formData.get("gstApiKey")) : null;
     const imageUrl = formData.get("logoUrl") as string | null
 
     const updateData = {
-        companyName, address, email, phone, quotationMessage, bottomDetails,
+        companyName, address, billingAddress, shippingAddress, email, phone, quotationMessage, bottomDetails,
         smtpEmail, smtpPassword, bankName, accountName, accountNumber, ifscCode, swiftCode, bankAddress,
-        ...(imageUrl ? { logoUrl: imageUrl } : {}),
+        gstApiKey, ...(imageUrl ? { logoUrl: imageUrl } : {}),
     }
 
     const createData = {
-        id: "default", companyName, address, email, phone, quotationMessage, bottomDetails,
+        id: "default", companyName, address, billingAddress, shippingAddress, email, phone, quotationMessage, bottomDetails,
         smtpEmail, smtpPassword, bankName, accountName, accountNumber, ifscCode, swiftCode, bankAddress,
-        logoUrl: imageUrl,
+        logoUrl: imageUrl, gstApiKey,
     }
 
     await prisma.companySettings.upsert({

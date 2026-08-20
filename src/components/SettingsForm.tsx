@@ -89,8 +89,18 @@ export function SettingsForm({ settings }: { settings: any }) {
           </div>
 
           <div className="col-span-2">
-            <label className="block text-sm font-medium text-zinc-400 mb-1">Address</label>
+            <label className="block text-sm font-medium text-zinc-400 mb-1">Company Address</label>
             <textarea defaultValue={settings?.address || ""} name="address" rows={2} className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+          </div>
+
+          <div className="col-span-2 md:col-span-1">
+            <label className="block text-sm font-medium text-zinc-400 mb-1">Billing Address</label>
+            <textarea defaultValue={settings?.billingAddress || ""} name="billingAddress" rows={3} className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+          </div>
+
+          <div className="col-span-2 md:col-span-1">
+            <label className="block text-sm font-medium text-zinc-400 mb-1">Shipping Address</label>
+            <textarea defaultValue={settings?.shippingAddress || ""} name="shippingAddress" rows={3} className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
           </div>
 
           <div>
@@ -126,6 +136,20 @@ export function SettingsForm({ settings }: { settings: any }) {
             <div>
               <label className="block text-sm font-medium text-zinc-400 mb-1">SMTP App Password</label>
               <input defaultValue={settings?.smtpPassword || ""} name="smtpPassword" type="password" placeholder="16-character App Password" className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+            </div>
+          </div>
+        </div>
+
+        
+        {/* API Integrations */}
+        <div className="pt-6 border-t border-zinc-800">
+          <h3 className="text-lg font-semibold text-white mb-4">API Integrations</h3>
+          <p className="text-sm text-zinc-400 mb-4">Configure third-party APIs for automation.</p>
+          <div className="grid grid-cols-2 gap-6">
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-zinc-400 mb-1">Appyflow GST API Key (key_secret)</label>
+              <input defaultValue={settings?.gstApiKey || ""} name="gstApiKey" type="password" placeholder="e.g. Me1aB2haQFbZTaZ5THcrCTkZ0F13" className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+              <p className="text-xs text-zinc-500 mt-1">Used for automatically fetching client and supplier details via GSTIN.</p>
             </div>
           </div>
         </div>

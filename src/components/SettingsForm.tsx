@@ -119,6 +119,11 @@ export function SettingsForm({ settings }: { settings: any }) {
           </div>
 
           <div className="col-span-2">
+            <label className="block text-sm font-medium text-zinc-400 mb-1">Default RFQ Message</label>
+            <textarea defaultValue={settings?.rfqMessage || "Please find attached our Request for Quotation. Kindly share your best prices at the earliest."} name="rfqMessage" rows={2} className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+          </div>
+
+          <div className="col-span-2">
             <label className="block text-sm font-medium text-zinc-400 mb-1">Bottom Details (Terms / Signatures)</label>
             <textarea defaultValue={settings?.bottomDetails || ""} name="bottomDetails" rows={3} placeholder="Terms and conditions, validity, etc." className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
           </div>

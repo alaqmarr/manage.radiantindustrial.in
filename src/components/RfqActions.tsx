@@ -341,10 +341,10 @@ export function RfqActions({
             </tbody>
           </table>
 
-          {settings?.quotationMessage && (
+          {settings?.rfqMessage && (
             <div 
               style={{ marginBottom: "24px", padding: "12px", backgroundColor: "#f9fafb", borderRadius: "6px", color: "#374151" }}
-              dangerouslySetInnerHTML={{ __html: settings.quotationMessage }}
+              dangerouslySetInnerHTML={{ __html: settings.rfqMessage }}
             />
           )}
 

@@ -71,6 +71,7 @@ model CompanySettings {
   email            String?
   phone            String?
   quotationMessage String?
+  rfqMessage       String?
   bottomDetails    String?
   
   // Email / SMTP Settings

@@ -76,10 +76,10 @@ export default async function RfqViewPage({ params }: { params: Promise<{ id: st
         </div>
 
         {/* Message */}
-        {settings?.quotationMessage && (
+        {settings?.rfqMessage && (
           <p 
             className="text-zinc-300 mb-8 whitespace-pre-wrap"
-            dangerouslySetInnerHTML={{ __html: settings.quotationMessage }}
+            dangerouslySetInnerHTML={{ __html: settings.rfqMessage }}
           />
         )}
 

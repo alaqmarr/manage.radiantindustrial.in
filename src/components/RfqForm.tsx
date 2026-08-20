@@ -5,7 +5,8 @@ import { upsertDraftRfq, getRfqUpdatedAt } from "@/app/actions/rfq"
 import { createSupplier } from "@/app/actions/supplier"
 import { parseQuotationExcelAction } from "@/app/actions/import"
 import { formatRupee, numberToWordsRupees } from "@/lib/utils"
-import { Loader2, Plus, Trash2, Upload, X, Check, AlertCircle } from "lucide-react"
+import { Loader2, Plus, Trash2, Upload, X, Check, AlertCircle, Search } from "lucide-react"
+import { verifyGSTAction } from "@/app/actions/gst"
 
 type Supplier = { id: string, name: string }
 type Product = { id: string, materialCode: string, materialDescription: string, sellingPrice: number, costPrice: number, gstRate: number, unit: string, specification?: string | null }
@@ -37,6 +38,33 @@ export function RfqForm({ suppliers: initialSuppliers, products, initialData, in
   const [newSupplierName, setNewSupplierName] = useState("")
   const [newSupplierContact, setNewSupplierContact] = useState("")
   const [isCreatingSupplier, setIsCreatingSupplier] = useState(false)
+
+  const [newSupplierGst, setNewSupplierGst] = useState("")
+  const [newSupplierLocation, setNewSupplierLocation] = useState("")
+  
+  const [isVerifyingGST, setIsVerifyingGST] = useState(false)
+  const handleVerifyGST = async () => {
+    if (!newSupplierGst.trim() || newSupplierGst.length < 15) {
+      alert("Please enter a valid 15-character GST Number.");
+      return;
+    }
+    setIsVerifyingGST(true);
+    try {
+      const res = await verifyGSTAction(newSupplierGst.trim());
+      if (res.error) {
+        alert(res.error);
+      } else if (res.data) {
+        setNewSupplierName(res.data.name || newSupplierName);
+        setNewSupplierLocation(res.data.location || res.data.address || newSupplierLocation);
+        alert("Details fetched successfully! \n" + (res.data.legalName ? "(" + res.data.legalName + ")" : ""));
+      }
+    } catch (e) {
+      alert("Failed to verify GST.");
+    } finally {
+      setIsVerifyingGST(false);
+    }
+  }
+
 
   const [searchTerm, setSearchTerm] = useState("")
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
@@ -293,6 +321,27 @@ export function RfqForm({ suppliers: initialSuppliers, products, initialData, in
               </button>
             </div>
             <div className="space-y-4">
+              
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">GST Number</label>
+                <div className="flex gap-2">
+                  <input 
+                    value={newSupplierGst}
+                    onChange={e => setNewSupplierGst(e.target.value)}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate uppercase" 
+                    placeholder="e.g. 22AAAAA0000A1Z5"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleVerifyGST}
+                    disabled={isVerifyingGST}
+                    className="flex items-center gap-1 px-3 py-2 bg-brand-orange/20 text-brand-orange hover:bg-brand-orange/30 disabled:opacity-50 rounded-md transition-colors"
+                  >
+                    {isVerifyingGST ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                    <span className="text-xs font-semibold whitespace-nowrap">Verify</span>
+                  </button>
+                </div>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-zinc-400 mb-1">Supplier Name *</label>
                 <input 
@@ -301,6 +350,54 @@ export function RfqForm({ suppliers: initialSuppliers, products, initialData, in
                   onChange={e => setNewSupplierName(e.target.value)}
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
                   placeholder="Acme Vendor Corp"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">Location / Address</label>
+                <input 
+                  value={newSupplierLocation}
+                  onChange={e => setNewSupplierLocation(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
+                  placeholder="City, State, etc."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">GST Number</label>
+                <div className="flex gap-2">
+                  <input 
+                    value={newSupplierGst}
+                    onChange={e => setNewSupplierGst(e.target.value)}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate uppercase" 
+                    placeholder="e.g. 22AAAAA0000A1Z5"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleVerifyGST}
+                    disabled={isVerifyingGST}
+                    className="flex items-center gap-1 px-3 py-2 bg-brand-orange/20 text-brand-orange hover:bg-brand-orange/30 disabled:opacity-50 rounded-md transition-colors"
+                  >
+                    {isVerifyingGST ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                    <span className="text-xs font-semibold whitespace-nowrap">Verify</span>
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">Supplier Name *</label>
+                <input 
+                  autoFocus
+                  value={newSupplierName}
+                  onChange={e => setNewSupplierName(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
+                  placeholder="Acme Vendor Corp"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">Location / Address</label>
+                <input 
+                  value={newSupplierLocation}
+                  onChange={e => setNewSupplierLocation(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
+                  placeholder="City, State, etc."
                 />
               </div>
               <div>

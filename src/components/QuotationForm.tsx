@@ -6,7 +6,8 @@ import { createClient } from "@/app/actions/client"
 import { parseQuotationExcelAction } from "@/app/actions/import"
 import { VendorPriceDialog } from "./VendorPriceDialog"
 import { formatRupee, numberToWordsRupees } from "@/lib/utils"
-import { Loader2, Plus, Trash2, Upload, X, Check, AlertCircle } from "lucide-react"
+import { Loader2, Plus, Trash2, Upload, X, Check, AlertCircle, Search } from "lucide-react"
+import { verifyGSTAction } from "@/app/actions/gst"
 
 type Client = { id: string, name: string }
 type Product = { id: string, materialCode: string, materialDescription: string, sellingPrice: number, gstRate: number, unit: string, specification?: string | null, commissionCostPrice?: number | null }
@@ -54,6 +55,36 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
   const [newClientName, setNewClientName] = useState("")
   const [newClientContact, setNewClientContact] = useState("")
   const [isCreatingClient, setIsCreatingClient] = useState(false)
+
+  const [newClientGst, setNewClientGst] = useState("")
+  const [newClientLocation, setNewClientLocation] = useState("")
+  const [newClientAddress, setNewClientAddress] = useState("")
+  const [newClientEmail, setNewClientEmail] = useState("")
+  
+  const [isVerifyingGST, setIsVerifyingGST] = useState(false)
+  const handleVerifyGST = async () => {
+    if (!newClientGst.trim() || newClientGst.length < 15) {
+      alert("Please enter a valid 15-character GST Number.");
+      return;
+    }
+    setIsVerifyingGST(true);
+    try {
+      const res = await verifyGSTAction(newClientGst.trim());
+      if (res.error) {
+        alert(res.error);
+      } else if (res.data) {
+        setNewClientName(res.data.name || newClientName);
+        setNewClientLocation(res.data.location || newClientLocation);
+        setNewClientAddress(res.data.address || newClientAddress);
+        alert("Details fetched successfully! \n" + (res.data.legalName ? "(" + res.data.legalName + ")" : ""));
+      }
+    } catch (e) {
+      alert("Failed to verify GST.");
+    } finally {
+      setIsVerifyingGST(false);
+    }
+  }
+
 
   // Autocomplete
   const [searchTerm, setSearchTerm] = useState("")
@@ -368,6 +399,27 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
               </button>
             </div>
             <div className="space-y-4">
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">GST Number</label>
+                <div className="flex gap-2">
+                  <input 
+                    value={newClientGst}
+                    onChange={e => setNewClientGst(e.target.value)}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate uppercase" 
+                    placeholder="e.g. 22AAAAA0000A1Z5"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleVerifyGST}
+                    disabled={isVerifyingGST}
+                    className="flex items-center gap-1 px-3 py-2 bg-brand-orange/20 text-brand-orange hover:bg-brand-orange/30 disabled:opacity-50 rounded-md transition-colors"
+                  >
+                    {isVerifyingGST ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                    <span className="text-xs font-semibold whitespace-nowrap">Verify</span>
+                  </button>
+                </div>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-zinc-400 mb-1">Client Name *</label>
                 <input 
@@ -376,6 +428,25 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                   onChange={e => setNewClientName(e.target.value)}
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
                   placeholder="Acme Corp"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">Location / City</label>
+                <input 
+                  value={newClientLocation}
+                  onChange={e => setNewClientLocation(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
+                  placeholder="City, State"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">Full Address</label>
+                <textarea 
+                  value={newClientAddress}
+                  onChange={e => setNewClientAddress(e.target.value)}
+                  rows={2}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
+                  placeholder="Full physical address"
                 />
               </div>
               <div>

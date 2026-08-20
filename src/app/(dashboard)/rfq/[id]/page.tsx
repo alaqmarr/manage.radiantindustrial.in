@@ -92,8 +92,7 @@ export default async function RfqViewPage({ params }: { params: Promise<{ id: st
                 <th className="py-3 px-4 font-medium min-w-[300px] w-auto">Description</th>
                 <th className="py-3 px-4 font-medium text-center w-20">UOM</th>
                 <th className="py-3 px-4 font-medium text-center w-24">Qty</th>
-                <th className="py-3 px-4 font-medium text-right w-32">Rate</th>
-                <th className="py-3 px-4 font-medium text-right w-32">Amount</th>
+                
                 
               </tr>
             </thead>
@@ -113,8 +112,7 @@ export default async function RfqViewPage({ params }: { params: Promise<{ id: st
                   <td className="py-4 px-4 text-center text-zinc-400 text-xs font-mono">{item.product.unit}</td>
                   <td className="py-4 px-4 text-center text-zinc-300">{item.quantity}</td>
                   
-                  <td className="py-4 px-4 text-right text-zinc-300">{formatRupee(item.cpSnapshot)}</td>
-                  <td className="py-4 px-4 text-right text-white font-medium">{formatRupee(Math.round(item.cpSnapshot * item.quantity))}</td>
+                  
                   
                 </tr>
               ))}
@@ -124,23 +122,7 @@ export default async function RfqViewPage({ params }: { params: Promise<{ id: st
 
 
 
-        <div className="hidden print:flex justify-end mb-12">
-            <div className="w-72 space-y-3 text-sm">
-              <div className="flex justify-between text-zinc-400">
-                <span>Subtotal (excl. GST)</span>
-                <span>{formatRupee(rfq.totalAmount)}</span>
-              </div>
-              <div className="flex justify-between text-zinc-400">
-                <span>Total GST</span>
-                <span>{formatRupee(rfq.totalGst)}</span>
-              </div>
-              <div className="flex justify-between text-lg font-bold text-brand-orange pt-3 border-t border-premium-border">
-                <span>Grand Total</span>
-                <span>{formatRupee(rfq.totalAmount + rfq.totalGst)}</span>
-              </div>
-              
-            </div>
-          </div>
+        
 
         {/* Bottom Details */}
         {settings?.bottomDetails && (
@@ -150,9 +132,7 @@ export default async function RfqViewPage({ params }: { params: Promise<{ id: st
           />
         )}
         
-        <div className="pt-4 text-sm font-medium text-zinc-400">
-          Amount in words: <span className="text-white">{numberToWordsRupees(rfq.totalAmount + rfq.totalGst)}</span>
-        </div>
+        
 
       </div>
 

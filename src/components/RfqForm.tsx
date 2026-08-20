@@ -526,7 +526,7 @@ export function RfqForm({ suppliers: initialSuppliers, products, initialData, in
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-4 border-t border-premium-border/30">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-premium-border/30">
                     <div>
                       <label className="block text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-2">Quantity</label>
                       <div className="flex items-center gap-2">
@@ -547,40 +547,11 @@ export function RfqForm({ suppliers: initialSuppliers, products, initialData, in
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-2">Cost Price / Unit</label>
-                      <div className="relative w-full max-w-[120px]">
-                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-zinc-500 text-xs font-mono">₹</span>
-                        <input 
-                          type="number"
-                          min="0" step="any"
-                          value={cp ? cp / 100 : ''}
-                          onChange={e => handleCpChange(item.product.id, Math.round(parseFloat(e.target.value) * 100) || 0)}
-                          placeholder="Price"
-                          className="w-full bg-zinc-950 border border-premium-border rounded pl-5 pr-2 py-1.5 text-sm font-medium text-white focus:outline-none focus:ring-1 focus:ring-brand-slate transition-colors"
-                        />
-                      </div>
-                    </div>
+                    
 
-                    <div>
-                      <label className="block text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-2">Total Value</label>
-                      <div className="text-sm font-mono font-bold text-emerald-500 pt-1.5">
-                        {formatRupee(cp * item.quantity)}
-                      </div>
-                    </div>
+                    
 
-                    <div>
-                      <label className="block text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-2">GST Rate</label>
-                      <div className="flex items-center">
-                        <input 
-                          type="number"
-                          value={item.product.gstRate}
-                          onChange={e => handleProductChange(item.product.id, 'gstRate', parseFloat(e.target.value) || 0)}
-                          className="w-14 bg-zinc-950/50 border border-transparent hover:border-premium-border focus:border-brand-slate px-2 py-1.5 text-sm text-white focus:outline-none transition-colors rounded"
-                        />
-                        <span className="text-zinc-500 text-xs ml-2">%</span>
-                      </div>
-                    </div>
+                    
                   </div>
                 </div>
               )
@@ -591,35 +562,7 @@ export function RfqForm({ suppliers: initialSuppliers, products, initialData, in
 
       {items.length > 0 && (
         <div className="fixed bottom-0 left-0 md:left-64 right-0 z-40 bg-zinc-950/80 backdrop-blur-xl border-t border-premium-border/50 p-4 md:px-8 flex flex-col md:flex-row items-center justify-between shadow-[0_-10px_40px_rgba(0,0,0,0.3)] animate-in slide-in-from-bottom-4">
-          <div className="flex flex-wrap items-center gap-6 md:gap-12 mb-4 md:mb-0">
-            {(() => {
-              const totalAmount = items.reduce((sum, item) => sum + Math.round((item.cpSnapshot || 0) * item.quantity), 0);
-              const totalGst = items.reduce((sum, item) => sum + Math.round(Math.round((item.cpSnapshot || 0) * item.quantity) * (item.product.gstRate / 100)), 0);
-              
-              return (
-                <>
-                  <div className="space-y-1">
-                    <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Subtotal</div>
-                    <div className="text-lg font-bold text-white">{formatRupee(totalAmount)}</div>
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Total GST</div>
-                    <div className="text-lg font-bold text-zinc-300">{formatRupee(totalGst)}</div>
-                  </div>
-                  
-                  <div className="hidden md:block w-px h-10 bg-premium-border/50"></div>
-                  
-                  <div className="space-y-1 flex flex-col items-end">
-                    <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Grand Total</div>
-                    <div className="text-2xl font-black text-brand-orange">{formatRupee(totalAmount + totalGst)}</div>
-                    <div className="text-xs text-zinc-400 font-medium">{numberToWordsRupees(totalAmount + totalGst)}</div>
-                  </div>
-                </>
-              );
-            })()}
-          </div>
-          
+          <div className="flex flex-wrap items-center gap-6 md:gap-12 mb-4 md:mb-0"></div>
           <div className="flex items-center gap-4 w-full md:w-auto">
             <button 
               onClick={() => handleSubmit("DRAFT")}

@@ -172,7 +172,7 @@ export function RfqActions({
     try {
       const XLSX = await import("xlsx");
       
-      const rows = rfq.items.filter((item: any) => item.cpSnapshot > 0).map((item: any, index: number) => ({
+      const rows = rfq.items.map((item: any, index: number) => ({
         "SR NO": index + 1,
         "Code": item.product.materialCode,
         "Description": item.product.materialDescription,
@@ -180,22 +180,11 @@ export function RfqActions({
         "Comment": item.comment || "",
         "Qty": item.quantity,
         "UOM": item.product.unit,
-        "Rate": item.cpSnapshot / 100,
-        "Amount": Math.round(item.cpSnapshot * item.quantity) / 100
+        
+        
       }));
       
-      // Calculate totals
-      rows.push({
-        "SR NO": "",
-        "Code": "",
-        "Description": "Subtotal",
-        "Specification": "",
-        "Comment": "",
-        "Qty": "",
-        "UOM": "",
-        "Rate": "",
-        "Amount": rfq.totalAmount / 100
-      } as any);
+      
       rows.push({
         "SR NO": "",
         "Code": "",
@@ -230,8 +219,8 @@ export function RfqActions({
         { wch: 30 }, // Comment
         { wch: 8 },  // Qty
         { wch: 8 },  // UOM
-        { wch: 12 }, // Rate
-        { wch: 15 }, // Amount
+        
+        
       ];
       worksheet['!cols'] = columnWidths;
 
@@ -366,12 +355,12 @@ export function RfqActions({
                 <th style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "left", color: "#374151", fontSize: "11px", textTransform: "uppercase", fontWeight: "700", width: "15%" }}>Code</th>
                 <th style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "left", color: "#374151", fontSize: "11px", textTransform: "uppercase", fontWeight: "700", width: "45%" }}>Description</th>
                 <th style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "center", color: "#374151", fontSize: "11px", textTransform: "uppercase", fontWeight: "700", width: "10%" }}>Qty</th>
-                <th style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "right", color: "#374151", fontSize: "11px", textTransform: "uppercase", fontWeight: "700", width: "15%" }}>Rate</th>
-                <th style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "right", color: "#374151", fontSize: "11px", textTransform: "uppercase", fontWeight: "700", width: "15%" }}>Amount</th>
+                
+                
               </tr>
             </thead>
             <tbody>
-              {rfq.items.filter((item: any) => item.cpSnapshot > 0).map((item: any) => (
+              {rfq.items.map((item: any) => (
                 <tr key={item.id}>
                   <td style={{ border: "1px solid #d1d5db", padding: "10px 8px", verticalAlign: "top", wordBreak: "break-word" }}>
                     <span style={{ fontFamily: "monospace", color: "#4b5563" }}>{item.product.materialCode}</span>
@@ -389,47 +378,15 @@ export function RfqActions({
                     <span style={{ fontWeight: "600", color: "#374151", fontSize: "13px", fontVariantNumeric: "tabular-nums" }}>{item.quantity}</span>
                     <span style={{ fontSize: "10px", color: "#9ca3af", marginLeft: "4px" }}>{item.product.unit}</span>
                   </td>
-                  <td style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "right", verticalAlign: "top", fontSize: "13px", fontVariantNumeric: "tabular-nums" }}>
-                    {formatRupee(item.cpSnapshot)}
-                  </td>
-                  <td style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "right", verticalAlign: "top", fontWeight: "600", color: "#111827", fontSize: "13px", fontVariantNumeric: "tabular-nums" }}>
-                    {formatRupee(Math.round(item.cpSnapshot * item.quantity))}
-                  </td>
+                  
                 </tr>
               ))}
             </tbody>
           </table>
 
-          {/* Totals - Email Safe */}
-          <table width="100%" border={0} cellPadding={0} cellSpacing={0} style={{ marginBottom: "40px" }}>
-            <tbody>
-              <tr>
-                <td width="40%"></td>
-                <td width="60%" align="right">
-                  <table width="100%" border={0} cellPadding={0} cellSpacing={0} style={{ border: "1px solid #d1d5db", backgroundColor: "#f9fafb", borderCollapse: "collapse" }}>
-                    <tbody>
-                      <tr>
-                        <td style={{ padding: "12px 16px", color: "#4b5563", textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Subtotal</td>
-                        <td style={{ padding: "12px 16px", fontWeight: "600", color: "#111827", textAlign: "right", borderBottom: "1px solid #e5e7eb", fontVariantNumeric: "tabular-nums" }}>{formatRupee(rfq.totalAmount)}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ padding: "12px 16px", color: "#4b5563", textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Total GST</td>
-                        <td style={{ padding: "12px 16px", fontWeight: "600", color: "#111827", textAlign: "right", borderBottom: "1px solid #e5e7eb", fontVariantNumeric: "tabular-nums" }}>{formatRupee(rfq.totalGst)}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ padding: "16px", fontSize: "16px", fontWeight: "800", color: "#111827", textAlign: "left" }}>Grand Total</td>
-                        <td style={{ padding: "16px", fontSize: "16px", fontWeight: "800", color: "#f97316", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{formatRupee(rfq.totalAmount + rfq.totalGst)}</td>
-                      </tr>
-                    </tbody>
-                  </table>
+          
                   
-                  <div style={{ marginTop: "12px", fontSize: "12px", color: "#4b5563", textAlign: "right", fontStyle: "italic" }}>
-                    Amount in words: <span style={{ fontWeight: "600" }}>{numberToWordsRupees(rfq.totalAmount + rfq.totalGst)}</span>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+
 
           {/* Footer */}
           {settings?.bottomDetails && (

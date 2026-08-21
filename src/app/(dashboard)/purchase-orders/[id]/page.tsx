@@ -24,9 +24,9 @@ export default async function PurchaseOrderViewPage(props: { params: Promise<{ i
   const settings = await prisma.companySettings.findFirst()
 
   return (
-    <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-6">
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
       <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 print:hidden">
           <Link href="/purchase-orders" className="p-2 text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-md transition-colors">
             <ArrowLeft className="w-4 h-4" />
           </Link>
@@ -46,7 +46,7 @@ export default async function PurchaseOrderViewPage(props: { params: Promise<{ i
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:hidden">
         <div className="glass-panel p-6 rounded-lg border border-premium-border">
           <h3 className="text-sm font-medium text-zinc-400 mb-4 uppercase tracking-wider">Supplier Details</h3>
           <p className="text-lg font-medium text-white">{po.supplier.name}</p>
@@ -76,7 +76,7 @@ export default async function PurchaseOrderViewPage(props: { params: Promise<{ i
         </div>
       </div>
 
-      <div className="glass-panel rounded-lg border border-premium-border overflow-hidden">
+      <div className="glass-panel rounded-lg border border-premium-border overflow-hidden print:hidden">
         <table className="w-full text-sm text-left">
           <thead className="text-xs text-zinc-400 uppercase bg-black/40 border-b border-premium-border">
             <tr>
@@ -124,7 +124,7 @@ export default async function PurchaseOrderViewPage(props: { params: Promise<{ i
       </div>
       
       {po.notes && (
-        <div className="glass-panel p-6 rounded-lg border border-premium-border">
+        <div className="glass-panel p-6 rounded-lg border border-premium-border print:hidden">
           <h3 className="text-sm font-medium text-zinc-400 mb-2 uppercase tracking-wider">Notes</h3>
           <p className="text-sm text-zinc-300 whitespace-pre-wrap">{po.notes}</p>
         </div>

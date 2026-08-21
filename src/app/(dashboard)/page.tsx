@@ -36,8 +36,8 @@ async function getDashboardData() {
   let profits = 0
 
   for (const q of acceptedQuotations) {
-    totalSales += q.totalAmount
-    totalSalesGst += q.totalGst
+    totalSales += (q.totalAmount || 0)
+    totalSalesGst += (q.totalGst || 0)
     
     for (const item of q.items) {
       const cp = item.cpSnapshot || 0
@@ -73,7 +73,7 @@ async function getDashboardData() {
     let dayPurchases = 0
     
     for (const q of dayQuotes) {
-      daySales += q.totalAmount
+      daySales += (q.totalAmount || 0)
       for (const item of q.items) {
         dayPurchases += (item.cpSnapshot || 0) * item.quantity
       }

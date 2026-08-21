@@ -24,13 +24,11 @@ export function RfqForm({ suppliers: initialSuppliers, products, initialData, in
   const [selectedSupplierId, setSelectedSupplierId] = useState(initialData?.supplierId || "")
   const [items, setItems] = useState<{ 
     product: Product, 
-    quantity: number, 
-    cpSnapshot: number,
+    quantity: number,
     comment?: string
   }[]>(initialData?.items?.map((item: any) => ({
     product: item.product,
     quantity: item.quantity,
-    cpSnapshot: item.cpSnapshot || 0,
     comment: item.comment || undefined
   })) || [])
   
@@ -156,7 +154,7 @@ export function RfqForm({ suppliers: initialSuppliers, products, initialData, in
       return [...prev, { 
         product, 
         quantity, 
-        cpSnapshot: product.costPrice || 0
+        
       }]
     })
     setSearchTerm("")
@@ -176,7 +174,7 @@ export function RfqForm({ suppliers: initialSuppliers, products, initialData, in
 
   const handleCpChange = (productId: string, cp: number) => {
     setItems(prev => prev.map(item => 
-      item.product.id === productId ? { ...item, cpSnapshot: cp } : item
+      item
     ))
   }
 
@@ -211,7 +209,7 @@ export function RfqForm({ suppliers: initialSuppliers, products, initialData, in
               newItems.push({
                 product: parsed.product,
                 quantity: parsed.quantity,
-                cpSnapshot: 0
+                
               })
             }
           })
@@ -243,7 +241,6 @@ export function RfqForm({ suppliers: initialSuppliers, products, initialData, in
         items: items.map(item => ({
           product: item.product,
           quantity: item.quantity,
-          cpSnapshot: item.cpSnapshot ?? 0,
           comment: item.comment
         }))
       }
@@ -470,8 +467,6 @@ export function RfqForm({ suppliers: initialSuppliers, products, initialData, in
         {items.length > 0 && (
           <div className="space-y-4 mt-4">
             {items.map((item) => {
-              const cp = item.cpSnapshot ?? 0
-              const isPending = !cp
               
               return (
                 <div key={item.product.id} className="glass-panel border border-premium-border rounded-lg p-5 group hover:bg-white/[0.03] transition-colors relative">
@@ -492,11 +487,6 @@ export function RfqForm({ suppliers: initialSuppliers, products, initialData, in
                           placeholder="Description"
                           className="flex-1 bg-zinc-950/50 border border-transparent hover:border-premium-border focus:border-brand-slate px-2 py-1 text-sm font-medium text-white focus:outline-none transition-colors rounded"
                         />
-                        {isPending && (
-                          <span className="flex-shrink-0 inline-flex items-center gap-1 text-[10px] uppercase tracking-wider bg-rose-500/10 text-rose-400 px-2 py-1 rounded border border-rose-500/20">
-                            <AlertCircle className="w-3 h-3" /> Price Pending
-                          </span>
-                        )}
                       </div>
                       
                       {item.product.specification && (

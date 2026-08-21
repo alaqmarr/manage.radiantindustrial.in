@@ -35,7 +35,8 @@ const menuGroups = [
     label: "Inventory & Supply",
     items: [
       { icon: PackageSearch, label: "Products", href: "/products" },
-      { icon: FileText, label: "RFQ (PO)", href: "/rfq" },
+      { icon: FileText, label: "RFQ", href: "/rfq" },
+  { icon: FileText, label: "Purchase Orders", href: "/purchase-orders" },
       { icon: ShoppingCart, label: "Purchases", href: "/purchases" },
       { icon: Truck, label: "Suppliers", href: "/suppliers" },
     ]

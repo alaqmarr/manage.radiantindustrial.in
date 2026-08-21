@@ -13,8 +13,7 @@ type RfqItemData = {
     gstRate: number
   }
   quantity: number
-  cpSnapshot: number // paise
-  comment?: string
+    comment?: string
 }
 
 export async function getRfqUpdatedAt(id: string) {
@@ -50,16 +49,7 @@ export async function createRfq(data: {
       return { error: "RFQ must have at least one item" }
     }
 
-    let totalAmount = 0
-    let totalGst = 0
     
-    for (const item of data.items) {
-      const amount = Math.round(item.quantity * item.cpSnapshot)
-      const gst = Math.round(amount * (item.product.gstRate / 100))
-      
-      totalAmount += amount
-      totalGst += gst
-    }
 
     for (const item of data.items) {
       const p = await prisma.product.upsert({
@@ -90,15 +80,13 @@ export async function createRfq(data: {
         id,
         supplierId: data.supplierId,
         status: data.status,
-        totalAmount,
-        totalGst,
+        
         items: {
           create: data.items.map((item, index) => ({
             id: generateSlug(`RFQI-${id}-${index}`),
             productId: item.product.id,
             quantity: item.quantity,
-            cpSnapshot: item.cpSnapshot,
-            gstSnapshot: item.product.gstRate,
+            
             comment: item.comment || null
           }))
         }
@@ -137,16 +125,7 @@ export async function upsertDraftRfq(data: {
       }
     }
 
-    let totalAmount = 0
-    let totalGst = 0
     
-    for (const item of data.items) {
-      const amount = Math.round(item.quantity * item.cpSnapshot)
-      const gst = Math.round(amount * (item.product.gstRate / 100))
-      
-      totalAmount += amount
-      totalGst += gst
-    }
 
     let rfqId = data.id
     const finalStatus = data.status || "DRAFT"
@@ -181,15 +160,13 @@ export async function upsertDraftRfq(data: {
           id: rfqId,
           supplierId: data.supplierId,
           status: finalStatus,
-          totalAmount,
-          totalGst,
+          
           items: {
             create: data.items.map((item, index) => ({
               id: generateSlug(`RFQI-${rfqId}-${index}`),
               productId: item.product.id,
               quantity: item.quantity,
-              cpSnapshot: item.cpSnapshot,
-              gstSnapshot: item.product.gstRate,
+              
               comment: item.comment || null
             }))
           }
@@ -205,15 +182,13 @@ export async function upsertDraftRfq(data: {
         data: {
           supplierId: data.supplierId,
           status: finalStatus,
-          totalAmount,
-          totalGst,
+          
           items: {
             create: data.items.map((item, index) => ({
               id: generateSlug(`RFQI-${rfqId}-${index}`),
               productId: item.product.id,
               quantity: item.quantity,
-              cpSnapshot: item.cpSnapshot,
-              gstSnapshot: item.product.gstRate,
+              
               comment: item.comment || null
             }))
           }

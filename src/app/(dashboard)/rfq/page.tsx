@@ -75,8 +75,7 @@ export default async function RfqsPage(props: { searchParams: Promise<{ search?:
                 <th className="px-6 py-5 font-medium tracking-wider">Supplier</th>
                 
                 <th className="px-6 py-5 font-medium tracking-wider">Status</th>
-                <th className="px-6 py-5 font-medium tracking-wider">Total Amount</th>
-                
+                                
                 <th className="px-6 py-5 font-medium tracking-wider text-right">Actions</th>
               </tr>
             </thead>
@@ -101,8 +100,7 @@ export default async function RfqsPage(props: { searchParams: Promise<{ search?:
                     <td className="px-6 py-4">
                       <RfqStatusBadge id={quote.id} currentStatus={quote.status} />
                     </td>
-                    <td className="px-6 py-4 font-medium text-white">{formatRupee(quote.totalAmount)}</td>
-                    
+                                        
                     <td className="px-6 py-4 text-right">
                       <Link href={`/rfq/${quote.id}`} className="text-brand-slate hover:text-slate-400 font-medium">View</Link>
                     </td>

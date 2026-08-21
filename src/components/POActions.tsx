@@ -353,10 +353,11 @@ export function POActions({
             <thead style={{ backgroundColor: "#f9fafb" }}>
               <tr>
                 <th style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "left", color: "#374151", fontSize: "11px", textTransform: "uppercase", fontWeight: "700", width: "15%" }}>Code</th>
-                <th style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "left", color: "#374151", fontSize: "11px", textTransform: "uppercase", fontWeight: "700", width: "45%" }}>Description</th>
+                <th style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "left", color: "#374151", fontSize: "11px", textTransform: "uppercase", fontWeight: "700", width: "35%" }}>Description</th>
                 <th style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "center", color: "#374151", fontSize: "11px", textTransform: "uppercase", fontWeight: "700", width: "10%" }}>Qty</th>
-                
-                
+                <th style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "right", color: "#374151", fontSize: "11px", textTransform: "uppercase", fontWeight: "700", width: "15%" }}>Rate</th>
+                <th style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "center", color: "#374151", fontSize: "11px", textTransform: "uppercase", fontWeight: "700", width: "10%" }}>GST</th>
+                <th style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "right", color: "#374151", fontSize: "11px", textTransform: "uppercase", fontWeight: "700", width: "15%" }}>Total</th>
               </tr>
             </thead>
             <tbody>
@@ -378,7 +379,15 @@ export function POActions({
                     <span style={{ fontWeight: "600", color: "#374151", fontSize: "13px", fontVariantNumeric: "tabular-nums" }}>{item.quantity}</span>
                     <span style={{ fontSize: "10px", color: "#9ca3af", marginLeft: "4px" }}>{item.product.unit}</span>
                   </td>
-                  
+                  <td style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "right", verticalAlign: "top", color: "#374151", fontSize: "13px", fontVariantNumeric: "tabular-nums" }}>
+                    {formatRupee(item.unitPrice)}
+                  </td>
+                  <td style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "center", verticalAlign: "top", color: "#374151", fontSize: "13px", fontVariantNumeric: "tabular-nums" }}>
+                    {item.gstRate}%
+                  </td>
+                  <td style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "right", verticalAlign: "top", color: "#111827", fontWeight: "600", fontSize: "13px", fontVariantNumeric: "tabular-nums" }}>
+                    {formatRupee(item.quantity * item.unitPrice)}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -387,6 +396,36 @@ export function POActions({
           
                   
 
+
+          {/* Terms and Notes */}
+          <table width="100%" border={0} cellPadding={0} cellSpacing={0} style={{ marginTop: "32px", marginBottom: "24px", borderCollapse: "collapse", fontSize: "12px", color: "#374151" }}>
+            <tbody>
+              {po.paymentTerms && (
+                <tr>
+                  <td style={{ padding: "8px 0", borderBottom: "1px solid #f3f4f6", width: "25%", fontWeight: "600", color: "#6b7280" }}>Payment Terms</td>
+                  <td style={{ padding: "8px 0", borderBottom: "1px solid #f3f4f6", width: "75%", fontWeight: "500" }}>{po.paymentTerms}</td>
+                </tr>
+              )}
+              {po.deliveryTerms && (
+                <tr>
+                  <td style={{ padding: "8px 0", borderBottom: "1px solid #f3f4f6", width: "25%", fontWeight: "600", color: "#6b7280" }}>Delivery Terms</td>
+                  <td style={{ padding: "8px 0", borderBottom: "1px solid #f3f4f6", width: "75%", fontWeight: "500" }}>{po.deliveryTerms}</td>
+                </tr>
+              )}
+              {po.expectedDeliveryDate && (
+                <tr>
+                  <td style={{ padding: "8px 0", borderBottom: "1px solid #f3f4f6", width: "25%", fontWeight: "600", color: "#6b7280" }}>Expected Delivery</td>
+                  <td style={{ padding: "8px 0", borderBottom: "1px solid #f3f4f6", width: "75%", fontWeight: "500" }}>{new Date(po.expectedDeliveryDate).toLocaleDateString()}</td>
+                </tr>
+              )}
+              {po.notes && (
+                <tr>
+                  <td style={{ padding: "8px 0", width: "25%", fontWeight: "600", color: "#6b7280", verticalAlign: "top" }}>Notes</td>
+                  <td style={{ padding: "8px 0", width: "75%", fontWeight: "500", whiteSpace: "pre-wrap" }}>{po.notes}</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
 
           {/* Footer */}
           {settings?.bottomDetails && (
@@ -525,11 +564,36 @@ export function POActions({
             </table>
           </div>
           
-          <div style={{ marginTop: '20px', textAlign: 'right' }}>
-            <p style={{ margin: '4px 0', color: '#475569' }}>Total Amount: <strong>?</strong></p>
-            <p style={{ margin: '4px 0', color: '#475569' }}>Total GST: <strong>?</strong></p>
-            <p style={{ margin: '4px 0', color: '#0f172a', fontSize: '18px' }}>Grand Total: <strong>?</strong></p>
-          </div>
+          <table width="100%" border={0} cellPadding={0} cellSpacing={0}>
+            <tbody>
+              <tr>
+                <td width="50%" valign="top" style={{ paddingRight: "24px" }}>
+                  <p style={{ margin: "0 0 8px 0", color: "#4b5563", fontSize: "12px", textTransform: "uppercase", fontWeight: "600", letterSpacing: "0.5px" }}>Amount in Words</p>
+                  <p style={{ margin: "0", color: "#111827", fontSize: "13px", fontWeight: "600", textTransform: "capitalize", fontStyle: "italic", lineHeight: "1.4" }}>
+                    {numberToWordsRupees(po.totalAmount + po.totalGst)}
+                  </p>
+                </td>
+                <td width="50%" align="right">
+                  <table width="100%" border={0} cellPadding={0} cellSpacing={0} style={{ border: "1px solid #d1d5db", backgroundColor: "#f9fafb", borderCollapse: "collapse" }}>
+                    <tbody>
+                      <tr>
+                        <td style={{ padding: "12px 16px", color: "#4b5563", textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Subtotal</td>
+                        <td style={{ padding: "12px 16px", fontWeight: "600", color: "#111827", textAlign: "right", borderBottom: "1px solid #e5e7eb", fontVariantNumeric: "tabular-nums" }}>{formatRupee(po.totalAmount)}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: "12px 16px", color: "#4b5563", textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Total GST</td>
+                        <td style={{ padding: "12px 16px", fontWeight: "600", color: "#111827", textAlign: "right", borderBottom: "1px solid #e5e7eb", fontVariantNumeric: "tabular-nums" }}>{formatRupee(po.totalGst)}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: "16px", fontSize: "16px", fontWeight: "800", color: "#111827", textAlign: "left" }}>Grand Total</td>
+                        <td style={{ padding: "16px", fontSize: "16px", fontWeight: "800", color: "#f97316", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{formatRupee(po.totalAmount + po.totalGst)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </td>
+              </tr>
+            </tbody>
+          </table>
 
                     </div>
                   )}

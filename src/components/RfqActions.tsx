@@ -76,7 +76,7 @@ export function RfqActions({
       const htmlContent = emailTableRef.current.innerHTML;
       const result = await sendEmailAction({
         to: finalEmails,
-        subject: `Purchase Order - ${rfq.id.slice(-6).toUpperCase()} from ${settings?.companyName || "Our Company"}`,
+        subject: `Request for Quotation - ${rfq.id.slice(-6).toUpperCase()} from ${settings?.companyName || "Our Company"}`,
         html: htmlContent
       });
 
@@ -225,9 +225,9 @@ export function RfqActions({
       worksheet['!cols'] = columnWidths;
 
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Purchase Order");
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Request for Quotation");
       
-      XLSX.writeFile(workbook, `Purchase Order_${rfq.id.slice(-6)}.xlsx`);
+      XLSX.writeFile(workbook, `RFQ_${rfq.id.slice(-6)}.xlsx`);
     } catch (err) {
       console.error("Failed to export to Excel", err);
       alert("Failed to export to Excel.");
@@ -270,7 +270,7 @@ export function RfqActions({
           className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-indigo-600 hover:to-blue-500 shadow-lg shadow-blue-500/20 text-white font-medium rounded-md transition-all active:scale-95"
         >
           <Send className="w-4 h-4" />
-          <span className="text-sm">Email PO</span>
+          <span className="text-sm">Email RFQ</span>
         </button>
 
         <button 
@@ -285,7 +285,7 @@ export function RfqActions({
           className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-brand-orange to-brand-orange-dark hover:from-brand-orange-dark hover:to-brand-orange shadow-lg shadow-brand-orange/20 text-white font-medium rounded-md transition-all active:scale-95"
         >
           <Printer className="w-4 h-4" />
-          <span className="text-sm">Print Purchase Order</span>
+          <span className="text-sm">Print RFQ</span>
         </button>
       </div>
 
@@ -315,9 +315,9 @@ export function RfqActions({
                   )}
                 </td>
                 <td valign="top" width="50%" align="right">
-                  <h2 style={{ margin: "0 0 6px 0", fontSize: "22px", fontWeight: "800", color: "#f97316", textTransform: "uppercase", letterSpacing: "1px", fontFamily: "var(--font-heading), 'Montserrat', Arial, sans-serif" }}>Purchase Order</h2>
+                  <h2 style={{ margin: "0 0 6px 0", fontSize: "22px", fontWeight: "800", color: "#f97316", textTransform: "uppercase", letterSpacing: "1px", fontFamily: "var(--font-heading), 'Montserrat', Arial, sans-serif" }}>REQUEST FOR QUOTATION</h2>
                   <p style={{ margin: "0 0 2px 0", color: "#4b5563" }}><strong>Date:</strong> {new Date(rfq.createdAt).toLocaleDateString()}</p>
-                  <p style={{ margin: "0", color: "#4b5563", wordBreak: "break-all" }}><strong>PO No:</strong> {rfq.id}</p>
+                  <p style={{ margin: "0", color: "#4b5563", wordBreak: "break-all" }}><strong>RFQ No:</strong> {rfq.id}</p>
                 </td>
               </tr>
             </tbody>
@@ -411,7 +411,7 @@ export function RfqActions({
             )}
             
             <h3 className="text-xl font-bold text-white mb-2 font-heading">
-              {sendResults ? 'Sending Complete' : isSending ? 'Sending Emails...' : 'Send PO Directly'}
+              {sendResults ? 'Sending Complete' : isSending ? 'Sending Emails...' : 'Send RFQ Directly'}
             </h3>
             
             {!sendResults && !isSending && (
@@ -536,7 +536,7 @@ export function RfqActions({
                   className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-indigo-600 hover:to-blue-500 shadow-lg shadow-blue-500/20 text-white font-medium rounded-md transition-all active:scale-95"
                 >
                   <Send className="w-5 h-5" />
-                  <span>Send PO</span>
+                  <span>Send RFQ</span>
                 </button>
               ) : sendResults ? (
                 <button 

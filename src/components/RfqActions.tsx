@@ -6,12 +6,12 @@ import { deleteRfq } from "@/app/actions/rfq"
 import { sendEmailAction } from "@/app/actions/email"
 import { formatRupee, numberToWordsRupees } from "@/lib/utils"
 
-export function RfqActions({ 
-  rfq, 
-  settings 
-}: { 
-  rfq: any, 
-  settings: any 
+export function RfqActions({
+  rfq,
+  settings
+}: {
+  rfq: any,
+  settings: any
 }) {
   const [copied, setCopied] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -21,7 +21,7 @@ export function RfqActions({
   const [validEmails, setValidEmails] = useState<string[]>([])
   const [emailInput, setEmailInput] = useState("")
   const [isSending, setIsSending] = useState(false)
-  const [sendResults, setSendResults] = useState<{email: string, status: 'success'|'failed', error?: string}[] | null>(null)
+  const [sendResults, setSendResults] = useState<{ email: string, status: 'success' | 'failed', error?: string }[] | null>(null)
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -105,14 +105,14 @@ export function RfqActions({
     try {
       const blobHtml = new Blob([htmlStr], { type: "text/html" })
       const blobText = new Blob([emailTableRef.current.innerText], { type: "text/plain" })
-      
+
       await navigator.clipboard.write([
         new ClipboardItem({
           "text/html": blobHtml,
           "text/plain": blobText,
         }),
       ])
-      
+
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch (err) {
@@ -124,7 +124,7 @@ export function RfqActions({
         const selection = window.getSelection()
         selection?.removeAllRanges()
         selection?.addRange(range)
-        
+
         // This requires the hidden div to actually be visible enough to be selected,
         // but since it's `hidden print:block`, standard `execCommand` might fail.
         // Let's temporarily make it visible for copying
@@ -132,15 +132,15 @@ export function RfqActions({
         if (emailTableRef.current.parentElement) {
           emailTableRef.current.parentElement.className = 'w-full bg-white text-black p-8 absolute top-[-9999px] left-[-9999px]'
         }
-        
+
         document.execCommand('copy')
-        
+
         if (emailTableRef.current.parentElement && originalClass) {
           emailTableRef.current.parentElement.className = originalClass
         }
-        
+
         selection?.removeAllRanges()
-        
+
         setCopied(true)
         setTimeout(() => setCopied(false), 2000)
       } catch (fallbackErr) {
@@ -156,7 +156,7 @@ export function RfqActions({
     try {
       const res = await deleteRfq(rfq.id)
       if (res.success) {
-        router.push("/rfqs")
+        router.push("/rfq")
         router.refresh()
       } else {
         alert(res.error)
@@ -171,7 +171,7 @@ export function RfqActions({
   const handleExportExcel = async () => {
     try {
       const XLSX = await import("xlsx");
-      
+
       const rows = rfq.items.map((item: any, index: number) => ({
         "SR NO": index + 1,
         "Code": item.product.materialCode,
@@ -180,11 +180,11 @@ export function RfqActions({
         "Comment": item.comment || "",
         "Qty": item.quantity,
         "UOM": item.product.unit,
-        
-        
+
+
       }));
-      
-      
+
+
       rows.push({
         "SR NO": "",
         "Code": "",
@@ -209,7 +209,7 @@ export function RfqActions({
       } as any);
 
       const worksheet = XLSX.utils.json_to_sheet(rows);
-      
+
       // Auto-size columns roughly
       const columnWidths = [
         { wch: 8 },  // SR NO
@@ -219,14 +219,14 @@ export function RfqActions({
         { wch: 30 }, // Comment
         { wch: 8 },  // Qty
         { wch: 8 },  // UOM
-        
-        
+
+
       ];
       worksheet['!cols'] = columnWidths;
 
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Request for Quotation");
-      
+
       XLSX.writeFile(workbook, `RFQ_${rfq.id.slice(-6)}.xlsx`);
     } catch (err) {
       console.error("Failed to export to Excel", err);
@@ -237,20 +237,20 @@ export function RfqActions({
   return (
     <>
       <div className="flex gap-3 print:hidden">
-        <button 
+        <button
           onClick={handleExportExcel}
           className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 font-medium rounded-md transition-colors border border-emerald-500/20 active:scale-95"
         >
           <span className="text-sm">Export Excel</span>
         </button>
-        <button 
-          onClick={() => router.push(`/rfqs/${rfq.id}/edit`)}
+        <button
+          onClick={() => router.push(`/rfq/${rfq.id}/edit`)}
           className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-white font-medium rounded-md transition-colors border border-premium-border active:scale-95"
         >
           <Edit className="w-4 h-4" />
           <span className="text-sm">Edit</span>
         </button>
-        <button 
+        <button
           onClick={handleDelete}
           disabled={isDeleting}
           className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 disabled:opacity-50 text-red-500 font-medium rounded-md transition-colors border border-red-500/20 active:scale-95"
@@ -258,8 +258,8 @@ export function RfqActions({
           <Trash2 className="w-4 h-4" />
           <span className="text-sm">{isDeleting ? "Deleting..." : "Delete"}</span>
         </button>
-        
-        <button 
+
+        <button
           onClick={() => {
             setIsSendModalOpen(true)
             setSendResults(null)
@@ -273,14 +273,14 @@ export function RfqActions({
           <span className="text-sm">Email RFQ</span>
         </button>
 
-        <button 
+        <button
           onClick={handleCopyEmail}
           className="flex items-center gap-2 px-4 py-2 bg-brand-slate hover:bg-brand-slate/80 text-white font-medium rounded-md transition-colors border border-brand-slate/50 active:scale-95"
         >
           {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
           <span className="text-sm">{copied ? "Copied!" : "Copy for Email"}</span>
         </button>
-        <button 
+        <button
           onClick={handlePrint}
           className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-brand-orange to-brand-orange-dark hover:from-brand-orange-dark hover:to-brand-orange shadow-lg shadow-brand-orange/20 text-white font-medium rounded-md transition-all active:scale-95"
         >
@@ -300,9 +300,9 @@ export function RfqActions({
             h1, h2, h3 { font-family: var(--font-heading), 'Montserrat', sans-serif !important; }
           `}
         </style>
-        
+
         <div ref={emailTableRef} style={{ color: "#1f2937", width: "100%", maxWidth: "800px", margin: "0 auto", padding: "40px", boxSizing: "border-box", fontSize: "12px", lineHeight: "1.4", fontFamily: "Arial, sans-serif" }}>
-          
+
           {/* Header */}
           <table width="100%" border={0} cellPadding={0} cellSpacing={0} style={{ borderBottom: "2px solid #f3f4f6", paddingBottom: "16px", marginBottom: "24px" }}>
             <tbody>
@@ -342,7 +342,7 @@ export function RfqActions({
           </table>
 
           {settings?.rfqMessage && (
-            <div 
+            <div
               style={{ marginBottom: "24px", padding: "12px", backgroundColor: "#f9fafb", borderRadius: "6px", color: "#374151" }}
               dangerouslySetInnerHTML={{ __html: settings.rfqMessage }}
             />
@@ -355,8 +355,8 @@ export function RfqActions({
                 <th style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "left", color: "#374151", fontSize: "11px", textTransform: "uppercase", fontWeight: "700", width: "15%" }}>Code</th>
                 <th style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "left", color: "#374151", fontSize: "11px", textTransform: "uppercase", fontWeight: "700", width: "45%" }}>Description</th>
                 <th style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "center", color: "#374151", fontSize: "11px", textTransform: "uppercase", fontWeight: "700", width: "10%" }}>Qty</th>
-                
-                
+
+
               </tr>
             </thead>
             <tbody>
@@ -378,42 +378,42 @@ export function RfqActions({
                     <span style={{ fontWeight: "600", color: "#374151", fontSize: "13px", fontVariantNumeric: "tabular-nums" }}>{item.quantity}</span>
                     <span style={{ fontSize: "10px", color: "#9ca3af", marginLeft: "4px" }}>{item.product.unit}</span>
                   </td>
-                  
+
                 </tr>
               ))}
             </tbody>
           </table>
 
-          
-                  
+
+
 
 
           {/* Footer */}
           {settings?.bottomDetails && (
-            <div 
+            <div
               style={{ borderTop: "1px solid #e5e7eb", paddingTop: "24px", fontSize: "12px", color: "#6b7280", lineHeight: "1.6" }}
               dangerouslySetInnerHTML={{ __html: settings.bottomDetails }}
             />
           )}
         </div>
       </div>
-    
+
       {isSendModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 print:hidden">
           <div className="bg-premium-dark border border-premium-border rounded-lg w-full max-w-2xl p-6 shadow-2xl relative max-h-[90vh] flex flex-col">
             {!isSending && (
-              <button 
+              <button
                 onClick={() => setIsSendModalOpen(false)}
                 className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             )}
-            
+
             <h3 className="text-xl font-bold text-white mb-2 font-heading">
               {sendResults ? 'Sending Complete' : isSending ? 'Sending Emails...' : 'Send RFQ Directly'}
             </h3>
-            
+
             {!sendResults && !isSending && (
               <p className="text-zinc-400 text-sm mb-6">
                 Paste or type recipient email addresses. Invalid emails will be automatically ignored.
@@ -531,7 +531,7 @@ export function RfqActions({
 
             <div className="mt-6 pt-6 border-t border-premium-border">
               {!sendResults && !isSending ? (
-                <button 
+                <button
                   onClick={handleSendEmail}
                   className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-indigo-600 hover:to-blue-500 shadow-lg shadow-blue-500/20 text-white font-medium rounded-md transition-all active:scale-95"
                 >
@@ -539,7 +539,7 @@ export function RfqActions({
                   <span>Send RFQ</span>
                 </button>
               ) : sendResults ? (
-                <button 
+                <button
                   onClick={() => setIsSendModalOpen(false)}
                   className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-premium-surface/50 border border-premium-border hover:bg-white/5 text-white font-medium rounded-md transition-all active:scale-95"
                 >

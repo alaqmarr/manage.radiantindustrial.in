@@ -44,6 +44,10 @@ export default async function QuotationsPage(props: { searchParams: Promise<{ se
     }
   })
 
+  const settings = await prisma.companySettings.findUnique({
+    where: { id: "default" }
+  })
+
   // Group by status priority: DRAFT first, then PENDING, then ACCEPTED, then REJECTED
   const drafts = quotations.filter(q => q.status === 'DRAFT')
   const pending = quotations.filter(q => q.status === 'PENDING')
@@ -58,7 +62,8 @@ export default async function QuotationsPage(props: { searchParams: Promise<{ se
   const totalProfit = accepted.reduce((s, q) => s + q.items.reduce((sum, item) => {
     const cp = item.cpSnapshot || 0
     const sp = item.spSnapshot || 0
-    return sum + (sp - cp) * item.quantity
+    const addnl = item.additionalCost || 0
+    return sum + ((sp - cp) * item.quantity - addnl)
   }, 0), 0)
   const conversionRate = quotations.length > 0 ? Math.round((accepted.length / quotations.length) * 100) : 0
 
@@ -202,14 +207,21 @@ export default async function QuotationsPage(props: { searchParams: Promise<{ se
                             <QuotationStatusBadge id={quote.id} currentStatus={quote.status} />
                           </td>
                           <td className="px-6 py-4 font-medium text-white">{formatRupee(quote.totalAmount)}</td>
-                          <td className="px-6 py-4 font-medium text-emerald-500">
-                            {formatRupee(
-                              quote.items.reduce((sum, item) => {
-                                const cp = item.cpSnapshot || 0;
-                                const sp = item.spSnapshot || 0;
-                                return sum + (sp - cp) * item.quantity;
-                              }, 0)
-                            )}
+                          <td className="px-6 py-4 font-medium text-emerald-500 flex items-center gap-2">
+                            {(() => {
+                              const totalRevenue = quote.items.reduce((s, i) => s + (i.spSnapshot || 0) * i.quantity, 0);
+                              const totalCost = quote.items.reduce((s, i) => s + (i.cpSnapshot || 0) * i.quantity + (i.additionalCost || 0), 0);
+                              const profit = totalRevenue - totalCost;
+                              const marginPct = totalRevenue > 0 ? (profit / totalRevenue) * 100 : 0;
+                              return (
+                                <>
+                                  {formatRupee(profit)}
+                                  {marginPct < (settings?.marginAlertThreshold ?? 10) && (
+                                    <span title="Low margin alert" className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                                  )}
+                                </>
+                              );
+                            })()}
                           </td>
                           <td className="px-6 py-4 text-right">
                             <Link href={`/quotations/${quote.id}`} className="text-brand-slate hover:text-slate-400 font-medium">View</Link>

@@ -6,6 +6,7 @@ import { upsertDraftQuotation, getQuotationUpdatedAt } from "@/app/actions/quota
 import { createClient } from "@/app/actions/client"
 import { parseQuotationExcelAction } from "@/app/actions/import"
 import { VendorPriceDialog } from "./VendorPriceDialog"
+import { MarginIndicator } from "./MarginIndicator"
 import { formatRupee, numberToWordsRupees } from "@/lib/utils"
 import { Loader2, Plus, Trash2, Upload, X, Check, AlertCircle, Search } from "lucide-react"
 import { verifyGSTAction } from "@/app/actions/gst"
@@ -934,8 +935,9 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                     <div className="space-y-1">
                       <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Act. Profit</div>
                       <div className="flex items-baseline gap-2">
-                        <span className="text-lg font-bold text-emerald-500">{formatRupee(totalProfit)}</span>
-                        {totalProfit > 0 && <span className="text-xs text-emerald-500/70 font-medium">({marginPercent.toFixed(1)}%)</span>}
+                        <MarginIndicator 
+                          items={items.map(i => ({ spSnapshot: i.spSnapshot || 0, cpSnapshot: i.cpSnapshot || 0, quantity: i.quantity, additionalCost: i.additionalCost }))} 
+                        />
                       </div>
                     </div>
                     {hasCommSplit && (

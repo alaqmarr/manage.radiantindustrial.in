@@ -89,6 +89,9 @@ model CompanySettings {
   swiftCode        String?
   bankAddress      String?
 
+  // Alerts
+  marginAlertThreshold Float  @default(10.0) // percentage
+
   updatedAt        DateTime @updatedAt
 }
 
@@ -142,22 +145,28 @@ model Product {
   purchaseItems       PurchaseItem[]
   purchaseOrderItems PurchaseOrderItem[]
   rfqItems            RfqItem[]
+  goodsReceiptItems   GoodsReceiptItem[]
+  priceHistory        PriceHistory[]
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
 }
 
 model Quotation {
-  id          String          @id
-  prNo        String?
-  rfqNo       String?
-  status      String          @default("DRAFT") // DRAFT, PENDING, ACCEPTED, REJECTED
-  totalAmount Int       // paise (excluding GST)
-  totalGst    Int       // paise
-  clientId    String
-  client      Client          @relation(fields: [clientId], references: [id])
-  items       QuotationItem[]
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  id               String          @id
+  prNo             String?
+  rfqNo            String?
+  status           String          @default("DRAFT") // DRAFT, PENDING, ACCEPTED, REJECTED
+  paymentStatus    String          @default("UNPAID") // UNPAID, PARTIALLY_PAID, PAID
+  paymentDueDate   DateTime?
+  amountPaid       Int             @default(0) // paise
+  totalAmount      Int       // paise (excluding GST)
+  totalGst         Int       // paise
+  clientId         String
+  client           Client          @relation(fields: [clientId], references: [id])
+  items            QuotationItem[]
+  payments         Payment[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 }
 
 model QuotationItem {
@@ -242,6 +251,9 @@ model PurchaseOrder {
   supplier             Supplier            @relation(fields: [supplierId], references: [id])
   rfqId                String?             // Optional link to Rfq
   status               String              @default("DRAFT") // DRAFT, ISSUED, ACKNOWLEDGED, COMPLETED, CANCELLED
+  paymentStatus        String              @default("UNPAID") // UNPAID, PARTIALLY_PAID, PAID
+  paymentDueDate       DateTime?
+  amountPaid           Int                 @default(0) // paise
   paymentTerms         String?
   deliveryTerms        String?
   expectedDeliveryDate DateTime?
@@ -249,6 +261,8 @@ model PurchaseOrder {
   totalAmount          Int                 // paise (excluding GST)
   totalGst             Int                 // paise
   items                PurchaseOrderItem[]
+  payments             Payment[]
+  deliveries           GoodsReceipt[]
   createdAt            DateTime            @default(now())
   updatedAt            DateTime            @updatedAt
 }
@@ -263,4 +277,47 @@ model PurchaseOrderItem {
   unitPrice   Int           // paise (vendor quoted price)
   gstRate     Float
   comment     String?
+}
+
+model Payment {
+  id             String         @id @default(cuid())
+  amount         Int            // paise
+  method         String?        // BANK_TRANSFER, CASH, CHEQUE, UPI
+  reference      String?        // Cheque no / UTR / transaction ref
+  notes          String?
+  date           DateTime       @default(now())
+  quotationId    String?
+  quotation      Quotation?     @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  poId           String?
+  po             PurchaseOrder? @relation(fields: [poId], references: [id], onDelete: Cascade)
+  createdAt      DateTime       @default(now())
+}
+
+model GoodsReceipt {
+  id             String              @id @default(cuid())
+  poId           String
+  po             PurchaseOrder       @relation(fields: [poId], references: [id], onDelete: Cascade)
+  receivedDate   DateTime            @default(now())
+  grnNumber      String?
+  notes          String?
+  items          GoodsReceiptItem[]
+  createdAt      DateTime            @default(now())
+}
+
+model GoodsReceiptItem {
+  id               String        @id @default(cuid())
+  goodsReceiptId   String
+  goodsReceipt     GoodsReceipt  @relation(fields: [goodsReceiptId], references: [id], onDelete: Cascade)
+  productId        String
+  product          Product       @relation(fields: [productId], references: [id])
+  quantityReceived Float
+}
+
+model PriceHistory {
+  id           String   @id @default(cuid())
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  costPrice    Int      // paise
+  sellingPrice Int      // paise
+  changedAt    DateTime @default(now())
 }

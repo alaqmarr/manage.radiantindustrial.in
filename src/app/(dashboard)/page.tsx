@@ -21,9 +21,10 @@ import {
 } from "lucide-react"
 import { formatRupee } from "@/lib/utils"
 import { DashboardCharts } from "@/components/DashboardCharts"
+import { DateRangePicker } from "@/components/DateRangePicker"
 import Link from "next/link"
 
-async function getDashboardData() {
+async function getDashboardData(fromStr?: string, toStr?: string) {
   const now = new Date()
   
   // Dates for trend calculations
@@ -33,20 +34,45 @@ async function getDashboardData() {
   const previousPeriodStart = new Date(currentPeriodStart)
   previousPeriodStart.setDate(previousPeriodStart.getDate() - 30)
 
+  // Date filtering
+  const fromDate = fromStr ? new Date(fromStr) : undefined
+  let toDate = toStr ? new Date(toStr) : undefined
+  if (toDate) {
+    // End of the day
+    toDate.setHours(23, 59, 59, 999)
+  }
+
+  const dateFilter = fromDate && toDate ? {
+    createdAt: {
+      gte: fromDate,
+      lte: toDate
+    }
+  } : {}
+  
+  const purchaseDateFilter = fromDate && toDate ? {
+    date: {
+      gte: fromDate,
+      lte: toDate
+    }
+  } : {}
+
   // Fetch Quotations (Sales)
   const allQuotations = await prisma.quotation.findMany({
+    where: dateFilter,
     include: { items: true, client: true },
     orderBy: { createdAt: 'desc' }
   })
   
   // Fetch Purchase Orders (Purchases)
   const allPOs = await prisma.purchaseOrder.findMany({
+    where: dateFilter,
     include: { supplier: true },
     orderBy: { createdAt: 'desc' }
   })
 
   // Fetch Purchases (stock intake)
   const allPurchases = await prisma.purchase.findMany({
+    where: purchaseDateFilter,
     include: { supplier: true },
     orderBy: { date: 'desc' }
   })
@@ -205,19 +231,23 @@ async function getDashboardData() {
   }
 }
 
-export default async function DashboardPage() {
-  const data = await getDashboardData()
+export default async function DashboardPage(props: { searchParams: Promise<{ from?: string, to?: string }> }) {
+  const { from, to } = await props.searchParams
+  const data = await getDashboardData(from, to)
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="p-3 bg-brand-orange/10 rounded-md">
-          <Sparkles className="w-6 h-6 text-brand-orange" />
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-brand-orange/10 rounded-md">
+            <Sparkles className="w-6 h-6 text-brand-orange" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-white font-heading">Dashboard Overview</h1>
+            <p className="text-zinc-400 mt-1 text-sm">Welcome back. Here's what's happening with your business.</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-white font-heading">Dashboard Overview</h1>
-          <p className="text-zinc-400 mt-1 text-sm">Welcome back. Here's what's happening with your business today.</p>
-        </div>
+        <DateRangePicker />
       </div>
 
       {/* ── Primary KPIs ── */}

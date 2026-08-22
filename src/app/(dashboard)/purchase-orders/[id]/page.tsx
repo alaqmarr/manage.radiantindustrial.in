@@ -4,6 +4,8 @@ import { formatRupee } from "@/lib/utils"
 import Link from "next/link"
 import { ArrowLeft, Printer } from "lucide-react"
 import { POActions } from "@/components/POActions"
+import { PaymentSection } from "@/components/PaymentSection"
+import { DeliverySection } from "@/components/DeliverySection"
 
 export const dynamic = "force-dynamic"
 
@@ -15,6 +17,13 @@ export default async function PurchaseOrderViewPage(props: { params: Promise<{ i
       supplier: true,
       items: {
         include: { product: true }
+      },
+      deliveries: {
+        include: { items: true },
+        orderBy: { receivedDate: 'desc' }
+      },
+      payments: {
+        orderBy: { date: 'desc' }
       }
     }
   })
@@ -128,6 +137,23 @@ export default async function PurchaseOrderViewPage(props: { params: Promise<{ i
           <h3 className="text-sm font-medium text-zinc-400 mb-2 uppercase tracking-wider">Notes</h3>
           <p className="text-sm text-zinc-300 whitespace-pre-wrap">{po.notes}</p>
         </div>
+      )}
+
+      {po.status !== 'DRAFT' && po.status !== 'CANCELLED' && (
+        <>
+          <DeliverySection poId={po.id} items={po.items} deliveries={po.deliveries} />
+          
+          <PaymentSection
+            type="po"
+            entityId={po.id}
+            totalAmount={po.totalAmount}
+            totalGst={po.totalGst}
+            amountPaid={po.amountPaid}
+            paymentStatus={po.paymentStatus}
+            paymentDueDate={po.paymentDueDate}
+            payments={po.payments}
+          />
+        </>
       )}
     </div>
   )

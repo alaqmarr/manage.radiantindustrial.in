@@ -3,6 +3,7 @@ import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { QuotationActions } from "@/components/QuotationActions"
 import { QuotationStatusBadge } from "@/components/QuotationStatusBadge"
+import { PaymentSection } from "@/components/PaymentSection"
 import { Metadata } from "next"
 import { formatRupee, numberToWordsRupees } from "@/lib/utils"
 
@@ -27,6 +28,9 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
       client: true,
       items: {
         include: { product: true }
+      },
+      payments: {
+        orderBy: { date: 'desc' }
       }
     }
   })
@@ -219,6 +223,19 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
         </div>
 
       </div>
+      
+      {!isDraft && (
+        <PaymentSection
+          type="quotation"
+          entityId={quotation.id}
+          totalAmount={quotation.totalAmount}
+          totalGst={quotation.totalGst}
+          amountPaid={quotation.amountPaid}
+          paymentStatus={quotation.paymentStatus}
+          paymentDueDate={quotation.paymentDueDate}
+          payments={quotation.payments}
+        />
+      )}
 
       {/* Totals (Sticky Bottom Bar) */}
       <div className="h-32 print:hidden"></div>

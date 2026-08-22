@@ -56,7 +56,7 @@ async function getDashboardData() {
     for (const item of q.items) {
       const cp = item.cpSnapshot || 0
       const sp = item.spSnapshot || 0
-      profits += (sp - cp) * item.quantity
+      profits += ((sp - cp) * item.quantity) - (item.additionalCost || 0)
     }
   }
 
@@ -67,7 +67,15 @@ async function getDashboardData() {
     totalPurchaseGst += (po.totalGst || 0)
   }
 
-  const gstToPay = totalSalesGst - totalPurchaseGst
+  // Calculate Current Month GST specifically
+  const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+  const currentMonthQuotations = acceptedQuotations.filter(q => q.createdAt >= currentMonthStart)
+  const currentMonthPOs = validPOs.filter(po => po.createdAt >= currentMonthStart)
+  
+  const currentMonthSalesGst = currentMonthQuotations.reduce((acc, q) => acc + (q.totalGst || 0), 0)
+  const currentMonthPurchaseGst = currentMonthPOs.reduce((acc, po) => acc + (po.totalGst || 0), 0)
+  
+  const gstToPay = currentMonthSalesGst - currentMonthPurchaseGst
 
   // Current Period (Last 30 days)
   const currentQuotations = acceptedQuotations.filter(q => q.createdAt >= currentPeriodStart)
@@ -76,7 +84,7 @@ async function getDashboardData() {
   let currentSales = currentQuotations.reduce((acc, q) => acc + (q.totalAmount || 0), 0)
   let currentPurchases = currentPOs.reduce((acc, po) => acc + (po.totalAmount || 0), 0)
   let currentProfits = currentQuotations.reduce((acc, q) => {
-    return acc + q.items.reduce((sum, item) => sum + ((item.spSnapshot || 0) - (item.cpSnapshot || 0)) * item.quantity, 0)
+    return acc + q.items.reduce((sum, item) => sum + (((item.spSnapshot || 0) - (item.cpSnapshot || 0)) * item.quantity) - (item.additionalCost || 0), 0)
   }, 0)
 
   // Previous Period (31-60 days ago)
@@ -86,7 +94,7 @@ async function getDashboardData() {
   let previousSales = previousQuotations.reduce((acc, q) => acc + (q.totalAmount || 0), 0)
   let previousPurchases = previousPOs.reduce((acc, po) => acc + (po.totalAmount || 0), 0)
   let previousProfits = previousQuotations.reduce((acc, q) => {
-    return acc + q.items.reduce((sum, item) => sum + ((item.spSnapshot || 0) - (item.cpSnapshot || 0)) * item.quantity, 0)
+    return acc + q.items.reduce((sum, item) => sum + (((item.spSnapshot || 0) - (item.cpSnapshot || 0)) * item.quantity) - (item.additionalCost || 0), 0)
   }, 0)
 
   // Calculate Trends (%)
@@ -181,10 +189,10 @@ export default async function DashboardPage() {
           trendUp={data.trends.profits >= 0}
         />
         <MetricCard 
-          title="Net GST" 
-          value={formatRupee(data.gstToPay)} 
+          title="Current Month GST" 
+          value={formatRupee(Math.abs(data.gstToPay))} 
           icon={<ReceiptText className="w-5 h-5 text-rose-500" />} 
-          subtext={data.gstToPay > 0 ? "Payable" : "Receivable / Input Credit"}
+          subtext={data.gstToPay > 0 ? "Net Payable (Output > Input)" : "Input Tax Credit (Input > Output)"}
         />
       </div>
 

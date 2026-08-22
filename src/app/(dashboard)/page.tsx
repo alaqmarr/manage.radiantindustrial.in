@@ -21,18 +21,32 @@ import { DashboardCharts } from "@/components/DashboardCharts"
 import Link from "next/link"
 
 async function getDashboardData() {
+  const now = new Date()
+  
+  // Dates for trend calculations
+  const currentPeriodStart = new Date(now)
+  currentPeriodStart.setDate(currentPeriodStart.getDate() - 30)
+  
+  const previousPeriodStart = new Date(currentPeriodStart)
+  previousPeriodStart.setDate(previousPeriodStart.getDate() - 30)
+
+  // Fetch Quotations (Sales)
   const allQuotations = await prisma.quotation.findMany({
     include: { items: true },
     orderBy: { createdAt: 'asc' }
   })
   
-  const acceptedQuotations = allQuotations.filter(q => q.status === 'ACCEPTED')
+  // Fetch Purchase Orders (Purchases)
+  const allPOs = await prisma.purchaseOrder.findMany({
+    orderBy: { createdAt: 'asc' }
+  })
   
-  // Basic totals
+  const acceptedQuotations = allQuotations.filter(q => q.status === 'ACCEPTED')
+  const validPOs = allPOs.filter(po => po.status !== 'DRAFT' && po.status !== 'CANCELLED')
+  
+  // Basic totals (All Time)
   let totalSales = 0
-  let totalPurchases = 0
   let totalSalesGst = 0
-  let totalPurchaseGst = 0
   let profits = 0
 
   for (const q of acceptedQuotations) {
@@ -42,19 +56,48 @@ async function getDashboardData() {
     for (const item of q.items) {
       const cp = item.cpSnapshot || 0
       const sp = item.spSnapshot || 0
-      const qty = item.quantity
-      const gstRate = item.gstSnapshot || 0
-
-      const cost = cp * qty
-      const costGst = cost * (gstRate / 100)
-
-      totalPurchases += cost
-      totalPurchaseGst += costGst
-      profits += (sp - cp) * qty
+      profits += (sp - cp) * item.quantity
     }
   }
 
+  let totalPurchases = 0
+  let totalPurchaseGst = 0
+  for (const po of validPOs) {
+    totalPurchases += (po.totalAmount || 0)
+    totalPurchaseGst += (po.totalGst || 0)
+  }
+
   const gstToPay = totalSalesGst - totalPurchaseGst
+
+  // Current Period (Last 30 days)
+  const currentQuotations = acceptedQuotations.filter(q => q.createdAt >= currentPeriodStart)
+  const currentPOs = validPOs.filter(po => po.createdAt >= currentPeriodStart)
+  
+  let currentSales = currentQuotations.reduce((acc, q) => acc + (q.totalAmount || 0), 0)
+  let currentPurchases = currentPOs.reduce((acc, po) => acc + (po.totalAmount || 0), 0)
+  let currentProfits = currentQuotations.reduce((acc, q) => {
+    return acc + q.items.reduce((sum, item) => sum + ((item.spSnapshot || 0) - (item.cpSnapshot || 0)) * item.quantity, 0)
+  }, 0)
+
+  // Previous Period (31-60 days ago)
+  const previousQuotations = acceptedQuotations.filter(q => q.createdAt >= previousPeriodStart && q.createdAt < currentPeriodStart)
+  const previousPOs = validPOs.filter(po => po.createdAt >= previousPeriodStart && po.createdAt < currentPeriodStart)
+  
+  let previousSales = previousQuotations.reduce((acc, q) => acc + (q.totalAmount || 0), 0)
+  let previousPurchases = previousPOs.reduce((acc, po) => acc + (po.totalAmount || 0), 0)
+  let previousProfits = previousQuotations.reduce((acc, q) => {
+    return acc + q.items.reduce((sum, item) => sum + ((item.spSnapshot || 0) - (item.cpSnapshot || 0)) * item.quantity, 0)
+  }, 0)
+
+  // Calculate Trends (%)
+  const calcTrend = (current: number, previous: number) => {
+    if (previous === 0) return current > 0 ? 100 : 0
+    return Math.round(((current - previous) / previous) * 100)
+  }
+
+  const salesTrend = calcTrend(currentSales, previousSales)
+  const purchasesTrend = calcTrend(currentPurchases, previousPurchases)
+  const profitsTrend = calcTrend(currentProfits, previousProfits)
 
   // Generate last 7 days chart data
   const chartData = []
@@ -68,16 +111,10 @@ async function getDashboardData() {
     nextDay.setDate(d.getDate() + 1)
     
     const dayQuotes = acceptedQuotations.filter(q => q.createdAt >= d && q.createdAt < nextDay)
+    const dayPOs = validPOs.filter(po => po.createdAt >= d && po.createdAt < nextDay)
     
-    let daySales = 0
-    let dayPurchases = 0
-    
-    for (const q of dayQuotes) {
-      daySales += (q.totalAmount || 0)
-      for (const item of q.items) {
-        dayPurchases += (item.cpSnapshot || 0) * item.quantity
-      }
-    }
+    let daySales = dayQuotes.reduce((acc, q) => acc + (q.totalAmount || 0), 0)
+    let dayPurchases = dayPOs.reduce((acc, po) => acc + (po.totalAmount || 0), 0)
     
     chartData.push({
       name: d.toLocaleDateString('en-US', { weekday: 'short' }),
@@ -92,6 +129,11 @@ async function getDashboardData() {
     profits,
     gstToPay,
     chartData,
+    trends: {
+      sales: salesTrend,
+      purchases: purchasesTrend,
+      profits: profitsTrend
+    },
     quotationCounts: {
       draft: allQuotations.filter(q => q.status === 'DRAFT').length,
       pending: allQuotations.filter(q => q.status === 'PENDING').length,
@@ -100,8 +142,6 @@ async function getDashboardData() {
     }
   }
 }
-
-
 
 export default async function DashboardPage() {
   const data = await getDashboardData()
@@ -123,26 +163,28 @@ export default async function DashboardPage() {
           title="Total Sales" 
           value={formatRupee(data.totalSales)} 
           icon={<TrendingUp className="w-5 h-5 text-emerald-500" />} 
-          trend="+12%" 
-          trendUp={true}
+          trend={data.trends.sales > 0 ? +% : ${data.trends.sales}%}
+          trendUp={data.trends.sales >= 0}
         />
         <MetricCard 
           title="Total Purchases" 
           value={formatRupee(data.totalPurchases)} 
           icon={<ShoppingCart className="w-5 h-5 text-blue-500" />} 
+          trend={data.trends.purchases > 0 ? +% : ${data.trends.purchases}%}
+          trendUp={data.trends.purchases <= 0} // Less purchases means better for cashflow, so trendUp = true visually
         />
         <MetricCard 
-          title="Net Profit" 
+          title="Net Profit (Est.)" 
           value={formatRupee(data.profits)} 
           icon={<IndianRupee className="w-5 h-5 text-amber-500" />} 
-          trend={data.profits >= 0 ? "+5%" : "-2%"} 
-          trendUp={data.profits >= 0}
+          trend={data.trends.profits > 0 ? +% : ${data.trends.profits}%} 
+          trendUp={data.trends.profits >= 0}
         />
         <MetricCard 
-          title="Pending GST" 
+          title="Net GST" 
           value={formatRupee(data.gstToPay)} 
           icon={<ReceiptText className="w-5 h-5 text-rose-500" />} 
-          subtext="After input tax credit"
+          subtext={data.gstToPay > 0 ? "Payable" : "Receivable / Input Credit"}
         />
       </div>
 
@@ -196,7 +238,7 @@ function MetricCard({
   href?: string
 }) {
   const content = (
-    <div className={`glass-panel p-6 rounded-md relative overflow-hidden group transition-all duration-300 ${href ? 'hover:-translate-y-1 hover:border-brand-slate hover:shadow-lg cursor-pointer' : 'hover:-translate-y-1'}`}>
+    <div className={glass-panel p-6 rounded-md relative overflow-hidden group transition-all duration-300 }>
       <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-white/5 rounded-full blur-2xl group-hover:bg-brand-orange/10 transition-colors" />
       <div className="flex items-center justify-between mb-4 relative z-10">
         <h3 className="text-zinc-400 font-medium tracking-wide text-sm">{title}</h3>
@@ -206,8 +248,8 @@ function MetricCard({
       </div>
       <div className="flex items-baseline gap-3 relative z-10">
         <h2 className="text-3xl font-bold text-white tracking-tight">{value}</h2>
-        {trend && (
-          <span className={`text-sm font-semibold px-2 py-0.5 rounded-full ${trendUp ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>
+        {trend !== undefined && trend !== '0%' && (
+          <span className={	ext-sm font-semibold px-2 py-0.5 rounded-full }>
             {trend}
           </span>
         )}
@@ -223,4 +265,3 @@ function MetricCard({
   }
   return content
 }
-

@@ -161,9 +161,23 @@ export async function updateProduct(id: string, formData: FormData) {
       data.imageUrl = imageUrl
     }
 
-    await prisma.product.update({
-      where: { id },
-      data
+    const existingProduct = await prisma.product.findUnique({ where: { id } })
+    
+    await prisma.$transaction(async (tx) => {
+      await tx.product.update({
+        where: { id },
+        data
+      })
+      
+      if (existingProduct && (existingProduct.costPrice !== cp || existingProduct.sellingPrice !== sp)) {
+        await tx.priceHistory.create({
+          data: {
+            productId: id,
+            costPrice: cp,
+            sellingPrice: sp,
+          }
+        })
+      }
     })
 
     return { success: true }

@@ -77,7 +77,7 @@ export default async function ClientsPage(props: { searchParams: Promise<{ searc
                 clients.map((client) => (
                   <ClickableRow 
                     key={client.id} 
-                    href={`?action=edit-client&id=${client.id}`}
+                    href={`/clients/${client.id}`}
                     className="hover:bg-white/5 even:bg-white/[0.02] transition-colors group cursor-pointer"
                   >
                     <td className="px-6 py-4"><RowCheckbox id={client.id} /></td>
@@ -86,7 +86,8 @@ export default async function ClientsPage(props: { searchParams: Promise<{ searc
                     <td className="px-6 py-4 text-zinc-300">
                       <span className="bg-white/5 border border-premium-border px-2 py-1 rounded text-xs font-mono">{client._count.quotations}</span>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-4 text-right space-x-3">
+                      <Link href={`/clients/${client.id}`} className="text-emerald-500 hover:text-emerald-400 font-medium">Ledger</Link>
                       <Link href={`?action=edit-client&id=${client.id}`} className="text-brand-slate hover:text-slate-400 font-medium">Edit</Link>
                     </td>
                   </ClickableRow>

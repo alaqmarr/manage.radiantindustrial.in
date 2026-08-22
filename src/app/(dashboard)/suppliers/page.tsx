@@ -78,7 +78,7 @@ export default async function SuppliersPage(props: { searchParams: Promise<{ sea
                 suppliers.map((supplier) => (
                   <ClickableRow 
                     key={supplier.id} 
-                    href={`?action=edit-supplier&id=${supplier.id}`}
+                    href={`/suppliers/${supplier.id}`}
                     className="hover:bg-white/5 even:bg-white/[0.02] transition-colors group cursor-pointer"
                   >
                     <td className="px-6 py-4"><RowCheckbox id={supplier.id} /></td>
@@ -90,7 +90,8 @@ export default async function SuppliersPage(props: { searchParams: Promise<{ sea
                     <td className="px-6 py-4 text-zinc-300">
                       <span className="bg-white/5 border border-premium-border px-2 py-1 rounded text-xs font-mono">{supplier._count.purchases}</span>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-4 text-right space-x-3">
+                      <Link href={`/suppliers/${supplier.id}`} className="text-emerald-500 hover:text-emerald-400 font-medium">Ledger</Link>
                       <Link href={`?action=edit-supplier&id=${supplier.id}`} className="text-brand-slate hover:text-slate-400 font-medium">Edit</Link>
                     </td>
                   </ClickableRow>

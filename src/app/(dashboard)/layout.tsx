@@ -27,7 +27,7 @@ export default async function DashboardLayout({
           <div className="print:hidden">
             <CommandPalette />
           </div>
-          <div className="max-w-[1920px] mx-auto w-full animate-in fade-in duration-500 print:max-w-none">
+          <div className="w-full animate-in fade-in duration-500 print:max-w-none">
             {children}
           </div>
         </main>

@@ -1,6 +1,7 @@
 "use client"
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
+import { createQuickProduct } from "@/app/actions/product"
 import { createPurchaseOrder, updatePurchaseOrder } from "@/app/actions/purchaseOrder"
 import { createSupplier } from "@/app/actions/supplier"
 import { formatRupee } from "@/lib/utils"
@@ -52,6 +53,12 @@ export function PurchaseOrderForm({ suppliers: initialSuppliers, products, initi
   const [isVerifyingGST, setIsVerifyingGST] = useState(false)
 
   const [searchTerm, setSearchTerm] = useState("")
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false)
+  const [newProdCode, setNewProdCode] = useState("")
+  const [newProdDesc, setNewProdDesc] = useState("")
+  const [newProdUnit, setNewProdUnit] = useState("NUM")
+  const [newProdGst, setNewProdGst] = useState("18")
+  const [isCreatingProduct, setIsCreatingProduct] = useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [highlightedIndex, setHighlightedIndex] = useState(-1)
   const autocompleteRef = useRef<HTMLDivElement>(null)
@@ -105,6 +112,33 @@ export function PurchaseOrderForm({ suppliers: initialSuppliers, products, initi
     p.materialCode.toLowerCase().includes(searchTerm.toLowerCase()) || 
     p.materialDescription.toLowerCase().includes(searchTerm.toLowerCase())
   ).slice(0, 50)
+
+  const handleCreateProduct = async () => {
+    if (!newProdDesc.trim()) return alert("Description is required")
+    setIsCreatingProduct(true)
+    try {
+      const res = await createQuickProduct({
+        materialCode: newProdCode,
+        materialDescription: newProdDesc,
+        unit: newProdUnit,
+        gstRate: parseFloat(newProdGst) || 18
+      })
+      if (res.success && res.product) {
+        setIsProductModalOpen(false)
+        addProductToPO(res.product)
+        setNewProdCode("")
+        setNewProdDesc("")
+        setNewProdUnit("NUM")
+        setNewProdGst("18")
+      } else {
+        alert(res.error)
+      }
+    } catch (e) {
+      alert("Failed to create product")
+    } finally {
+      setIsCreatingProduct(false)
+    }
+  }
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -227,6 +261,59 @@ export function PurchaseOrderForm({ suppliers: initialSuppliers, products, initi
         {saveStatus === "SAVED" && <span className="text-emerald-500 flex items-center gap-1"><Check className="w-3 h-3"/> Saved</span>}
         {saveStatus === "ERROR" && <span className="text-rose-500">Failed to save</span>}
       </div>
+
+      
+      {isProductModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="glass-panel w-full max-w-md p-6 rounded-md border border-premium-border">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-medium text-white">New Product</h3>
+              <button onClick={() => setIsProductModalOpen(false)} className="text-zinc-400 hover:text-white transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">Material Code (Optional)</label>
+                <input 
+                  value={newProdCode} onChange={e => setNewProdCode(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
+                  placeholder="Auto-generated if left blank"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">Description *</label>
+                <input 
+                  autoFocus value={newProdDesc} onChange={e => setNewProdDesc(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-400 mb-1">Unit</label>
+                  <input 
+                    value={newProdUnit} onChange={e => setNewProdUnit(e.target.value)}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-400 mb-1">GST %</label>
+                  <input 
+                    type="number" value={newProdGst} onChange={e => setNewProdGst(e.target.value)}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
+                  />
+                </div>
+              </div>
+              <button 
+                onClick={handleCreateProduct} disabled={isCreatingProduct || !newProdDesc.trim()}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-brand-orange hover:bg-orange-600 disabled:opacity-50 text-white font-medium rounded-md transition-colors mt-4"
+              >
+                {isCreatingProduct ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create & Add Product"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isSupplierModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -374,7 +461,7 @@ export function PurchaseOrderForm({ suppliers: initialSuppliers, products, initi
       <div className="space-y-4">
         <h2 className="text-lg font-medium text-white">Purchase Items</h2>
         
-        <div className="relative" ref={autocompleteRef}>
+        <div className="relative z-[55]" ref={autocompleteRef}>
           <input 
             type="text"
             value={searchTerm}
@@ -390,7 +477,7 @@ export function PurchaseOrderForm({ suppliers: initialSuppliers, products, initi
           />
           
           {isDropdownOpen && searchTerm && (
-            <ul className="absolute z-10 mt-2 w-full glass-panel border border-premium-border rounded-md shadow-2xl max-h-60 overflow-y-auto custom-scrollbar animate-in fade-in">
+            <ul className="absolute z-[60] mt-2 w-full glass-panel border border-premium-border rounded-md shadow-2xl max-h-60 overflow-y-auto custom-scrollbar animate-in fade-in">
               {filteredProducts.length === 0 ? (
                 <li className="px-4 py-3 text-zinc-500 text-sm">No products found.</li>
               ) : (

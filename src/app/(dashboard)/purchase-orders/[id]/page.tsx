@@ -24,7 +24,7 @@ export default async function PurchaseOrderViewPage(props: { params: Promise<{ i
   const settings = await prisma.companySettings.findFirst()
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-6 md:p-8 space-y-6">
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4 print:hidden">
           <Link href="/purchase-orders" className="p-2 text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-md transition-colors">

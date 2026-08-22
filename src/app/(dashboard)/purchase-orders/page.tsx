@@ -30,7 +30,7 @@ export default async function PurchaseOrdersPage(props: { searchParams: Promise<
   })
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-6 md:p-8 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-white">Purchase Orders</h1>
         <div className="flex items-center gap-3">

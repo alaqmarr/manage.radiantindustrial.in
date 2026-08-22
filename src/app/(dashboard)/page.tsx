@@ -163,21 +163,21 @@ export default async function DashboardPage() {
           title="Total Sales" 
           value={formatRupee(data.totalSales)} 
           icon={<TrendingUp className="w-5 h-5 text-emerald-500" />} 
-          trend={data.trends.sales > 0 ? +% : ${data.trends.sales}%}
+          trend={data.trends.sales > 0 ? `+${data.trends.sales}%` : `${data.trends.sales}%`}
           trendUp={data.trends.sales >= 0}
         />
         <MetricCard 
           title="Total Purchases" 
           value={formatRupee(data.totalPurchases)} 
           icon={<ShoppingCart className="w-5 h-5 text-blue-500" />} 
-          trend={data.trends.purchases > 0 ? +% : ${data.trends.purchases}%}
+          trend={data.trends.purchases > 0 ? `+${data.trends.purchases}%` : `${data.trends.purchases}%`}
           trendUp={data.trends.purchases <= 0} // Less purchases means better for cashflow, so trendUp = true visually
         />
         <MetricCard 
           title="Net Profit (Est.)" 
           value={formatRupee(data.profits)} 
           icon={<IndianRupee className="w-5 h-5 text-amber-500" />} 
-          trend={data.trends.profits > 0 ? +% : ${data.trends.profits}%} 
+          trend={data.trends.profits > 0 ? `+${data.trends.profits}%` : `${data.trends.profits}%`} 
           trendUp={data.trends.profits >= 0}
         />
         <MetricCard 
@@ -238,7 +238,7 @@ function MetricCard({
   href?: string
 }) {
   const content = (
-    <div className={glass-panel p-6 rounded-md relative overflow-hidden group transition-all duration-300 }>
+    <div className={`glass-panel p-6 rounded-md relative overflow-hidden group transition-all duration-300 ${href ? 'hover:-translate-y-1 hover:border-brand-slate hover:shadow-lg cursor-pointer' : 'hover:-translate-y-1'}`}>
       <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-white/5 rounded-full blur-2xl group-hover:bg-brand-orange/10 transition-colors" />
       <div className="flex items-center justify-between mb-4 relative z-10">
         <h3 className="text-zinc-400 font-medium tracking-wide text-sm">{title}</h3>
@@ -249,7 +249,7 @@ function MetricCard({
       <div className="flex items-baseline gap-3 relative z-10">
         <h2 className="text-3xl font-bold text-white tracking-tight">{value}</h2>
         {trend !== undefined && trend !== '0%' && (
-          <span className={	ext-sm font-semibold px-2 py-0.5 rounded-full }>
+          <span className={`text-sm font-semibold px-2 py-0.5 rounded-full ${trendUp ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>
             {trend}
           </span>
         )}

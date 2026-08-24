@@ -230,12 +230,23 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
               </thead>
               <tbody>
                 {coc.items.map((item: any, index: number) => {
+                  const attrs = item.attributes ? JSON.parse(item.attributes) : [];
                   return (
                     <tr key={item.id}>
                       <td style={{ color: "#777", fontWeight: "500" }}>{String(index + 1).padStart(2, '0')}</td>
                       <td>
                         <div style={{ fontWeight: "600", fontSize: "13px", color: "#111", marginBottom: "3px" }}>{item.product.materialDescription}</div>
                         <div style={{ color: "#666", fontSize: "11px" }}>Part Code: {item.product.materialCode}</div>
+                        {attrs.length > 0 && (
+                          <div style={{ marginTop: "8px" }}>
+                            {attrs.map((attr: any, i: number) => attr.key && attr.value ? (
+                              <div key={i} style={{ display: 'flex', marginBottom: '3px', fontSize: '11px' }}>
+                                <span style={{ minWidth: '90px', color: '#777' }}>{attr.key}:</span>
+                                <strong style={{ color: '#222', fontWeight: "500" }}>{attr.value}</strong>
+                              </div>
+                            ) : null)}
+                          </div>
+                        )}
                       </td>
                       <td align="center" style={{ fontWeight: "600", fontSize: "13px" }}>{item.quantity} <span style={{ fontSize: "11px", color: "#777", fontWeight: "normal" }}>{item.product.unit}</span></td>
                       <td align="center" style={{ fontWeight: "500" }}>{item.batchNo || '-'}</td>

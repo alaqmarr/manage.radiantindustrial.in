@@ -90,177 +90,217 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
         <Trash2 className="w-5 h-5" />
       </button>
 
-      {/* Print Template */}
-      <div className="hidden print:block w-full bg-white text-black min-h-screen relative overflow-hidden" style={{ margin: 0, padding: 0 }}>
+      {/* Print Template - Certificate Style */}
+      <div className="hidden print:block w-full bg-white text-black relative" style={{ margin: 0, padding: 0, minHeight: "100vh" }}>
         <style type="text/css" media="print">
           {`
-            @page { margin: 15mm; size: A4; }
-            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: white; }
-            * { font-family: var(--font-sans), 'Outfit', system-ui, sans-serif; }
-            h1, h2, h3 { font-family: var(--font-heading), 'Montserrat', sans-serif !important; }
-            
-            /* Hide the global Next.js main layout elements if any leak through */
+            @page { margin: 0; size: A4 portrait; }
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: white; margin: 0; padding: 0; }
+            * { box-sizing: border-box; }
             nav, header, footer { display: none !important; }
+            
+            .cert-container {
+              width: 210mm;
+              min-height: 297mm;
+              padding: 20mm;
+              position: relative;
+              background-color: #fff;
+              font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+              color: #111;
+            }
+            .cert-border {
+              position: absolute;
+              top: 10mm; left: 10mm; right: 10mm; bottom: 10mm;
+              border: 1px solid #111;
+              padding: 2mm;
+            }
+            .cert-inner-border {
+              width: 100%;
+              height: 100%;
+              border: 3px solid #111;
+              position: relative;
+              z-index: 10;
+              padding: 15mm;
+              display: flex;
+              flex-direction: column;
+            }
+            .cert-watermark {
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              opacity: 0.04;
+              width: 60%;
+              pointer-events: none;
+              z-index: 1;
+            }
+            .cert-title {
+              font-family: 'Georgia', serif;
+              font-size: 32px;
+              font-weight: bold;
+              text-align: center;
+              text-transform: uppercase;
+              letter-spacing: 4px;
+              margin: 20px 0;
+              color: #000;
+            }
+            .cert-table th {
+              background-color: #f8f9fa;
+              border-bottom: 2px solid #000;
+              border-top: 1px solid #000;
+              padding: 10px;
+              font-size: 11px;
+              text-transform: uppercase;
+              letter-spacing: 1px;
+              text-align: left;
+            }
+            .cert-table td {
+              padding: 12px 10px;
+              border-bottom: 1px dashed #ccc;
+              font-size: 12px;
+              vertical-align: top;
+            }
           `}
         </style>
-        
-        {/* Background Watermark */}
-        {settings?.logoUrl && (
-          <div style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            opacity: 0.05,
-            pointerEvents: 'none',
-            zIndex: 0,
-            width: '60%',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center'
-          }}>
-            <img src={settings.logoUrl} style={{ width: '100%', height: 'auto', filter: 'grayscale(100%)' }} />
-          </div>
-        )}
 
-        <div style={{ color: "#1f2937", width: "100%", maxWidth: "800px", margin: "0 auto", padding: "40px", boxSizing: "border-box", fontSize: "14px", lineHeight: "1.5", position: 'relative', zIndex: 10 }}>
-          
-          {/* Header */}
-          <table width="100%" border={0} cellPadding={0} cellSpacing={0} style={{ borderBottom: "2px solid #e5e7eb", paddingBottom: "20px", marginBottom: "30px" }}>
-            <tbody>
-              <tr>
-                <td valign="top" width="50%">
+        <div className="cert-container">
+          <div className="cert-border">
+            <div className="cert-inner-border">
+              
+              {/* Watermark */}
+              {settings?.logoUrl && (
+                <div className="cert-watermark">
+                  <img src={settings.logoUrl} style={{ width: '100%', height: 'auto', filter: 'grayscale(100%)' }} alt="Watermark" />
+                </div>
+              )}
+
+              <div style={{ position: 'relative', zIndex: 10, flex: 1, display: 'flex', flexDirection: 'column' }}>
+                
+                {/* Header Logo */}
+                <div style={{ textAlign: "center", marginBottom: "10px" }}>
                   {settings?.logoUrl ? (
-                    <img src={settings.logoUrl} alt={settings.companyName} style={{ maxHeight: "60px", marginBottom: "16px" }} />
+                    <img src={settings.logoUrl} alt={settings.companyName} style={{ maxHeight: "80px", objectFit: "contain" }} />
                   ) : (
-                    <h1 style={{ margin: "0 0 16px 0", fontSize: "24px", fontWeight: "800", color: "#111827" }}>{settings?.companyName || "Company Name"}</h1>
+                    <h1 style={{ margin: 0, fontSize: "28px", fontWeight: "bold", fontFamily: "'Georgia', serif" }}>{settings?.companyName || "Company Name"}</h1>
                   )}
-                  <div style={{ color: "#4b5563", fontSize: "12px", lineHeight: "1.4" }}>
-                    {settings?.address && <div style={{ whiteSpace: "pre-wrap" }}>{settings.address}</div>}
-                    {settings?.phone && <div>Tel: {settings.phone}</div>}
-                    {settings?.email && <div>Email: {settings.email}</div>}
+                </div>
+
+                <div className="cert-title">
+                  Certificate of Conformance
+                </div>
+
+                {/* Certificate Meta */}
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "30px", borderBottom: "1px solid #000", paddingBottom: "15px" }}>
+                  <div>
+                    <div style={{ fontSize: "11px", color: "#666", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "2px" }}>Certificate No.</div>
+                    <div style={{ fontSize: "16px", fontWeight: "bold", color: "#000" }}>{coc.cocNumber || coc.id.slice(0, 8)}</div>
                   </div>
-                </td>
-                <td valign="top" width="50%" align="right">
-                  <h2 style={{ margin: "0 0 12px 0", fontSize: "28px", fontWeight: "900", color: "#059669", textTransform: "uppercase", letterSpacing: "1px" }}>Certificate of Conformance</h2>
-                  <table border={0} cellPadding={4} cellSpacing={0} style={{ display: "inline-block", textAlign: "left", fontSize: "12px" }}>
-                    <tbody>
-                      <tr>
-                        <td style={{ color: "#6b7280", fontWeight: "bold", paddingRight: "16px" }}>COC Number:</td>
-                        <td style={{ fontWeight: "600", color: "#111827" }}>{coc.cocNumber || coc.id.slice(0, 8)}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ color: "#6b7280", fontWeight: "bold", paddingRight: "16px" }}>Date of Issue:</td>
-                        <td style={{ fontWeight: "600", color: "#111827" }}>{new Date(coc.date).toLocaleDateString()}</td>
-                      </tr>
-                      {coc.clientPoRef && (
-                        <tr>
-                          <td style={{ color: "#6b7280", fontWeight: "bold", paddingRight: "16px" }}>Client PO Ref:</td>
-                          <td style={{ fontWeight: "600", color: "#111827" }}>{coc.clientPoRef}</td>
+                  <div style={{ textAlign: "center" }}>
+                    {coc.clientPoRef && (
+                      <>
+                        <div style={{ fontSize: "11px", color: "#666", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "2px" }}>PO Reference</div>
+                        <div style={{ fontSize: "14px", fontWeight: "bold", color: "#000" }}>{coc.clientPoRef}</div>
+                      </>
+                    )}
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: "11px", color: "#666", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "2px" }}>Date of Issue</div>
+                    <div style={{ fontSize: "16px", fontWeight: "bold", color: "#000" }}>{new Date(coc.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
+                  </div>
+                </div>
+
+                {/* Statement & Client */}
+                <div style={{ marginBottom: "30px", fontSize: "14px", lineHeight: "1.6", textAlign: "center", padding: "0 20px" }}>
+                  <p style={{ marginBottom: "15px" }}>
+                    {coc.standardText ? coc.standardText : "We hereby certify that the materials supplied against this order conform strictly to your company standards and have been procured from genuine sources."}
+                  </p>
+                  <div style={{ fontSize: "12px", color: "#666", textTransform: "uppercase", letterSpacing: "1px", marginTop: "25px", marginBottom: "5px" }}>Issued To</div>
+                  <div style={{ fontSize: "18px", fontWeight: "bold", fontFamily: "'Georgia', serif" }}>{coc.client.name}</div>
+                  {coc.client.address && <div style={{ fontSize: "12px", color: "#444", marginTop: "4px" }}>{coc.client.address}</div>}
+                </div>
+
+                {/* Items Table */}
+                <table className="cert-table" width="100%" cellSpacing={0} cellPadding={0} style={{ borderCollapse: "collapse", marginBottom: "30px" }}>
+                  <thead>
+                    <tr>
+                      <th style={{ width: "40px" }}>#</th>
+                      <th style={{ width: "45%" }}>Description of Goods</th>
+                      <th style={{ textAlign: "center", width: "100px" }}>Qty</th>
+                      <th style={{ textAlign: "center", width: "130px" }}>Batch / Heat No.</th>
+                      <th>Remarks</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {coc.items.map((item: any, index: number) => {
+                      const attrs = item.attributes ? JSON.parse(item.attributes) : [];
+                      return (
+                        <tr key={item.id}>
+                          <td style={{ color: "#666", fontWeight: "bold" }}>{String(index + 1).padStart(2, '0')}</td>
+                          <td>
+                            <div style={{ fontWeight: "bold", fontSize: "13px", marginBottom: "4px" }}>{item.product.materialDescription}</div>
+                            <div style={{ color: "#666", fontSize: "11px", marginBottom: "4px" }}>Part Code: {item.product.materialCode}</div>
+                            {item.product.specification && (
+                              <div style={{ color: "#444", fontSize: "11px", marginBottom: "6px" }}>{item.product.specification}</div>
+                            )}
+                            {attrs.length > 0 && (
+                              <div style={{ marginTop: "6px" }}>
+                                {attrs.map((attr: any, i: number) => attr.key && attr.value ? (
+                                  <div key={i} style={{ display: 'flex', marginBottom: '2px', fontSize: '11px' }}>
+                                    <span style={{ minWidth: '90px', color: '#666' }}>{attr.key}:</span>
+                                    <strong style={{ color: '#000' }}>{attr.value}</strong>
+                                  </div>
+                                ) : null)}
+                              </div>
+                            )}
+                          </td>
+                          <td align="center" style={{ fontWeight: "bold", fontSize: "13px" }}>{item.quantity} <span style={{ fontSize: "10px", color: "#666", fontWeight: "normal" }}>{item.product.unit}</span></td>
+                          <td align="center" style={{ fontWeight: "bold" }}>{item.batchNo || 'N/A'}</td>
+                          <td style={{ color: "#444" }}>{item.remarks || '-'}</td>
                         </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                      )
+                    })}
+                  </tbody>
+                </table>
 
-          {/* Issued To */}
-          <div style={{ marginBottom: "30px", padding: "16px", backgroundColor: "#f9fafb", borderRadius: "8px", border: "1px solid #f3f4f6" }}>
-            <h3 style={{ margin: "0 0 8px 0", fontSize: "11px", textTransform: "uppercase", color: "#6b7280", letterSpacing: "0.5px", fontWeight: "700" }}>Issued To</h3>
-            <div style={{ fontSize: "14px", fontWeight: "bold", color: "#111827", marginBottom: "4px" }}>{coc.client.name}</div>
-            {coc.client.address && <div style={{ color: "#4b5563", fontSize: "12px", whiteSpace: "pre-wrap" }}>{coc.client.address}</div>}
-            {coc.client.gstNumber && <div style={{ color: "#4b5563", fontSize: "12px", marginTop: "4px" }}><strong>GSTIN:</strong> {coc.client.gstNumber}</div>}
-          </div>
+                {/* Footer Section flex pusher */}
+                <div style={{ flex: 1 }}></div>
 
-          {/* Statement */}
-          <div style={{ marginBottom: "30px", fontSize: "15px", lineHeight: "1.6", color: "#374151", textAlign: "justify" }}>
-            {coc.standardText ? (
-              <div style={{ whiteSpace: "pre-wrap" }}>{coc.standardText}</div>
-            ) : (
-              <div>We hereby certify that the materials supplied against this order conform strictly to your company standards and have been procured from genuine sources.</div>
-            )}
-          </div>
+                {/* Bottom Section (Signatures & Company Details) */}
+                <div style={{ borderTop: "1px solid #000", paddingTop: "20px", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+                  
+                  {/* Left: Company details / notes */}
+                  <div style={{ width: "50%", fontSize: "10px", color: "#666", lineHeight: "1.5" }}>
+                    <div style={{ fontWeight: "bold", color: "#000", marginBottom: "4px", fontSize: "12px" }}>{settings?.companyName || "Company Name"}</div>
+                    {settings?.address && <div style={{ whiteSpace: "pre-wrap", marginBottom: "4px" }}>{settings.address}</div>}
+                    <div>
+                      {settings?.phone && <span style={{ marginRight: '10px' }}>T: {settings.phone}</span>}
+                      {settings?.email && <span>E: {settings.email}</span>}
+                    </div>
+                    {settings?.gstApiKey && <div style={{ marginTop: "2px" }}>GSTIN: {settings.gstApiKey}</div>}
+                    {settings?.bottomDetails && (
+                      <div style={{ marginTop: "10px", whiteSpace: "pre-wrap", color: "#444" }}>
+                        {settings.bottomDetails}
+                      </div>
+                    )}
+                  </div>
 
-          {/* Items Table */}
-          <table width="100%" border={0} cellPadding={14} cellSpacing={0} style={{ borderCollapse: "collapse", marginBottom: "40px", border: "2px solid #e5e7eb" }}>
-            <thead>
-              <tr style={{ backgroundColor: "#f3f4f6", borderBottom: "2px solid #d1d5db", textAlign: "left", fontSize: "11px", textTransform: "uppercase", color: "#4b5563", letterSpacing: "0.5px", fontWeight: "700" }}>
-                <th style={{ borderRight: "1px solid #e5e7eb" }}>#</th>
-                <th style={{ borderRight: "1px solid #e5e7eb" }}>Product Description & Attributes</th>
-                <th style={{ borderRight: "1px solid #e5e7eb", textAlign: "center" }}>Qty</th>
-                <th style={{ borderRight: "1px solid #e5e7eb", textAlign: "center" }}>Batch / Lot No.</th>
-                <th>Remarks</th>
-              </tr>
-            </thead>
-            <tbody>
-              {coc.items.map((item: any, index: number) => {
-                const attrs = item.attributes ? JSON.parse(item.attributes) : [];
-                return (
-                  <tr key={item.id} style={{ borderBottom: "1px solid #e5e7eb", fontSize: "13px" }}>
-                    <td style={{ borderRight: "1px solid #e5e7eb", color: "#6b7280", verticalAlign: "top", paddingTop: "14px" }}>{index + 1}</td>
-                    <td style={{ borderRight: "1px solid #e5e7eb", verticalAlign: "top" }}>
-                      <div style={{ fontWeight: "700", color: "#111827", marginBottom: "4px" }}>{item.product.materialDescription}</div>
-                      <div style={{ color: "#6b7280", fontSize: "11px", marginBottom: "4px" }}>CODE: {item.product.materialCode}</div>
-                      {item.product.specification && (
-                        <div style={{ color: "#4b5563", fontSize: "12px", marginTop: "2px", marginBottom: "6px" }}>{item.product.specification}</div>
-                      )}
-                      
-                      {/* Dynamic Attributes */}
-                      {attrs.length > 0 && (
-                        <div style={{ marginTop: "8px", paddingTop: "8px", borderTop: "1px dashed #d1d5db" }}>
-                          {attrs.map((attr: any, i: number) => attr.key && attr.value ? (
-                            <div key={i} style={{ display: 'flex', marginBottom: '2px', fontSize: '11px' }}>
-                              <strong style={{ minWidth: '90px', color: '#4b5563' }}>{attr.key}:</strong>
-                              <span style={{ color: '#111827' }}>{attr.value}</span>
-                            </div>
-                          ) : null)}
-                        </div>
-                      )}
-                    </td>
-                    <td align="center" style={{ borderRight: "1px solid #e5e7eb", fontWeight: "700", verticalAlign: "top", paddingTop: "14px" }}>{item.quantity} <span style={{ fontSize: "11px", color: "#6b7280", fontWeight: "normal" }}>{item.product.unit}</span></td>
-                    <td align="center" style={{ borderRight: "1px solid #e5e7eb", fontWeight: "700", color: "#059669", verticalAlign: "top", paddingTop: "14px" }}>{item.batchNo || '-'}</td>
-                    <td style={{ color: "#4b5563", verticalAlign: "top", paddingTop: "14px" }}>{item.remarks || '-'}</td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-
-          {/* Remarks */}
-          {coc.remarks && (
-            <div style={{ marginBottom: "40px" }}>
-              <h3 style={{ margin: "0 0 8px 0", fontSize: "11px", textTransform: "uppercase", color: "#6b7280", letterSpacing: "0.5px", fontWeight: "700" }}>Additional Remarks</h3>
-              <div style={{ fontSize: "13px", color: "#374151", whiteSpace: "pre-wrap", padding: "12px", backgroundColor: "#f9fafb", borderRadius: "6px", border: "1px dashed #d1d5db" }}>
-                {coc.remarks}
-              </div>
-            </div>
-          )}
-
-          {/* Signatures */}
-          <table width="100%" border={0} cellPadding={0} cellSpacing={0} style={{ marginTop: "60px", pageBreakInside: "avoid" }}>
-            <tbody>
-              <tr>
-                <td valign="bottom" width="50%" align="left">
-                </td>
-                <td valign="bottom" width="50%" align="right">
-                  <div style={{ display: "inline-block", textAlign: "center" }}>
-                    <div style={{ fontWeight: "700", color: "#111827", fontSize: "14px", marginBottom: "4px" }}>For {settings?.companyName || "Company Name"}</div>
-                    
-                    <div style={{ height: "80px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {/* Right: Signature */}
+                  <div style={{ width: "40%", textAlign: "center" }}>
+                    <div style={{ height: "90px", display: "flex", alignItems: "flex-end", justifyContent: "center", paddingBottom: "10px" }}>
                       {settings?.signatureUrl && (
-                        <img src={settings.signatureUrl} alt="Signature" style={{ maxHeight: "80px", objectFit: "contain" }} />
+                        <img src={settings.signatureUrl} alt="Signature" style={{ maxHeight: "80px", maxWidth: "200px", objectFit: "contain" }} />
                       )}
                     </div>
-                    
-                    <div style={{ borderTop: "2px solid #9ca3af", paddingTop: "8px", color: "#4b5563", fontSize: "12px", fontWeight: "600", marginTop: "4px" }}>Authorized Signatory</div>
+                    <div style={{ borderTop: "1px solid #000", paddingTop: "8px", fontWeight: "bold", fontSize: "12px", textTransform: "uppercase", letterSpacing: "1px" }}>
+                      Authorized Signatory
+                    </div>
                   </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
 
+                </div>
+
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

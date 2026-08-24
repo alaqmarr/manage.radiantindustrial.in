@@ -1,6 +1,5 @@
 "use client"
-import { useState, useEffect } from "react"
-import { createPortal } from "react-dom"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { deleteCocs, updateCocStatus } from "@/app/actions/coc"
 import { Printer, Edit, Trash2, CheckCircle2, Ban } from "lucide-react"
@@ -9,11 +8,6 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
   const router = useRouter()
   const [isDeleting, setIsDeleting] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
 
   const handleDelete = async () => {
     if (!confirm("Are you sure you want to delete this Certificate of Conformance?")) return
@@ -98,20 +92,20 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
         </button>
       </div>
 
-      {mounted && createPortal(
-        <div id="coc-print-view" className="hidden print:block w-full bg-white text-black" style={{ margin: 0, padding: 0 }}>
-          <style type="text/css" media="print">
-            {`
-              @media print {
-              @page { size: A4; margin: 0; }
-              
-              /* Remove all backdrop filters which create false containing blocks for position: fixed */
-              * {
-                -webkit-backdrop-filter: none !important;
-                backdrop-filter: none !important;
-              }
+      {/* Print Template - Certificate Style */}
+      <div id="coc-print-view" className="hidden print:block w-full bg-white text-black" style={{ margin: 0, padding: 0 }}>
+        <style type="text/css" media="print">
+          {`
+            @media print {
+            @page { size: A4; margin: 0; }
+            
+            /* Remove all backdrop filters which create false containing blocks for position: fixed */
+            * {
+              -webkit-backdrop-filter: none !important;
+              backdrop-filter: none !important;
+            }
 
-              .cert-container {
+            .cert-container {
               box-sizing: border-box;
               width: 210mm;
               min-height: 297mm;
@@ -297,7 +291,6 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
           </div>
         </div>
       </div>
-      , document.body)}
     </>
   )
 }

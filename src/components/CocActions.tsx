@@ -260,16 +260,26 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
                       <td>
                         <div style={{ fontWeight: "600", fontSize: "13px", color: "#111", marginBottom: "3px" }}>{item.product.materialDescription}</div>
                         <div style={{ color: "#666", fontSize: "11px" }}>Part Code: {item.product.materialCode}</div>
-                        {attrs.length > 0 && (
-                          <div style={{ marginTop: "8px" }}>
-                            {attrs.map((attr: any, i: number) => attr.key && attr.value ? (
-                              <div key={i} style={{ display: 'flex', marginBottom: '3px', fontSize: '11px' }}>
-                                <span style={{ minWidth: '90px', color: '#777' }}>{attr.key}:</span>
-                                <strong style={{ color: '#222', fontWeight: "500" }}>{attr.value}</strong>
-                              </div>
-                            ) : null)}
-                          </div>
-                        )}
+                        {(() => {
+                          try {
+                            const parsed = JSON.parse(item.attributes || '[]');
+                            if (Array.isArray(parsed) && parsed.length > 0) {
+                              return (
+                                <div style={{ marginTop: "8px" }}>
+                                  {parsed.map((attr: { key: string; value: string }, i: number) => attr.key && attr.value ? (
+                                    <div key={i} style={{ display: 'flex', marginBottom: '3px', fontSize: '11px' }}>
+                                      <span style={{ minWidth: '90px', color: '#777' }}>{attr.key}:</span>
+                                      <strong style={{ color: '#222', fontWeight: "500" }}>{attr.value}</strong>
+                                    </div>
+                                  ) : null)}
+                                </div>
+                              );
+                            }
+                          } catch (e) {
+                            return null;
+                          }
+                          return null;
+                        })()}
                       </td>
                       <td align="center" style={{ fontWeight: "600", fontSize: "13px" }}>{item.quantity} <span style={{ fontSize: "11px", color: "#777", fontWeight: "normal" }}>{item.product.unit}</span></td>
                       <td align="center" style={{ fontWeight: "500" }}>{item.batchNo || '-'}</td>

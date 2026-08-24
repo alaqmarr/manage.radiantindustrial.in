@@ -478,7 +478,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
       )}
 
       {isClientModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="glass-panel w-full max-w-md p-6 rounded-md border border-premium-border">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-medium text-white">New Client</h3>

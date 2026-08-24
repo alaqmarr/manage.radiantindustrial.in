@@ -278,9 +278,9 @@ export async function getAccountMetrics() {
     })
     const accountsReceivable = pendingQuotations.reduce((sum, q) => sum + Math.max(0, (q.totalAmount + q.totalGst) - q.amountPaid), 0)
 
-    // Calculate Accounts Payable (Unpaid amount of all POs except CANCELLED + Unpaid Purchases)
+    // Calculate Accounts Payable (Unpaid amount of all POs except CANCELLED and DRAFT + Unpaid Purchases)
     const pendingPOs = await prisma.purchaseOrder.findMany({
-      where: { status: { not: 'CANCELLED' } }
+      where: { status: { notIn: ['CANCELLED', 'DRAFT'] } }
     })
     const pendingPurchases = await prisma.purchase.findMany()
     

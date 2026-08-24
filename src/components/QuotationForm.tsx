@@ -5,6 +5,7 @@ import { createQuickProduct } from "@/app/actions/product"
 import { upsertDraftQuotation, getQuotationUpdatedAt } from "@/app/actions/quotation"
 import { createClient } from "@/app/actions/client"
 import { parseQuotationExcelAction } from "@/app/actions/import"
+import { ProductModal } from "./ProductModal"
 import { VendorPriceDialog } from "./VendorPriceDialog"
 import { MarginIndicator } from "./MarginIndicator"
 import { formatRupee, numberToWordsRupees } from "@/lib/utils"
@@ -424,59 +425,6 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
       </div>
 
       {/* Client Modal */}
-      
-      {isProductModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="glass-panel w-full max-w-md p-6 rounded-md border border-premium-border">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-medium text-white">New Product</h3>
-              <button onClick={() => setIsProductModalOpen(false)} className="text-zinc-400 hover:text-white transition-colors">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-1">Material Code (Optional)</label>
-                <input 
-                  value={newProdCode} onChange={e => setNewProdCode(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
-                  placeholder="Auto-generated if left blank"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-1">Description *</label>
-                <input 
-                  autoFocus value={newProdDesc} onChange={e => setNewProdDesc(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-zinc-400 mb-1">Unit</label>
-                  <input 
-                    value={newProdUnit} onChange={e => setNewProdUnit(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-zinc-400 mb-1">GST %</label>
-                  <input 
-                    type="number" value={newProdGst} onChange={e => setNewProdGst(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
-                  />
-                </div>
-              </div>
-              <button 
-                onClick={handleCreateProduct} disabled={isCreatingProduct || !newProdDesc.trim()}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-brand-orange hover:bg-orange-600 disabled:opacity-50 text-white font-medium rounded-md transition-colors mt-4"
-              >
-                {isCreatingProduct ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create & Add Product"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {isClientModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="glass-panel w-full max-w-md p-6 rounded-md border border-premium-border">
@@ -626,7 +574,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
         </div>
         
         <div className="relative z-[55]" ref={autocompleteRef}>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <input 
               type="text"
               value={searchTerm}
@@ -640,8 +588,25 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
               placeholder="Search products by code or description..."
               className="flex-1 bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate shadow-lg shadow-black/20"
             />
+            <button
+              type="button"
+              onClick={() => setIsProductModalOpen(true)}
+              className="p-2 bg-zinc-900 border border-premium-border rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+              title="Add New Product"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
           </div>
           
+          <ProductModal 
+            forceOpen={isProductModalOpen} 
+            onForceClose={() => setIsProductModalOpen(false)} 
+            onSuccess={(p) => {
+              addProductToQuotation(p)
+              setIsProductModalOpen(false)
+            }} 
+          />
+
           {isDropdownOpen && searchTerm && (
             <ul className="absolute z-[60] mt-2 w-full glass-panel border border-premium-border rounded-md shadow-2xl max-h-60 overflow-y-auto custom-scrollbar overflow-x-hidden animate-in fade-in slide-in-from-top-2">
               {filteredProducts.length === 0 ? (

@@ -5,6 +5,7 @@ import { createPurchase, updatePurchase } from "@/app/actions/purchase"
 import { Loader2, X, Plus, Search, Trash2 } from "lucide-react"
 import { formatRupee } from "@/lib/utils"
 import { SupplierModal } from "./SupplierModal"
+import { ProductModal } from "./ProductModal"
 
 type Supplier = { id: string, name: string }
 type Product = { id: string, materialCode: string, materialDescription: string, costPrice: number }
@@ -40,6 +41,7 @@ export function PurchaseModal({
 
   const [localSuppliers, setLocalSuppliers] = useState<Supplier[]>(suppliers)
   const [showSupplierModal, setShowSupplierModal] = useState(false)
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false)
 
   useEffect(() => {
     setLocalSuppliers(suppliers)
@@ -251,7 +253,7 @@ export function PurchaseModal({
           {/* Autocomplete */}
           <div className="relative" ref={autocompleteRef}>
             <label className="block text-sm font-medium text-zinc-400 mb-1">Add Product *</label>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
               <input 
                 type="text"
                 value={searchTerm}
@@ -265,6 +267,14 @@ export function PurchaseModal({
                 placeholder="Search products by code or description..."
                 className="flex-1 max-w-md bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate shadow-lg shadow-black/20"
               />
+              <button
+                type="button"
+                onClick={() => setIsProductModalOpen(true)}
+                className="p-2 bg-zinc-900 border border-premium-border rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                title="Add New Product"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
             </div>
             
             {isDropdownOpen && searchTerm && (
@@ -386,6 +396,15 @@ export function PurchaseModal({
           setSelectedSupplierId(newSupplier.id)
           setShowSupplierModal(false)
         }} 
+      />
+
+      <ProductModal
+        forceOpen={isProductModalOpen}
+        onForceClose={() => setIsProductModalOpen(false)}
+        onSuccess={(p: any) => {
+          addProductToPurchase(p)
+          setIsProductModalOpen(false)
+        }}
       />
     </div>
   )

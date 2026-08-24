@@ -21,7 +21,7 @@ export default async function AccountsPage() {
       paymentStatus: { not: 'PAID' },
       status: { notIn: ['CANCELLED', 'REJECTED'] }
     },
-    select: { id: true, prNo: true, client: { select: { name: true } } }
+    select: { id: true, prNo: true, totalAmount: true, totalGst: true, amountPaid: true, client: { select: { name: true } } }
   })
   
   const pos = await prisma.purchaseOrder.findMany({
@@ -29,12 +29,12 @@ export default async function AccountsPage() {
       paymentStatus: { not: 'PAID' },
       status: { notIn: ['CANCELLED', 'DRAFT'] }
     },
-    select: { id: true, poNumber: true, supplier: { select: { name: true } } }
+    select: { id: true, poNumber: true, totalAmount: true, totalGst: true, amountPaid: true, supplier: { select: { name: true } } }
   })
 
   const purchases = await prisma.purchase.findMany({
     where: { paymentStatus: { not: 'PAID' } },
-    select: { id: true, supplier: { select: { name: true } } }
+    select: { id: true, totalAmount: true, totalGst: true, amountPaid: true, supplier: { select: { name: true } } }
   })
 
   return (

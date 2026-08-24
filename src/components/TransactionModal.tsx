@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation"
 import { recordManualPayment, recordPayment } from "@/app/actions/payment"
 import { X } from "lucide-react"
 
+import { formatRupee } from "@/lib/utils"
+
 export function TransactionModal({ onClose, quotations, pos, purchases }: any) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -19,6 +21,35 @@ export function TransactionModal({ onClose, quotations, pos, purchases }: any) {
   const [notes, setNotes] = useState("")
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [status, setStatus] = useState("CLEARED") // PENDING, CLEARED
+
+  const getSelectedEntity = () => {
+    if (!entityId) return null;
+    if (category === "quotation") return quotations?.find((q: any) => q.id === entityId);
+    if (category === "po") return pos?.find((p: any) => p.id === entityId);
+    if (category === "purchase") return purchases?.find((p: any) => p.id === entityId);
+    return null;
+  }
+
+  const selectedEntity = getSelectedEntity();
+  
+  const handleEntityChange = (newEntityId: string) => {
+    setEntityId(newEntityId);
+    if (!newEntityId) {
+      setAmount("");
+      return;
+    }
+    
+    // Autofill amount
+    let entity = null;
+    if (category === "quotation") entity = quotations?.find((q: any) => q.id === newEntityId);
+    if (category === "po") entity = pos?.find((p: any) => p.id === newEntityId);
+    if (category === "purchase") entity = purchases?.find((p: any) => p.id === newEntityId);
+    
+    if (entity) {
+      const remainingPaise = (entity.totalAmount || 0) + (entity.totalGst || 0) - (entity.amountPaid || 0);
+      setAmount((remainingPaise / 100).toFixed(2));
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -75,6 +106,7 @@ export function TransactionModal({ onClose, quotations, pos, purchases }: any) {
                   value={category} 
                   onChange={(e) => {
                     setCategory(e.target.value)
+                    handleEntityChange("")
                     if (e.target.value === "quotation") setType("IN")
                     if (e.target.value === "po" || e.target.value === "purchase") setType("OUT")
                   }}
@@ -107,7 +139,7 @@ export function TransactionModal({ onClose, quotations, pos, purchases }: any) {
                 <select 
                   required
                   value={entityId} 
-                  onChange={(e) => setEntityId(e.target.value)}
+                  onChange={(e) => handleEntityChange(e.target.value)}
                   className="w-full bg-black/50 border border-premium-border rounded-md px-3 py-2 text-white focus:outline-none focus:border-brand-slate"
                 >
                   <option value="">-- Select --</option>
@@ -124,7 +156,7 @@ export function TransactionModal({ onClose, quotations, pos, purchases }: any) {
                 <select 
                   required
                   value={entityId} 
-                  onChange={(e) => setEntityId(e.target.value)}
+                  onChange={(e) => handleEntityChange(e.target.value)}
                   className="w-full bg-black/50 border border-premium-border rounded-md px-3 py-2 text-white focus:outline-none focus:border-brand-slate"
                 >
                   <option value="">-- Select --</option>
@@ -141,7 +173,7 @@ export function TransactionModal({ onClose, quotations, pos, purchases }: any) {
                 <select 
                   required
                   value={entityId} 
-                  onChange={(e) => setEntityId(e.target.value)}
+                  onChange={(e) => handleEntityChange(e.target.value)}
                   className="w-full bg-black/50 border border-premium-border rounded-md px-3 py-2 text-white focus:outline-none focus:border-brand-slate"
                 >
                   <option value="">-- Select --</option>
@@ -149,6 +181,33 @@ export function TransactionModal({ onClose, quotations, pos, purchases }: any) {
                     <option key={p.id} value={p.id}>{p.id.slice(0,8)} - {p.supplier.name}</option>
                   ))}
                 </select>
+              </div>
+            )}
+
+            {selectedEntity && (
+              <div className="bg-black/30 border border-premium-border/50 rounded-lg p-3 text-sm">
+                <div className="flex justify-between text-zinc-400 mb-1">
+                  <span>Total Value:</span>
+                  <span className="text-white font-medium">{formatRupee((selectedEntity.totalAmount || 0) + (selectedEntity.totalGst || 0))}</span>
+                </div>
+                <div className="flex justify-between text-zinc-400 mb-1">
+                  <span>Already Paid:</span>
+                  <span className="text-white font-medium">{formatRupee(selectedEntity.amountPaid || 0)}</span>
+                </div>
+                <div className="flex justify-between text-zinc-400 mb-2 pb-2 border-b border-white/10">
+                  <span>Current Due:</span>
+                  <span className="text-brand-orange font-bold">
+                    {formatRupee((selectedEntity.totalAmount || 0) + (selectedEntity.totalGst || 0) - (selectedEntity.amountPaid || 0))}
+                  </span>
+                </div>
+                <div className="flex justify-between text-zinc-400">
+                  <span>Due after this txn:</span>
+                  <span className="text-emerald-400 font-bold">
+                    {formatRupee(
+                      Math.max(0, (selectedEntity.totalAmount || 0) + (selectedEntity.totalGst || 0) - (selectedEntity.amountPaid || 0) - (Number(amount) * 100 || 0))
+                    )}
+                  </span>
+                </div>
               </div>
             )}
 

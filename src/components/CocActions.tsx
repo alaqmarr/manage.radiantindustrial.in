@@ -103,6 +103,15 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
             @media print {
             @page { size: A4; margin: 0; }
             
+            html, body {
+              margin: 0 !important;
+              padding: 0 !important;
+            }
+
+            body > *:not(#coc-print-view) {
+              display: none !important;
+            }
+            
             /* Remove all backdrop filters which create false containing blocks for position: fixed */
             * {
               -webkit-backdrop-filter: none !important;
@@ -122,7 +131,7 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
               position: relative;
             }
             .cert-watermark {
-              position: fixed;
+              position: absolute;
               top: 50%;
               left: 50%;
               transform: translate(-50%, -50%);
@@ -141,6 +150,9 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
               letter-spacing: 2px;
               margin: 30px 0 25px;
               color: #111;
+            }
+            .cert-table tr {
+              page-break-inside: avoid;
             }
             .cert-table th {
               background-color: #fafafa;

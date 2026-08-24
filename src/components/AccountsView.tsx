@@ -7,7 +7,7 @@ import { updatePaymentStatus, deletePayment } from "@/app/actions/payment"
 import { useRouter } from "next/navigation"
 import { TransactionModal } from "./TransactionModal"
 
-export function AccountsView({ initialMetrics, initialEntries, quotations, pos }: any) {
+export function AccountsView({ initialMetrics, initialEntries, quotations, pos, purchases }: any) {
   const router = useRouter()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
@@ -121,7 +121,7 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos }
           <div>
             <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Accounts Payable</p>
             <p className="text-lg font-bold text-rose-400">-{formatRupee(accountsPayable)}</p>
-            <p className="text-[10px] text-zinc-500 mt-1">Unpaid on Purchase Orders</p>
+            <p className="text-[10px] text-zinc-500 mt-1">Unpaid on Purchase Orders & Purchases</p>
           </div>
           <div>
             <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Pending Fulfillments</p>
@@ -199,6 +199,11 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos }
                         <div className="text-zinc-200">Purchase Order</div>
                         <div className="text-xs text-zinc-500">{entry.po?.supplier?.name} (PO: {entry.po?.poNumber})</div>
                       </div>
+                    ) : entry.purchaseId ? (
+                      <div>
+                        <div className="text-zinc-200">Direct Purchase</div>
+                        <div className="text-xs text-zinc-500">{entry.purchase?.supplier?.name}</div>
+                      </div>
                     ) : (
                       <div className="text-zinc-200">Manual Entry</div>
                     )}
@@ -251,6 +256,7 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos }
           onClose={() => setIsModalOpen(false)} 
           quotations={quotations}
           pos={pos}
+          purchases={purchases}
         />
       )}
     </div>

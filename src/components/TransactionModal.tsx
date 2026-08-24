@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { recordManualPayment, recordPayment } from "@/app/actions/payment"
 import { X } from "lucide-react"
 
-export function TransactionModal({ onClose, quotations, pos }: any) {
+export function TransactionModal({ onClose, quotations, pos, purchases }: any) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   
@@ -37,7 +37,7 @@ export function TransactionModal({ onClose, quotations, pos }: any) {
         })
       } else {
         await recordPayment({
-          type: category as "quotation" | "po",
+          type: category as "quotation" | "po" | "purchase",
           entityId,
           amount: Number(amount),
           method,
@@ -76,13 +76,14 @@ export function TransactionModal({ onClose, quotations, pos }: any) {
                   onChange={(e) => {
                     setCategory(e.target.value)
                     if (e.target.value === "quotation") setType("IN")
-                    if (e.target.value === "po") setType("OUT")
+                    if (e.target.value === "po" || e.target.value === "purchase") setType("OUT")
                   }}
                   className="w-full bg-black/50 border border-premium-border rounded-md px-3 py-2 text-white focus:outline-none focus:border-brand-slate"
                 >
                   <option value="manual">Manual Entry</option>
                   <option value="quotation">Against Quotation / Sale</option>
                   <option value="po">Against Purchase Order</option>
+                  <option value="purchase">Against Direct Purchase</option>
                 </select>
               </div>
               
@@ -129,6 +130,23 @@ export function TransactionModal({ onClose, quotations, pos }: any) {
                   <option value="">-- Select --</option>
                   {pos?.map((p: any) => (
                     <option key={p.id} value={p.id}>{p.poNumber || p.id.slice(0,8)} - {p.supplier.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {category === "purchase" && (
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">Select Direct Purchase</label>
+                <select 
+                  required
+                  value={entityId} 
+                  onChange={(e) => setEntityId(e.target.value)}
+                  className="w-full bg-black/50 border border-premium-border rounded-md px-3 py-2 text-white focus:outline-none focus:border-brand-slate"
+                >
+                  <option value="">-- Select --</option>
+                  {purchases?.map((p: any) => (
+                    <option key={p.id} value={p.id}>{p.id.slice(0,8)} - {p.supplier.name}</option>
                   ))}
                 </select>
               </div>

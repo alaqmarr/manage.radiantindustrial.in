@@ -15,7 +15,7 @@ function computePaymentStatus(amountPaid: number, totalAmount: number, totalGst:
 }
 
 // Recalculate and update the parent entity's amountPaid based ONLY on CLEARED payments.
-async function recalculateParentPayment(type: "quotation" | "po", entityId: string) {
+async function recalculateParentPayment(type: "quotation" | "po" | "purchase", entityId: string) {
   if (type === "quotation") {
     const quotation = await prisma.quotation.findUnique({ where: { id: entityId } })
     if (!quotation) return
@@ -44,11 +44,24 @@ async function recalculateParentPayment(type: "quotation" | "po", entityId: stri
     })
     revalidatePath("/purchase-orders")
     revalidatePath(`/purchase-orders/${entityId}`)
+  } else if (type === "purchase") {
+    const purchase = await prisma.purchase.findUnique({ where: { id: entityId } })
+    if (!purchase) return
+    const payments = await prisma.payment.findMany({
+      where: { purchaseId: entityId, status: "CLEARED" }
+    })
+    const totalPaidPaise = payments.reduce((sum, p) => sum + p.amount, 0)
+    const newStatus = computePaymentStatus(totalPaidPaise, purchase.totalAmount, purchase.totalGst)
+    await prisma.purchase.update({
+      where: { id: entityId },
+      data: { amountPaid: totalPaidPaise, paymentStatus: newStatus }
+    })
+    revalidatePath("/purchases")
   }
 }
 
 export async function recordPayment(data: {
-  type: "quotation" | "po"
+  type: "quotation" | "po" | "purchase"
   entityId: string
   amount: number // in RUPEES
   method: string
@@ -85,7 +98,9 @@ export async function recordPayment(data: {
         reference: data.reference?.trim() || null,
         notes: data.notes?.trim() || null,
         date: paymentDate,
-        ...(data.type === "quotation" ? { quotationId: data.entityId } : { poId: data.entityId })
+        ...(data.type === "quotation" ? { quotationId: data.entityId } : 
+           data.type === "po" ? { poId: data.entityId } : 
+           { purchaseId: data.entityId })
       }
     })
 
@@ -108,6 +123,7 @@ export async function deletePayment(paymentId: string) {
 
     const quotationId = payment.quotationId
     const poId = payment.poId
+    const purchaseId = payment.purchaseId
 
     await prisma.payment.delete({ where: { id: paymentId } })
 
@@ -115,6 +131,8 @@ export async function deletePayment(paymentId: string) {
       await recalculateParentPayment("quotation", quotationId)
     } else if (poId) {
       await recalculateParentPayment("po", poId)
+    } else if (purchaseId) {
+      await recalculateParentPayment("purchase", purchaseId)
     }
     
     revalidatePath("/accounts")
@@ -218,7 +236,8 @@ export async function getLedgerEntries() {
       orderBy: { date: "desc" },
       include: {
         quotation: { select: { id: true, client: { select: { name: true } } } },
-        po: { select: { poNumber: true, id: true, supplier: { select: { name: true } } } }
+        po: { select: { poNumber: true, id: true, supplier: { select: { name: true } } } },
+        purchase: { select: { id: true, supplier: { select: { name: true } } } }
       }
     })
     return { success: true, entries }
@@ -259,11 +278,14 @@ export async function getAccountMetrics() {
     })
     const accountsReceivable = pendingQuotations.reduce((sum, q) => sum + Math.max(0, (q.totalAmount + q.totalGst) - q.amountPaid), 0)
 
-    // Calculate Accounts Payable (Unpaid amount of all POs except CANCELLED)
+    // Calculate Accounts Payable (Unpaid amount of all POs except CANCELLED + Unpaid Purchases)
     const pendingPOs = await prisma.purchaseOrder.findMany({
       where: { status: { not: 'CANCELLED' } }
     })
-    const accountsPayable = pendingPOs.reduce((sum, po) => sum + Math.max(0, (po.totalAmount + po.totalGst) - po.amountPaid), 0)
+    const pendingPurchases = await prisma.purchase.findMany()
+    
+    let accountsPayable = pendingPOs.reduce((sum, po) => sum + Math.max(0, (po.totalAmount + po.totalGst) - po.amountPaid), 0)
+    accountsPayable += pendingPurchases.reduce((sum, p) => sum + Math.max(0, (p.totalAmount + p.totalGst) - p.amountPaid), 0)
 
     // Calculate Pending Fulfillment Cost (Expected cost to fulfill ACCEPTED quotations)
     // We only sum this for ACCEPTED. Once COMPLETED, we assume goods were purchased and PO handles the cost.

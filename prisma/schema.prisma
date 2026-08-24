@@ -206,13 +206,16 @@ model ProductSupplier {
 }
 
 model Purchase {
-  id          String         @id
-  supplierId  String
-  supplier    Supplier       @relation(fields: [supplierId], references: [id])
-  totalAmount Int       // paise (excluding GST)
-  totalGst    Int       // paise
-  items       PurchaseItem[]
-  date        DateTime       @default(now())
+  id            String         @id
+  supplierId    String
+  supplier      Supplier       @relation(fields: [supplierId], references: [id])
+  totalAmount   Int            // paise (excluding GST)
+  totalGst      Int            // paise
+  paymentStatus String         @default("UNPAID") // UNPAID, PARTIALLY_PAID, PAID
+  amountPaid    Int            @default(0) // paise
+  items         PurchaseItem[]
+  payments      Payment[]
+  date          DateTime       @default(now())
 }
 
 model PurchaseItem {
@@ -297,6 +300,8 @@ model Payment {
   quotation      Quotation?     @relation(fields: [quotationId], references: [id], onDelete: Cascade)
   poId           String?
   po             PurchaseOrder? @relation(fields: [poId], references: [id], onDelete: Cascade)
+  purchaseId     String?
+  purchase       Purchase?      @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
   createdAt      DateTime       @default(now())
 }
 

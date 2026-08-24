@@ -26,6 +26,11 @@ export default async function AccountsPage() {
     select: { id: true, poNumber: true, supplier: { select: { name: true } } }
   })
 
+  const purchases = await prisma.purchase.findMany({
+    where: { paymentStatus: { not: 'PAID' } },
+    select: { id: true, supplier: { select: { name: true } } }
+  })
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between sticky top-0 z-50 bg-zinc-950/80 backdrop-blur-xl py-4 -mx-8 px-8 border-b border-premium-border/50">
@@ -40,6 +45,7 @@ export default async function AccountsPage() {
         initialEntries={entriesRes.success ? entriesRes.entries : []} 
         quotations={quotations}
         pos={pos}
+        purchases={purchases}
       />
     </div>
   )

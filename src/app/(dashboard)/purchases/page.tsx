@@ -265,13 +265,14 @@ export default async function PurchasesPage(props: { searchParams: Promise<{ sea
                   <th className="px-6 py-5 font-medium tracking-wider">Total Amount</th>
                   <th className="px-6 py-5 font-medium tracking-wider">Total GST</th>
                   <th className="px-6 py-5 font-medium tracking-wider">Grand Total</th>
+                  <th className="px-6 py-5 font-medium tracking-wider">Payment Status</th>
                   <th className="px-6 py-5 font-medium tracking-wider text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-premium-border">
                 {purchases.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-6 py-8 text-center text-zinc-500">
+                    <td colSpan={10} className="px-6 py-8 text-center text-zinc-500">
                       No purchases recorded.
                     </td>
                   </tr>
@@ -290,6 +291,11 @@ export default async function PurchasesPage(props: { searchParams: Promise<{ sea
                       <td className="px-6 py-4 font-medium text-white">{formatRupee(purchase.totalAmount)}</td>
                       <td className="px-6 py-4 text-zinc-300">{formatRupee(purchase.totalGst)}</td>
                       <td className="px-6 py-4 font-medium text-white">{formatRupee(purchase.totalAmount + purchase.totalGst)}</td>
+                      <td className="px-6 py-4">
+                        {purchase.paymentStatus === "PAID" && <span className="px-2 py-1 bg-emerald-500/10 text-emerald-500 rounded text-xs font-medium">PAID</span>}
+                        {purchase.paymentStatus === "PARTIALLY_PAID" && <span className="px-2 py-1 bg-amber-500/10 text-amber-500 rounded text-xs font-medium">PARTIAL</span>}
+                        {purchase.paymentStatus === "UNPAID" && <span className="px-2 py-1 bg-rose-500/10 text-rose-500 rounded text-xs font-medium">UNPAID</span>}
+                      </td>
                       <td className="px-6 py-4 text-right">
                         <Link href={`?action=edit-purchase&id=${purchase.id}`} className="text-brand-slate hover:text-slate-400 font-medium">Edit</Link>
                       </td>

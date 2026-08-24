@@ -38,9 +38,9 @@ export default async function CocViewPage({ params }: { params: Promise<{ id: st
   })
 
   return (
-    <div className="space-y-6 print:space-y-0">
-      <div className="flex items-center justify-between sticky top-0 z-50 bg-zinc-950/80 backdrop-blur-xl py-4 -mx-8 px-8 border-b border-premium-border/50 mb-6 print:static print:bg-transparent print:border-none print:p-0 print:m-0 print:block">
-        <div className="print:hidden">
+    <div className="space-y-6 print:hidden">
+      <div className="flex items-center justify-between sticky top-0 z-50 bg-zinc-950/80 backdrop-blur-xl py-4 -mx-8 px-8 border-b border-premium-border/50 mb-6">
+        <div>
           <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Certificate {coc.cocNumber || coc.id.slice(0, 8)}</h1>
           <div className="flex items-center gap-3">
             <span className="text-zinc-400">Status:</span>

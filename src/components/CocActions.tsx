@@ -1,5 +1,6 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import { deleteCocs, updateCocStatus } from "@/app/actions/coc"
 import { Printer, Edit, Trash2, CheckCircle2, Ban } from "lucide-react"
@@ -8,6 +9,9 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
   const router = useRouter()
   const [isDeleting, setIsDeleting] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => setMounted(true), [])
 
   const handleDelete = async () => {
     if (!confirm("Are you sure you want to delete this Certificate of Conformance?")) return
@@ -92,8 +96,8 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
         </button>
       </div>
 
-      {/* Print Template - Certificate Style */}
-      <div id="coc-print-view" className="hidden print:block w-full bg-white text-black" style={{ margin: 0, padding: 0 }}>
+      {mounted && createPortal(
+        <div id="coc-print-view" className="hidden print:block w-full bg-white text-black" style={{ margin: 0, padding: 0 }}>
         <style type="text/css" media="print">
           {`
             @media print {
@@ -291,6 +295,7 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
           </div>
         </div>
       </div>
+      , document.body)}
     </>
   )
 }

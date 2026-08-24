@@ -13,7 +13,9 @@ import {
   LogOut,
   ChevronRight,
   Mail,
-  Award
+  Award,
+  Wallet,
+  ClipboardList
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 
@@ -34,11 +36,17 @@ const menuGroups = [
     ]
   },
   {
+    label: "Finance",
+    items: [
+      { icon: Wallet, label: "Accounts & Ledger", href: "/accounts" },
+    ]
+  },
+  {
     label: "Inventory & Supply",
     items: [
       { icon: PackageSearch, label: "Products", href: "/products" },
       { icon: FileText, label: "RFQ", href: "/rfq" },
-  { icon: FileText, label: "Purchase Orders", href: "/purchase-orders" },
+      { icon: ClipboardList, label: "Purchase Orders", href: "/purchase-orders" },
       { icon: ShoppingCart, label: "Purchases", href: "/purchases" },
       { icon: Truck, label: "Suppliers", href: "/suppliers" },
     ]

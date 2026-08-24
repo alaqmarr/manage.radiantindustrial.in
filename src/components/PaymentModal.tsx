@@ -42,8 +42,9 @@ export function PaymentModal({
   const [amount, setAmount] = useState(defaultAmountRupees)
   const [method, setMethod] = useState("Bank Transfer")
   const [reference, setReference] = useState("")
-  const [date, setDate] = useState("")
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [notes, setNotes] = useState("")
+  const [status, setStatus] = useState("CLEARED")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
 
@@ -82,7 +83,8 @@ export function PaymentModal({
         method,
         reference: reference.trim() || undefined,
         notes: notes.trim() || undefined,
-        date: date || undefined
+        date: date || undefined,
+        status
       })
 
       if (res?.error) {
@@ -193,8 +195,8 @@ export function PaymentModal({
             </div>
           </div>
 
-          {/* Method and Date Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Method, Date, and Status Row */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5">
                 Payment Method *
@@ -210,6 +212,21 @@ export function PaymentModal({
                     {m}
                   </option>
                 ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5">
+                Status *
+              </label>
+              <select
+                required
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                className="w-full bg-zinc-950 border border-premium-border rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate text-sm"
+              >
+                <option value="CLEARED" className="bg-zinc-900 text-white">Cleared</option>
+                <option value="PENDING" className="bg-zinc-900 text-white">Pending (PDC)</option>
               </select>
             </div>
 

@@ -286,6 +286,8 @@ model PurchaseOrderItem {
 
 model Payment {
   id             String         @id @default(cuid())
+  type           String         @default("IN") // "IN" or "OUT"
+  status         String         @default("CLEARED") // "PENDING", "CLEARED", "BOUNCED", "CANCELLED"
   amount         Int            // paise
   method         String?        // BANK_TRANSFER, CASH, CHEQUE, UPI
   reference      String?        // Cheque no / UTR / transaction ref

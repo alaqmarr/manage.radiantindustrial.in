@@ -170,6 +170,7 @@ model Quotation {
   items            QuotationItem[]
   payments         Payment[]
   cocs             CertificateOfConformance[]
+  purchases        Purchase[]
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 }
@@ -213,6 +214,8 @@ model Purchase {
   totalGst      Int            // paise
   paymentStatus String         @default("UNPAID") // UNPAID, PARTIALLY_PAID, PAID
   amountPaid    Int            @default(0) // paise
+  quotationId   String?
+  quotation     Quotation?     @relation(fields: [quotationId], references: [id])
   items         PurchaseItem[]
   payments      Payment[]
   date          DateTime       @default(now())

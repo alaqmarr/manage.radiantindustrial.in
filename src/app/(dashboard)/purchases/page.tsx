@@ -42,6 +42,11 @@ export default async function PurchasesPage(props: { searchParams: Promise<{ sea
 
   const suppliers = await prisma.supplier.findMany({ select: { id: true, name: true } })
   const products = await prisma.product.findMany({ select: { id: true, materialCode: true, materialDescription: true, costPrice: true } })
+  const quotations = await prisma.quotation.findMany({
+    where: { status: { notIn: ['CANCELLED', 'REJECTED'] } },
+    select: { id: true, prNo: true, client: { select: { name: true } } },
+    orderBy: { createdAt: 'desc' }
+  })
 
   // ── Dashboard Metrics ──
   const now = new Date()
@@ -306,7 +311,7 @@ export default async function PurchasesPage(props: { searchParams: Promise<{ sea
             </table>
           </div>
         </div>
-        <PurchaseModal suppliers={suppliers} products={products} purchases={purchases} />
+        <PurchaseModal suppliers={suppliers} products={products} purchases={purchases} quotations={quotations} />
       </div>
     </SelectionProvider>
   )

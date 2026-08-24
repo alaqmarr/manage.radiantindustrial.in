@@ -12,10 +12,12 @@ export function PurchaseModal({
   suppliers, 
   products,
   purchases,
+  quotations
 }: { 
   suppliers: Supplier[]
   products: Product[]
   purchases?: any[]
+  quotations?: any[]
 }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -28,6 +30,7 @@ export function PurchaseModal({
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedSupplierId, setSelectedSupplierId] = useState("")
+  const [selectedQuotationId, setSelectedQuotationId] = useState("")
   const [items, setItems] = useState<{ 
     product: Product, 
     quantity: number, 
@@ -44,6 +47,7 @@ export function PurchaseModal({
   useEffect(() => {
     if (purchaseToEdit) {
       setSelectedSupplierId(purchaseToEdit.supplierId || "")
+      setSelectedQuotationId(purchaseToEdit.quotationId || "")
       setItems(purchaseToEdit.items.map((item: any) => ({
         product: item.product,
         quantity: item.quantity,
@@ -51,6 +55,7 @@ export function PurchaseModal({
       })))
     } else {
       setSelectedSupplierId("")
+      setSelectedQuotationId("")
       setItems([])
     }
   }, [purchaseToEdit])
@@ -134,6 +139,7 @@ export function PurchaseModal({
     try {
       const payload = {
         supplierId: selectedSupplierId,
+        quotationId: selectedQuotationId || undefined,
         items: items.map(i => ({
           productId: i.product.id,
           quantity: i.quantity,
@@ -179,16 +185,31 @@ export function PurchaseModal({
 
         <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
           {/* Supplier Select */}
-          <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-1">Supplier *</label>
-            <select 
-              value={selectedSupplierId} 
-              onChange={e => setSelectedSupplierId(e.target.value)}
-              className="w-full max-w-md bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate"
-            >
-              <option value="">Select a Supplier</option>
-              {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-zinc-400 mb-1">Select Supplier *</label>
+              <select 
+                value={selectedSupplierId} 
+                onChange={e => setSelectedSupplierId(e.target.value)}
+                className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate"
+              >
+                <option value="">Select a Supplier</option>
+                {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-400 mb-1">Tag Quotation (Optional)</label>
+              <select 
+                value={selectedQuotationId} 
+                onChange={e => setSelectedQuotationId(e.target.value)}
+                className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate"
+              >
+                <option value="">-- No Quotation Tagged --</option>
+                {quotations?.map((q: any) => (
+                  <option key={q.id} value={q.id}>{q.prNo || q.id.slice(0,8)} - {q.client.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="h-px bg-premium-border w-full" />

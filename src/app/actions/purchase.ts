@@ -4,6 +4,7 @@ import { auth } from "@/auth"
 
 export async function createPurchase(payload: {
   supplierId: string
+  quotationId?: string
   items: { productId: string, quantity: number, cpSnapshot: number }[]
 }) {
   const session = await auth()
@@ -50,6 +51,7 @@ export async function createPurchase(payload: {
       data: {
         id,
         supplierId: payload.supplierId,
+        quotationId: payload.quotationId || null,
         totalAmount,
         totalGst,
         items: {
@@ -87,6 +89,7 @@ export async function createPurchase(payload: {
 
 export async function updatePurchase(id: string, payload: {
   supplierId: string
+  quotationId?: string
   items: { productId: string, quantity: number, cpSnapshot: number }[]
 }) {
   const session = await auth()
@@ -136,6 +139,7 @@ export async function updatePurchase(id: string, payload: {
       where: { id },
       data: {
         supplierId: payload.supplierId,
+        quotationId: payload.quotationId || null,
         totalAmount,
         totalGst,
         items: {

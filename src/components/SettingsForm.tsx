@@ -10,6 +10,8 @@ export function SettingsForm({ settings }: { settings: any }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(settings?.logoUrl || null)
+  const [signatureFile, setSignatureFile] = useState<File | null>(null)
+  const [signaturePreview, setSignaturePreview] = useState<string | null>(settings?.signatureUrl || null)
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -21,6 +23,16 @@ export function SettingsForm({ settings }: { settings: any }) {
     }
   }
 
+  const handleSignatureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setSignatureFile(file)
+      const reader = new FileReader()
+      reader.onloadend = () => setSignaturePreview(reader.result as string)
+      reader.readAsDataURL(file)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsSubmitting(true)
@@ -28,6 +40,7 @@ export function SettingsForm({ settings }: { settings: any }) {
     try {
       const formData = new FormData(e.currentTarget)
       let imageUrl = null
+      let uploadedSignatureUrl = null
 
       if (imageFile) {
         const { uploadUrl, publicUrl } = await getPresignedUrl(imageFile.name, imageFile.type)
@@ -43,8 +56,25 @@ export function SettingsForm({ settings }: { settings: any }) {
         imageUrl = publicUrl
       }
 
+      if (signatureFile) {
+        const { uploadUrl, publicUrl } = await getPresignedUrl("signature_" + signatureFile.name, signatureFile.type)
+        const uploadResponse = await fetch(uploadUrl, {
+          method: "PUT",
+          body: signatureFile,
+          headers: { "Content-Type": signatureFile.type },
+        })
+
+        if (!uploadResponse.ok) {
+          throw new Error("Failed to upload signature to Cloudflare R2")
+        }
+        uploadedSignatureUrl = publicUrl
+      }
+
       if (imageUrl) {
         formData.append("logoUrl", imageUrl)
+      }
+      if (uploadedSignatureUrl) {
+        formData.append("signatureUrl", uploadedSignatureUrl)
       }
 
       const result = await saveCompanySettings(formData)
@@ -65,20 +95,39 @@ export function SettingsForm({ settings }: { settings: any }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl bg-zinc-900 border border-zinc-800 p-6 rounded-md">
       <div className="space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-zinc-400 mb-2">Company Logo</label>
-          <div className="flex items-center gap-4">
-            <div className="w-48 h-24 rounded-md bg-zinc-950 border border-zinc-800 flex items-center justify-center overflow-hidden p-2">
-              {imagePreview ? (
-                <img src={imagePreview} alt="Preview" className="w-full h-full object-contain" />
-              ) : (
-                <ImagePlus className="w-8 h-8 text-zinc-700" />
-              )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-zinc-400 mb-2">Company Logo</label>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="w-48 h-24 rounded-md bg-zinc-950 border border-zinc-800 flex items-center justify-center overflow-hidden p-2">
+                {imagePreview ? (
+                  <img src={imagePreview} alt="Preview" className="w-full h-full object-contain" />
+                ) : (
+                  <ImagePlus className="w-8 h-8 text-zinc-700" />
+                )}
+              </div>
+              <label className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-medium rounded-md cursor-pointer transition-colors">
+                Choose Logo
+                <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+              </label>
             </div>
-            <label className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-medium rounded-md cursor-pointer transition-colors">
-              Choose Logo
-              <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
-            </label>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-zinc-400 mb-2">Digital Signature Stamp</label>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="w-48 h-24 rounded-md bg-zinc-950 border border-zinc-800 flex items-center justify-center overflow-hidden p-2">
+                {signaturePreview ? (
+                  <img src={signaturePreview} alt="Signature Preview" className="w-full h-full object-contain" />
+                ) : (
+                  <ImagePlus className="w-8 h-8 text-zinc-700" />
+                )}
+              </div>
+              <label className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-medium rounded-md cursor-pointer transition-colors">
+                Choose Signature
+                <input type="file" className="hidden" accept="image/*" onChange={handleSignatureChange} />
+              </label>
+            </div>
+            <p className="text-xs text-zinc-500 mt-2">Used as the authorized signatory on PDFs.</p>
           </div>
         </div>
 

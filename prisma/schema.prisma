@@ -64,6 +64,7 @@ model VerificationToken {
 model CompanySettings {
   id               String   @id @default("default")
   logoUrl          String?
+  signatureUrl     String?
   companyName      String
   address          String?
   billingAddress   String?
@@ -352,4 +353,5 @@ model CocItem {
   quantity         Float
   batchNo          String?
   remarks          String?
+  attributes       String? // JSON string for key-value pairs
 }

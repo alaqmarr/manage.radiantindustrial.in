@@ -34,7 +34,8 @@ export async function createCoc(data: any) {
             productId: item.productId,
             quantity: Number(item.quantity),
             batchNo: item.batchNo || null,
-            remarks: item.remarks || null
+            remarks: item.remarks || null,
+            attributes: item.attributes || null
           }))
         }
       }
@@ -81,7 +82,8 @@ export async function updateCoc(id: string, data: any) {
             productId: item.productId,
             quantity: Number(item.quantity),
             batchNo: item.batchNo || null,
-            remarks: item.remarks || null
+            remarks: item.remarks || null,
+            attributes: item.attributes || null
           }))
         })
       }

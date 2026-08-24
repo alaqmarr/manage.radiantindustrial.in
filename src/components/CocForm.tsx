@@ -26,12 +26,14 @@ export function CocForm({ clients, products, initialData, defaultCocMessage }: {
     product: Product, 
     quantity: number,
     batchNo: string,
-    remarks?: string
+    remarks?: string,
+    attributes: { key: string, value: string }[]
   }[]>(initialData?.items?.map((item: any) => ({
     product: item.product,
     quantity: item.quantity,
     batchNo: item.batchNo || "",
-    remarks: item.remarks || ""
+    remarks: item.remarks || "",
+    attributes: item.attributes ? JSON.parse(item.attributes) : []
   })) || [])
   
   const [searchTerm, setSearchTerm] = useState("")
@@ -100,7 +102,7 @@ export function CocForm({ clients, products, initialData, defaultCocMessage }: {
   }
 
   const addItem = (product: Product) => {
-    setItems(prev => [...prev, { product, quantity: 1, batchNo: "", remarks: "" }])
+    setItems(prev => [...prev, { product, quantity: 1, batchNo: "", remarks: "", attributes: [] }])
     setSearchTerm("")
     setIsDropdownOpen(false)
     setHighlightedIndex(-1)
@@ -143,7 +145,8 @@ export function CocForm({ clients, products, initialData, defaultCocMessage }: {
         productId: item.product.id,
         quantity: item.quantity,
         batchNo: item.batchNo,
-        remarks: item.remarks
+        remarks: item.remarks,
+        attributes: JSON.stringify(item.attributes)
       }))
     }
 
@@ -347,6 +350,52 @@ export function CocForm({ clients, products, initialData, defaultCocMessage }: {
                         {item.product.specification && (
                           <div className="text-zinc-500 text-xs mt-1 line-clamp-1">{item.product.specification}</div>
                         )}
+                        <div className="mt-3 space-y-2">
+                          {item.attributes.map((attr, attrIdx) => (
+                            <div key={attrIdx} className="flex items-center gap-2">
+                              <input 
+                                type="text"
+                                placeholder="Key (e.g. Serial No)"
+                                value={attr.key}
+                                onChange={(e) => {
+                                  const newAttrs = [...item.attributes]
+                                  newAttrs[attrIdx].key = e.target.value
+                                  updateItem(index, 'attributes', newAttrs)
+                                }}
+                                className="w-1/3 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-brand-slate"
+                              />
+                              <input 
+                                type="text"
+                                placeholder="Value"
+                                value={attr.value}
+                                onChange={(e) => {
+                                  const newAttrs = [...item.attributes]
+                                  newAttrs[attrIdx].value = e.target.value
+                                  updateItem(index, 'attributes', newAttrs)
+                                }}
+                                className="w-1/2 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-brand-slate"
+                              />
+                              <button 
+                                onClick={() => {
+                                  const newAttrs = item.attributes.filter((_, i) => i !== attrIdx)
+                                  updateItem(index, 'attributes', newAttrs)
+                                }}
+                                className="text-zinc-500 hover:text-rose-500 transition-colors"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                          <button
+                            onClick={() => {
+                              const newAttrs = [...item.attributes, { key: "", value: "" }]
+                              updateItem(index, 'attributes', newAttrs)
+                            }}
+                            className="text-xs text-brand-slate hover:text-brand-slate-light flex items-center gap-1 transition-colors"
+                          >
+                            <Plus className="w-3 h-3" /> Add field
+                          </button>
+                        </div>
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">

@@ -184,32 +184,47 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
           </div>
 
           {/* Items Table */}
-          <table width="100%" border={0} cellPadding={12} cellSpacing={0} style={{ borderCollapse: "collapse", marginBottom: "40px", border: "1px solid #e5e7eb" }}>
+          <table width="100%" border={0} cellPadding={14} cellSpacing={0} style={{ borderCollapse: "collapse", marginBottom: "40px", border: "2px solid #e5e7eb" }}>
             <thead>
-              <tr style={{ backgroundColor: "#f9fafb", borderBottom: "2px solid #e5e7eb", textAlign: "left", fontSize: "11px", textTransform: "uppercase", color: "#6b7280", letterSpacing: "0.5px" }}>
+              <tr style={{ backgroundColor: "#f3f4f6", borderBottom: "2px solid #d1d5db", textAlign: "left", fontSize: "11px", textTransform: "uppercase", color: "#4b5563", letterSpacing: "0.5px", fontWeight: "700" }}>
                 <th style={{ borderRight: "1px solid #e5e7eb" }}>#</th>
-                <th style={{ borderRight: "1px solid #e5e7eb" }}>Product Description</th>
+                <th style={{ borderRight: "1px solid #e5e7eb" }}>Product Description & Attributes</th>
                 <th style={{ borderRight: "1px solid #e5e7eb", textAlign: "center" }}>Qty</th>
                 <th style={{ borderRight: "1px solid #e5e7eb", textAlign: "center" }}>Batch / Lot No.</th>
                 <th>Remarks</th>
               </tr>
             </thead>
             <tbody>
-              {coc.items.map((item: any, index: number) => (
-                <tr key={item.id} style={{ borderBottom: "1px solid #e5e7eb", fontSize: "12px" }}>
-                  <td style={{ borderRight: "1px solid #e5e7eb", color: "#6b7280" }}>{index + 1}</td>
-                  <td style={{ borderRight: "1px solid #e5e7eb" }}>
-                    <div style={{ fontWeight: "600", color: "#111827", marginBottom: "2px" }}>{item.product.materialDescription}</div>
-                    <div style={{ color: "#6b7280", fontSize: "11px" }}>{item.product.materialCode}</div>
-                    {item.product.specification && (
-                      <div style={{ color: "#6b7280", fontSize: "11px", marginTop: "2px" }}>{item.product.specification}</div>
-                    )}
-                  </td>
-                  <td align="center" style={{ borderRight: "1px solid #e5e7eb", fontWeight: "600" }}>{item.quantity} <span style={{ fontSize: "10px", color: "#6b7280", fontWeight: "normal" }}>{item.product.unit}</span></td>
-                  <td align="center" style={{ borderRight: "1px solid #e5e7eb", fontWeight: "600", color: "#059669" }}>{item.batchNo || '-'}</td>
-                  <td style={{ color: "#4b5563" }}>{item.remarks || '-'}</td>
-                </tr>
-              ))}
+              {coc.items.map((item: any, index: number) => {
+                const attrs = item.attributes ? JSON.parse(item.attributes) : [];
+                return (
+                  <tr key={item.id} style={{ borderBottom: "1px solid #e5e7eb", fontSize: "13px" }}>
+                    <td style={{ borderRight: "1px solid #e5e7eb", color: "#6b7280", verticalAlign: "top", paddingTop: "14px" }}>{index + 1}</td>
+                    <td style={{ borderRight: "1px solid #e5e7eb", verticalAlign: "top" }}>
+                      <div style={{ fontWeight: "700", color: "#111827", marginBottom: "4px" }}>{item.product.materialDescription}</div>
+                      <div style={{ color: "#6b7280", fontSize: "11px", marginBottom: "4px" }}>CODE: {item.product.materialCode}</div>
+                      {item.product.specification && (
+                        <div style={{ color: "#4b5563", fontSize: "12px", marginTop: "2px", marginBottom: "6px" }}>{item.product.specification}</div>
+                      )}
+                      
+                      {/* Dynamic Attributes */}
+                      {attrs.length > 0 && (
+                        <div style={{ marginTop: "8px", paddingTop: "8px", borderTop: "1px dashed #d1d5db" }}>
+                          {attrs.map((attr: any, i: number) => attr.key && attr.value ? (
+                            <div key={i} style={{ display: 'flex', marginBottom: '2px', fontSize: '11px' }}>
+                              <strong style={{ minWidth: '90px', color: '#4b5563' }}>{attr.key}:</strong>
+                              <span style={{ color: '#111827' }}>{attr.value}</span>
+                            </div>
+                          ) : null)}
+                        </div>
+                      )}
+                    </td>
+                    <td align="center" style={{ borderRight: "1px solid #e5e7eb", fontWeight: "700", verticalAlign: "top", paddingTop: "14px" }}>{item.quantity} <span style={{ fontSize: "11px", color: "#6b7280", fontWeight: "normal" }}>{item.product.unit}</span></td>
+                    <td align="center" style={{ borderRight: "1px solid #e5e7eb", fontWeight: "700", color: "#059669", verticalAlign: "top", paddingTop: "14px" }}>{item.batchNo || '-'}</td>
+                    <td style={{ color: "#4b5563", verticalAlign: "top", paddingTop: "14px" }}>{item.remarks || '-'}</td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
 
@@ -232,8 +247,14 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
                 <td valign="bottom" width="50%" align="right">
                   <div style={{ display: "inline-block", textAlign: "center" }}>
                     <div style={{ fontWeight: "700", color: "#111827", fontSize: "14px", marginBottom: "4px" }}>For {settings?.companyName || "Company Name"}</div>
-                    <div style={{ height: "60px" }}></div>
-                    <div style={{ borderTop: "1px solid #9ca3af", paddingTop: "8px", color: "#4b5563", fontSize: "12px" }}>Authorized Signatory</div>
+                    
+                    <div style={{ height: "80px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      {settings?.signatureUrl && (
+                        <img src={settings.signatureUrl} alt="Signature" style={{ maxHeight: "80px", objectFit: "contain" }} />
+                      )}
+                    </div>
+                    
+                    <div style={{ borderTop: "2px solid #9ca3af", paddingTop: "8px", color: "#4b5563", fontSize: "12px", fontWeight: "600", marginTop: "4px" }}>Authorized Signatory</div>
                   </div>
                 </td>
               </tr>

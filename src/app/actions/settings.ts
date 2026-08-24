@@ -32,17 +32,18 @@ export async function saveCompanySettings(formData: FormData) {
     
     const gstApiKey = formData.get("gstApiKey") ? String(formData.get("gstApiKey")) : null;
     const imageUrl = formData.get("logoUrl") as string | null
+    const signatureUrl = formData.get("signatureUrl") as string | null
 
     const updateData = {
         companyName, address, billingAddress, shippingAddress, email, phone, quotationMessage, rfqMessage, cocMessage, bottomDetails,
         smtpEmail, smtpPassword, bankName, accountName, accountNumber, ifscCode, swiftCode, bankAddress,
-        gstApiKey, ...(imageUrl ? { logoUrl: imageUrl } : {}),
+        gstApiKey, ...(imageUrl ? { logoUrl: imageUrl } : {}), ...(signatureUrl ? { signatureUrl } : {})
     }
 
     const createData = {
-        id: "default", companyName, address, billingAddress, shippingAddress, email, phone, quotationMessage, rfqMessage, bottomDetails,
+        id: "default", companyName, address, billingAddress, shippingAddress, email, phone, quotationMessage, rfqMessage, cocMessage, bottomDetails,
         smtpEmail, smtpPassword, bankName, accountName, accountNumber, ifscCode, swiftCode, bankAddress,
-        logoUrl: imageUrl, gstApiKey,
+        logoUrl: imageUrl, signatureUrl, gstApiKey,
     }
 
     await prisma.companySettings.upsert({

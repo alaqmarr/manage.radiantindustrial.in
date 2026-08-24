@@ -104,6 +104,15 @@ export default async function CocViewPage({ params }: { params: Promise<{ id: st
                     {item.product.specification && (
                       <div className="text-xs text-zinc-500 mt-1 whitespace-pre-wrap">{item.product.specification}</div>
                     )}
+                    {(item as any).attributes && JSON.parse((item as any).attributes || '[]').length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        {JSON.parse((item as any).attributes || '[]').map((attr: any, i: number) => attr.key && attr.value ? (
+                          <div key={i} className="text-xs">
+                            <span className="text-zinc-500 font-medium">{attr.key}:</span> <span className="text-zinc-300">{attr.value}</span>
+                          </div>
+                        ) : null)}
+                      </div>
+                    )}
                   </td>
                   <td className="py-4 px-4 text-center">
                     <span className="text-zinc-300">{item.quantity}</span>

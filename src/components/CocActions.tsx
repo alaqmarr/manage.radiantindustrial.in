@@ -121,7 +121,7 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
             .cert-container {
               box-sizing: border-box;
               width: 210mm;
-              min-height: 297mm;
+              min-height: 296mm; /* buffer avoids Chrome's mm→px rounding overflow */
               padding: 15mm 20mm;
               background-color: #fff;
               font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -132,7 +132,7 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
             }
             .cert-watermark {
               position: absolute;
-              top: 50%;
+              top: 148.5mm; /* Anchor to exact physical center of page 1 */
               left: 50%;
               transform: translate(-50%, -50%);
               opacity: 0.05;
@@ -150,6 +150,9 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
               letter-spacing: 2px;
               margin: 30px 0 25px;
               color: #111;
+            }
+            .cert-table thead {
+              display: table-header-group;
             }
             .cert-table tr {
               page-break-inside: avoid;

@@ -15,6 +15,14 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos }
   const balance = initialMetrics?.balance || 0
   const pendingIn = initialMetrics?.pendingIn || 0
   const pendingOut = initialMetrics?.pendingOut || 0
+  
+  const accountsReceivable = initialMetrics?.accountsReceivable || 0
+  const accountsPayable = initialMetrics?.accountsPayable || 0
+  const pendingFulfillmentCost = initialMetrics?.pendingFulfillmentCost || 0
+  
+  const totalExpectedCash = balance + accountsReceivable
+  const totalExpectedLiabilities = accountsPayable + pendingFulfillmentCost + pendingOut
+  const workingCapital = totalExpectedCash - totalExpectedLiabilities
 
   const isLowBalance = balance < pendingOut
 
@@ -81,6 +89,39 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos }
             <h3 className="text-3xl font-bold tracking-tight text-rose-400">
               {formatRupee(pendingOut / 100)}
             </h3>
+          </div>
+        </div>
+      </div>
+
+      <div className="glass-panel p-6 rounded-xl space-y-4">
+        <h2 className="text-lg font-medium text-white">Working Capital Overview</h2>
+        <p className="text-sm text-zinc-400">
+          This shows the estimated cash flow considering unfulfilled obligations (Accepted Quotations and Unpaid POs). Mark quotations as COMPLETED when they are fulfilled to drop their estimated cost (since you would have already raised POs for them).
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-premium-border/50">
+          <div>
+            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Accounts Receivable</p>
+            <p className="text-lg font-bold text-emerald-400">+{formatRupee(accountsReceivable / 100)}</p>
+            <p className="text-[10px] text-zinc-500 mt-1">Unpaid on Accepted/Completed Quotes</p>
+          </div>
+          <div>
+            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Accounts Payable</p>
+            <p className="text-lg font-bold text-rose-400">-{formatRupee(accountsPayable / 100)}</p>
+            <p className="text-[10px] text-zinc-500 mt-1">Unpaid on Purchase Orders</p>
+          </div>
+          <div>
+            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Pending Fulfillments</p>
+            <p className="text-lg font-bold text-amber-400">-{formatRupee(pendingFulfillmentCost / 100)}</p>
+            <p className="text-[10px] text-zinc-500 mt-1">Est. cost for Accepted Quotes (not yet PO'd)</p>
+          </div>
+          <div className="pl-4 border-l border-premium-border/50">
+            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Working Capital</p>
+            <p className={`text-2xl font-bold ${workingCapital < 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
+              {formatRupee(workingCapital / 100)}
+            </p>
+            <p className="text-[10px] text-zinc-500 mt-1">
+              {workingCapital < 0 ? "Additional funds needed" : "Surplus funds available"}
+            </p>
           </div>
         </div>
       </div>

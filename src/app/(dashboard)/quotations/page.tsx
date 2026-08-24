@@ -48,24 +48,28 @@ export default async function QuotationsPage(props: { searchParams: Promise<{ se
     where: { id: "default" }
   })
 
-  // Group by status priority: DRAFT first, then PENDING, then ACCEPTED, then REJECTED
+  // Group by status priority
   const drafts = quotations.filter(q => q.status === 'DRAFT')
   const pending = quotations.filter(q => q.status === 'PENDING')
   const accepted = quotations.filter(q => q.status === 'ACCEPTED')
+  const completed = quotations.filter(q => q.status === 'COMPLETED')
   const rejected = quotations.filter(q => q.status === 'REJECTED')
 
   const allIds = quotations.map(q => q.id)
 
   // Quick stats
   const totalQuoted = quotations.reduce((s, q) => s + q.totalAmount, 0)
-  const totalAcceptedValue = accepted.reduce((s, q) => s + q.totalAmount, 0)
-  const totalProfit = accepted.reduce((s, q) => s + q.items.reduce((sum, item) => {
+  
+  // Combine accepted and completed for overall success stats
+  const allSuccessful = [...accepted, ...completed]
+  const totalAcceptedValue = allSuccessful.reduce((s, q) => s + q.totalAmount, 0)
+  const totalProfit = allSuccessful.reduce((s, q) => s + q.items.reduce((sum, item) => {
     const cp = item.cpSnapshot || 0
     const sp = item.spSnapshot || 0
     const addnl = item.additionalCost || 0
     return sum + ((sp - cp) * item.quantity - addnl)
   }, 0), 0)
-  const conversionRate = quotations.length > 0 ? Math.round((accepted.length / quotations.length) * 100) : 0
+  const conversionRate = quotations.length > 0 ? Math.round((allSuccessful.length / quotations.length) * 100) : 0
 
   const statusGroups = [
     { 
@@ -91,6 +95,14 @@ export default async function QuotationsPage(props: { searchParams: Promise<{ se
       color: 'text-emerald-400 border-emerald-900/50 bg-emerald-950/20',
       dotColor: 'bg-emerald-500',
       items: accepted 
+    },
+    { 
+      key: 'COMPLETED', 
+      label: 'Completed / Fulfilled', 
+      icon: <CheckCircle2 className="w-4 h-4" />,
+      color: 'text-cyan-400 border-cyan-900/50 bg-cyan-950/20',
+      dotColor: 'bg-cyan-500',
+      items: completed 
     },
     { 
       key: 'REJECTED', 

@@ -253,6 +253,31 @@ export async function getAccountMetrics() {
       _sum: { amount: true }
     })
 
+    // Calculate Accounts Receivable (Unpaid amount of ACCEPTED and COMPLETED Quotations)
+    const pendingQuotations = await prisma.quotation.findMany({
+      where: { status: { in: ['ACCEPTED', 'COMPLETED'] } }
+    })
+    const accountsReceivable = pendingQuotations.reduce((sum, q) => sum + Math.max(0, (q.totalAmount + q.totalGst) - q.amountPaid), 0)
+
+    // Calculate Accounts Payable (Unpaid amount of all POs except CANCELLED)
+    const pendingPOs = await prisma.purchaseOrder.findMany({
+      where: { status: { not: 'CANCELLED' } }
+    })
+    const accountsPayable = pendingPOs.reduce((sum, po) => sum + Math.max(0, (po.totalAmount + po.totalGst) - po.amountPaid), 0)
+
+    // Calculate Pending Fulfillment Cost (Expected cost to fulfill ACCEPTED quotations)
+    // We only sum this for ACCEPTED. Once COMPLETED, we assume goods were purchased and PO handles the cost.
+    const acceptedQuotations = await prisma.quotation.findMany({
+      where: { status: 'ACCEPTED' },
+      include: { items: true }
+    })
+    let pendingFulfillmentCost = 0
+    for (const q of acceptedQuotations) {
+      for (const item of q.items) {
+        pendingFulfillmentCost += ((item.cpSnapshot || 0) * item.quantity) + (item.additionalCost || 0)
+      }
+    }
+
     const totalIn = allClearedIn._sum.amount || 0
     const totalOut = allClearedOut._sum.amount || 0
     const balance = totalIn - totalOut
@@ -262,6 +287,9 @@ export async function getAccountMetrics() {
       balance,
       pendingIn: allPendingIn._sum.amount || 0,
       pendingOut: allPendingOut._sum.amount || 0,
+      accountsReceivable,
+      accountsPayable,
+      pendingFulfillmentCost
     }
   } catch (error: any) {
     console.error("Error fetching metrics:", error)

@@ -27,6 +27,7 @@ export function QuotationStatusBadge({ id, currentStatus }: { id: string, curren
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'ACCEPTED': return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+      case 'COMPLETED': return 'bg-cyan-500/10 text-cyan-500 border-cyan-500/20'
       case 'REJECTED': return 'bg-rose-500/10 text-rose-500 border-rose-500/20'
       case 'PENDING': return 'bg-blue-500/10 text-blue-500 border-blue-500/20'
       default: return 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'
@@ -51,6 +52,7 @@ export function QuotationStatusBadge({ id, currentStatus }: { id: string, curren
               <option value="DRAFT" className="bg-zinc-900 text-white">DRAFT</option>
               <option value="PENDING" className="bg-zinc-900 text-white">PENDING</option>
               <option value="ACCEPTED" className="bg-zinc-900 text-white">ACCEPTED</option>
+              <option value="COMPLETED" className="bg-zinc-900 text-white">COMPLETED</option>
               <option value="REJECTED" className="bg-zinc-900 text-white">REJECTED</option>
             </select>
             <div className="absolute right-2 pointer-events-none">

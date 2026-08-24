@@ -6,14 +6,24 @@ import { createSupplier, updateSupplier } from "@/app/actions/supplier"
 import { Loader2, X, Search } from "lucide-react"
 import { verifyGSTAction } from "@/app/actions/gst"
 
-export function SupplierModal({ suppliers }: { suppliers: any[] }) {
+export function SupplierModal({ 
+  suppliers,
+  forceOpen = false,
+  onForceClose,
+  onSuccess
+}: { 
+  suppliers?: any[]
+  forceOpen?: boolean
+  onForceClose?: () => void
+  onSuccess?: (newSupplier: any) => void
+}) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const action = searchParams.get("action")
   const editId = searchParams.get("id")
 
-  const isOpen = action === "new-supplier" || action === "edit-supplier"
-  const isEditing = action === "edit-supplier"
+  const isOpen = forceOpen || action === "new-supplier" || action === "edit-supplier"
+  const isEditing = !forceOpen && action === "edit-supplier"
 
   const [isVerifyingGST, setIsVerifyingGST] = useState(false)
   const [gstInput, setGstInput] = useState("")
@@ -44,7 +54,7 @@ export function SupplierModal({ suppliers }: { suppliers: any[] }) {
     }
   }
 
-  const supplierToEdit = isEditing ? suppliers.find(s => s.id === editId) : null
+  const supplierToEdit = isEditing ? suppliers?.find(s => s.id === editId) : null
 
   const [name, setName] = useState("")
   const [contact, setContact] = useState("")
@@ -68,10 +78,14 @@ export function SupplierModal({ suppliers }: { suppliers: any[] }) {
   if (!isOpen) return null
 
   const close = () => {
-    const params = new URLSearchParams(searchParams)
-    params.delete("action")
-    params.delete("id")
-    router.push(`?${params.toString()}`)
+    if (onForceClose) {
+      onForceClose()
+    } else {
+      const params = new URLSearchParams(searchParams)
+      params.delete("action")
+      params.delete("id")
+      router.push(`?${params.toString()}`)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -86,8 +100,13 @@ export function SupplierModal({ suppliers }: { suppliers: any[] }) {
         
       if (result.error) throw new Error(result.error)
       
+      if (onSuccess && result.supplier) {
+        onSuccess(result.supplier)
+      }
       close()
-      router.refresh()
+      if (!onForceClose) {
+        router.refresh()
+      }
     } catch (error: any) {
       alert(error.message)
     } finally {
@@ -96,7 +115,7 @@ export function SupplierModal({ suppliers }: { suppliers: any[] }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-0">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-0">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={close} />
       <div className="relative bg-zinc-900 border border-premium-border rounded-md shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between p-6 border-b border-premium-border bg-white/[0.02]">

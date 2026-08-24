@@ -4,6 +4,7 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import { createPurchase, updatePurchase } from "@/app/actions/purchase"
 import { Loader2, X, Plus, Search, Trash2 } from "lucide-react"
 import { formatRupee } from "@/lib/utils"
+import { SupplierModal } from "./SupplierModal"
 
 type Supplier = { id: string, name: string }
 type Product = { id: string, materialCode: string, materialDescription: string, costPrice: number }
@@ -36,6 +37,13 @@ export function PurchaseModal({
     quantity: number, 
     cpSnapshot: number 
   }[]>([])
+
+  const [localSuppliers, setLocalSuppliers] = useState<Supplier[]>(suppliers)
+  const [showSupplierModal, setShowSupplierModal] = useState(false)
+
+  useEffect(() => {
+    setLocalSuppliers(suppliers)
+  }, [suppliers])
 
   const handleClose = () => {
     const newParams = new URLSearchParams(searchParams.toString())
@@ -183,19 +191,29 @@ export function PurchaseModal({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar min-h-[400px]">
           {/* Supplier Select */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-zinc-400 mb-1">Select Supplier *</label>
-              <select 
-                value={selectedSupplierId} 
-                onChange={e => setSelectedSupplierId(e.target.value)}
-                className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate"
-              >
-                <option value="">Select a Supplier</option>
-                {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
+              <div className="flex items-center gap-2">
+                <select 
+                  value={selectedSupplierId} 
+                  onChange={e => setSelectedSupplierId(e.target.value)}
+                  className="flex-1 bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate"
+                >
+                  <option value="">Select a Supplier</option>
+                  {localSuppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setShowSupplierModal(true)}
+                  className="p-2 bg-zinc-900 border border-premium-border rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                  title="Add New Supplier"
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-400 mb-1">Tag Quotation (Optional)</label>
@@ -343,6 +361,16 @@ export function PurchaseModal({
           </button>
         </div>
       </div>
+
+      <SupplierModal 
+        forceOpen={showSupplierModal} 
+        onForceClose={() => setShowSupplierModal(false)}
+        onSuccess={(newSupplier: any) => {
+          setLocalSuppliers(prev => [...prev, newSupplier])
+          setSelectedSupplierId(newSupplier.id)
+          setShowSupplierModal(false)
+        }} 
+      />
     </div>
   )
 }

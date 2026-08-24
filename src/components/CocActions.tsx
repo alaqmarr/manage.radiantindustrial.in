@@ -100,9 +100,10 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
             @page { size: A4; margin: 0; }
             
             .cert-container {
+              box-sizing: border-box;
               width: 210mm;
               min-height: 297mm;
-              padding: 25mm 20mm;
+              padding: 15mm 20mm;
               background-color: #fff;
               font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
               color: #222;

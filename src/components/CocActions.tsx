@@ -95,20 +95,12 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
         <style type="text/css" media="print">
           {`
             @media print {
-            body * { visibility: hidden; }
-            #coc-print-view, #coc-print-view * { visibility: visible; }
-            #coc-print-view {
-              position: absolute; left: 0; top: 0; width: 100%;
-              background: #fff;
-            }
-            nav, header, footer { display: none !important; }
             @page { size: A4; margin: 0; }
             
             .cert-container {
               width: 210mm;
               min-height: 297mm;
               padding: 25mm 20mm;
-              position: relative;
               background-color: #fff;
               font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
               color: #222;
@@ -116,12 +108,13 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
               flex-direction: column;
             }
             .cert-watermark {
-              position: absolute;
-              top: 55%;
+              position: fixed;
+              top: 50%;
               left: 50%;
               transform: translate(-50%, -50%);
               opacity: 0.05;
               width: 55%;
+              max-width: 400px;
               pointer-events: none;
               z-index: 1;
             }
@@ -152,6 +145,7 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
               font-size: 12px;
               vertical-align: top;
             }
+            } /* close @media print */
           `}
         </style>
 

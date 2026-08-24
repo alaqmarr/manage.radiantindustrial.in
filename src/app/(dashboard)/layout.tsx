@@ -14,12 +14,12 @@ export default async function DashboardLayout({
   const suppliers = await prisma.supplier.findMany({ select: { id: true, name: true } })
   const products = await prisma.product.findMany({ select: { id: true, materialCode: true, materialDescription: true, costPrice: true } })
   return (
-    <div className="flex bg-premium-dark min-h-screen text-zinc-200 print:bg-white print:text-black">
+    <div className="flex bg-premium-dark min-h-screen text-zinc-200 print:bg-white print:text-black print:min-h-0 print:block">
       <DisableNumberInputScroll />
       <div className="print:hidden">
         <Sidebar />
       </div>
-      <div className="ml-64 flex-1 flex flex-col min-h-screen print:ml-0 print:block">
+      <div className="ml-64 flex-1 flex flex-col min-h-screen print:ml-0 print:block print:min-h-0">
         <div className="print:hidden">
           <TopBar />
         </div>

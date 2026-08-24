@@ -2,8 +2,8 @@
 
 import { useState } from "react"
 import { formatRupee } from "@/lib/utils"
-import { Plus, ArrowDownRight, ArrowUpRight, Clock, AlertTriangle, CheckCircle2, ChevronRight, Check, X, Search } from "lucide-react"
-import { updatePaymentStatus } from "@/app/actions/payment"
+import { Plus, ArrowDownRight, ArrowUpRight, Clock, AlertTriangle, CheckCircle2, ChevronRight, Check, X, Search, Trash2 } from "lucide-react"
+import { updatePaymentStatus, deletePayment } from "@/app/actions/payment"
 import { useRouter } from "next/navigation"
 import { TransactionModal } from "./TransactionModal"
 
@@ -38,6 +38,20 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos }
     }
   }
 
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this transaction? This will impact your balances immediately.")) return
+    
+    setIsUpdating(true)
+    try {
+      await deletePayment(id)
+      router.refresh()
+    } catch (e) {
+      alert("Error deleting transaction")
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       
@@ -47,7 +61,7 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos }
           <div>
             <h3 className="text-rose-500 font-medium">Low Balance Alert</h3>
             <p className="text-rose-400/80 text-sm mt-1">
-              Your current balance ({formatRupee(balance / 100)}) is lower than your pending outgoing cheques ({formatRupee(pendingOut / 100)}). Please ensure sufficient funds are available before they clear.
+              Your current balance ({formatRupee(balance)}) is lower than your pending outgoing cheques ({formatRupee(pendingOut)}). Please ensure sufficient funds are available before they clear.
             </p>
           </div>
         </div>
@@ -63,7 +77,7 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos }
           <p className="text-sm font-medium text-zinc-400 mb-2">Current Balance</p>
           <div className="flex items-baseline gap-2">
             <h3 className={`text-3xl font-bold tracking-tight ${balance < 0 ? 'text-rose-400' : 'text-white'}`}>
-              {formatRupee(balance / 100)}
+              {formatRupee(balance)}
             </h3>
           </div>
         </div>
@@ -75,7 +89,7 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos }
           <p className="text-sm font-medium text-zinc-400 mb-2">Pending In (Cheques)</p>
           <div className="flex items-baseline gap-2">
             <h3 className="text-3xl font-bold tracking-tight text-emerald-400">
-              {formatRupee(pendingIn / 100)}
+              {formatRupee(pendingIn)}
             </h3>
           </div>
         </div>
@@ -87,7 +101,7 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos }
           <p className="text-sm font-medium text-zinc-400 mb-2">Pending Out (Cheques)</p>
           <div className="flex items-baseline gap-2">
             <h3 className="text-3xl font-bold tracking-tight text-rose-400">
-              {formatRupee(pendingOut / 100)}
+              {formatRupee(pendingOut)}
             </h3>
           </div>
         </div>
@@ -101,23 +115,23 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos }
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-premium-border/50">
           <div>
             <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Accounts Receivable</p>
-            <p className="text-lg font-bold text-emerald-400">+{formatRupee(accountsReceivable / 100)}</p>
+            <p className="text-lg font-bold text-emerald-400">+{formatRupee(accountsReceivable)}</p>
             <p className="text-[10px] text-zinc-500 mt-1">Unpaid on Accepted/Completed Quotes</p>
           </div>
           <div>
             <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Accounts Payable</p>
-            <p className="text-lg font-bold text-rose-400">-{formatRupee(accountsPayable / 100)}</p>
+            <p className="text-lg font-bold text-rose-400">-{formatRupee(accountsPayable)}</p>
             <p className="text-[10px] text-zinc-500 mt-1">Unpaid on Purchase Orders</p>
           </div>
           <div>
             <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Pending Fulfillments</p>
-            <p className="text-lg font-bold text-amber-400">-{formatRupee(pendingFulfillmentCost / 100)}</p>
+            <p className="text-lg font-bold text-amber-400">-{formatRupee(pendingFulfillmentCost)}</p>
             <p className="text-[10px] text-zinc-500 mt-1">Est. cost for Accepted Quotes (not yet PO'd)</p>
           </div>
           <div className="pl-4 border-l border-premium-border/50">
             <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Working Capital</p>
             <p className={`text-2xl font-bold ${workingCapital < 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
-              {formatRupee(workingCapital / 100)}
+              {formatRupee(workingCapital)}
             </p>
             <p className="text-[10px] text-zinc-500 mt-1">
               {workingCapital < 0 ? "Additional funds needed" : "Surplus funds available"}
@@ -195,7 +209,7 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos }
                     {entry.reference && <div className="text-xs text-zinc-500 font-mono">{entry.reference}</div>}
                   </td>
                   <td className="px-6 py-4 text-right font-medium">
-                    {formatRupee(entry.amount / 100)}
+                    {formatRupee(entry.amount)}
                   </td>
                   <td className="px-6 py-4 text-center">
                     {entry.status === 'CLEARED' ? (
@@ -206,7 +220,7 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos }
                       <span className="text-rose-500 flex items-center justify-center gap-1 text-xs font-medium"><X className="w-4 h-4"/> {entry.status}</span>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-6 py-4 text-right flex items-center justify-end gap-2">
                     {entry.status === 'PENDING' && (
                       <button 
                         disabled={isUpdating}
@@ -216,6 +230,14 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos }
                         Mark Cleared
                       </button>
                     )}
+                    <button
+                      disabled={isUpdating}
+                      onClick={() => handleDelete(entry.id)}
+                      className="p-1.5 text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 rounded transition-colors disabled:opacity-50"
+                      title="Delete Transaction"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </td>
                 </tr>
               ))}

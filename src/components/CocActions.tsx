@@ -176,7 +176,7 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
                     {settings?.email && <span>E: {settings.email}</span>}
                   </div>
                 )}
-                {settings?.gstApiKey && <div style={{ marginTop: "4px" }}>GSTIN: {settings.gstApiKey}</div>}
+                {settings?.gstNumber && <div style={{ marginTop: "4px" }}>GSTIN: {settings.gstNumber}</div>}
               </div>
             </div>
 
@@ -219,7 +219,7 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
               <thead>
                 <tr>
                   <th style={{ width: "40px" }}>#</th>
-                  <th style={{ width: "50%" }}>Description of Goods</th>
+                  <th style={{ width: "50%" }}>Part Code</th>
                   <th style={{ textAlign: "center", width: "80px" }}>Qty</th>
                   <th style={{ textAlign: "center", width: "120px" }}>Batch / Heat No.</th>
                   <th>Remarks</th>
@@ -227,23 +227,11 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
               </thead>
               <tbody>
                 {coc.items.map((item: any, index: number) => {
-                  const attrs = item.attributes ? JSON.parse(item.attributes) : [];
                   return (
                     <tr key={item.id}>
                       <td style={{ color: "#777", fontWeight: "500" }}>{String(index + 1).padStart(2, '0')}</td>
                       <td>
-                        <div style={{ fontWeight: "600", fontSize: "13px", color: "#111", marginBottom: "3px" }}>{item.product.materialDescription}</div>
-                        <div style={{ color: "#666", fontSize: "11px" }}>Part Code: {item.product.materialCode}</div>
-                        {attrs.length > 0 && (
-                          <div style={{ marginTop: "8px" }}>
-                            {attrs.map((attr: any, i: number) => attr.key && attr.value ? (
-                              <div key={i} style={{ display: 'flex', marginBottom: '3px', fontSize: '11px' }}>
-                                <span style={{ minWidth: '90px', color: '#777' }}>{attr.key}:</span>
-                                <strong style={{ color: '#222', fontWeight: "500" }}>{attr.value}</strong>
-                              </div>
-                            ) : null)}
-                          </div>
-                        )}
+                        <div style={{ fontWeight: "600", fontSize: "13px", color: "#111" }}>{item.product.materialCode}</div>
                       </td>
                       <td align="center" style={{ fontWeight: "600", fontSize: "13px" }}>{item.quantity} <span style={{ fontSize: "11px", color: "#777", fontWeight: "normal" }}>{item.product.unit}</span></td>
                       <td align="center" style={{ fontWeight: "500" }}>{item.batchNo || '-'}</td>
@@ -260,13 +248,8 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
             {/* Bottom Section (Signatures & Details) */}
             <div style={{ borderTop: "1px solid #eaeaea", paddingTop: "30px", display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: "40px" }}>
               
-              {/* Left: Notes */}
+              {/* Left: Notes (Removed per user request) */}
               <div style={{ width: "55%", fontSize: "11px", color: "#666", lineHeight: "1.6" }}>
-                {settings?.bottomDetails && (
-                  <div style={{ whiteSpace: "pre-wrap", color: "#555" }}>
-                    {settings.bottomDetails}
-                  </div>
-                )}
               </div>
 
               {/* Right: Signature */}

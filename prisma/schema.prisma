@@ -87,6 +87,7 @@ model CompanySettings {
   ifscCode         String?
 
   // Integrations
+  gstNumber        String?
   gstApiKey        String?
   swiftCode        String?
   bankAddress      String?

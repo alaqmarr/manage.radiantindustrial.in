@@ -163,6 +163,11 @@ export function SettingsForm({ settings }: { settings: any }) {
           </div>
 
           <div className="col-span-2">
+            <label className="block text-sm font-medium text-zinc-400 mb-1">Company GST Number</label>
+            <input defaultValue={settings?.gstNumber || ""} name="gstNumber" type="text" className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate uppercase" />
+          </div>
+
+          <div className="col-span-2">
             <label className="block text-sm font-medium text-zinc-400 mb-1">Default Quotation Message</label>
             <textarea defaultValue={settings?.quotationMessage || "Here is your quotation for the RFQ as requested."} name="quotationMessage" rows={2} className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
           </div>

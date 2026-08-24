@@ -52,6 +52,20 @@ export function PurchaseModal({
     router.replace(`${pathname}?${newParams.toString()}`, { scroll: false })
   }
 
+  const handleQuotationChange = (qId: string) => {
+    setSelectedQuotationId(qId)
+    if (!qId) return
+    const q = quotations?.find(x => x.id === qId)
+    if (q && q.items) {
+      const newItems = q.items.map((qi: any) => ({
+        product: qi.product,
+        quantity: qi.quantity,
+        cpSnapshot: qi.cpSnapshot || qi.product.costPrice || 0
+      }))
+      setItems(newItems)
+    }
+  }
+
   useEffect(() => {
     if (purchaseToEdit) {
       setSelectedSupplierId(purchaseToEdit.supplierId || "")
@@ -219,7 +233,7 @@ export function PurchaseModal({
               <label className="block text-sm font-medium text-zinc-400 mb-1">Tag Quotation (Optional)</label>
               <select 
                 value={selectedQuotationId} 
-                onChange={e => setSelectedQuotationId(e.target.value)}
+                onChange={e => handleQuotationChange(e.target.value)}
                 className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate"
               >
                 <option value="">-- No Quotation Tagged --</option>

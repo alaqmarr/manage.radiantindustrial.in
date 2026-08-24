@@ -31,6 +31,23 @@ export async function createPurchase(payload: {
       return acc
     }, {} as Record<string, any>)
 
+    // If tagging a quotation, ensure we aren't double-purchasing items
+    if (payload.quotationId) {
+      const existingPurchases = await prisma.purchase.findMany({
+        where: { quotationId: payload.quotationId },
+        include: { items: true }
+      })
+      const alreadyPurchasedProductIds = new Set(
+        existingPurchases.flatMap(p => p.items.map(i => i.productId))
+      )
+      
+      for (const item of payload.items) {
+        if (alreadyPurchasedProductIds.has(item.productId)) {
+          throw new Error(`Item ${productMap[item.productId]?.materialCode || item.productId} purchase is already recorded for this quotation. Delete the existing purchase to add a new one.`)
+        }
+      }
+    }
+
     const itemsToCreate = payload.items.map(item => {
       const product = productMap[item.productId]
       const amount = item.cpSnapshot * item.quantity
@@ -80,6 +97,16 @@ export async function createPurchase(payload: {
       })
     }
 
+    // Update QuotationItem cpSnapshot if tagged to a quotation
+    if (payload.quotationId) {
+      for (const item of payload.items) {
+        await prisma.quotationItem.updateMany({
+          where: { quotationId: payload.quotationId, productId: item.productId },
+          data: { cpSnapshot: item.cpSnapshot, supplierId: payload.supplierId }
+        })
+      }
+    }
+
     return { success: true, id: purchase.id }
   } catch (error: any) {
     console.error("Error creating purchase:", error)
@@ -113,6 +140,22 @@ export async function updatePurchase(id: string, payload: {
       return acc
     }, {} as Record<string, any>)
 
+    if (payload.quotationId) {
+      const existingPurchases = await prisma.purchase.findMany({
+        where: { quotationId: payload.quotationId, id: { not: id } },
+        include: { items: true }
+      })
+      const alreadyPurchasedProductIds = new Set(
+        existingPurchases.flatMap(p => p.items.map(i => i.productId))
+      )
+      
+      for (const item of payload.items) {
+        if (alreadyPurchasedProductIds.has(item.productId)) {
+          throw new Error(`Item ${productMap[item.productId]?.materialCode || item.productId} purchase is already recorded for this quotation. Delete the existing purchase to add a new one.`)
+        }
+      }
+    }
+
     const itemsToCreate = payload.items.map(item => {
       const product = productMap[item.productId]
       const amount = item.cpSnapshot * item.quantity
@@ -129,12 +172,11 @@ export async function updatePurchase(id: string, payload: {
       }
     })
 
-    // First delete all existing items
+    // Delete existing items
     await prisma.purchaseItem.deleteMany({
       where: { purchaseId: id }
     })
 
-    // Then update purchase and recreate items
     const purchase = await prisma.purchase.update({
       where: { id },
       data: {
@@ -148,7 +190,7 @@ export async function updatePurchase(id: string, payload: {
       }
     })
 
-    // Also upsert ProductSupplier entries to maintain up-to-date vendor prices
+    // Also upsert ProductSupplier entries
     for (const item of payload.items) {
       await prisma.productSupplier.upsert({
         where: {
@@ -168,7 +210,17 @@ export async function updatePurchase(id: string, payload: {
       })
     }
 
-    return { success: true, id: purchase.id }
+    // Update QuotationItem cpSnapshot if tagged to a quotation
+    if (payload.quotationId) {
+      for (const item of payload.items) {
+        await prisma.quotationItem.updateMany({
+          where: { quotationId: payload.quotationId, productId: item.productId },
+          data: { cpSnapshot: item.cpSnapshot, supplierId: payload.supplierId }
+        })
+      }
+    }
+
+    return { success: true }
   } catch (error: any) {
     console.error("Error updating purchase:", error)
     return { success: false, error: error.message || "Failed to update purchase" }

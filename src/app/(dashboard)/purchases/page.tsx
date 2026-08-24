@@ -44,7 +44,12 @@ export default async function PurchasesPage(props: { searchParams: Promise<{ sea
   const products = await prisma.product.findMany({ select: { id: true, materialCode: true, materialDescription: true, costPrice: true } })
   const quotations = await prisma.quotation.findMany({
     where: { status: { notIn: ['CANCELLED', 'REJECTED'] } },
-    select: { id: true, prNo: true, client: { select: { name: true } } },
+    select: { 
+      id: true, 
+      prNo: true, 
+      client: { select: { name: true } },
+      items: { include: { product: true } }
+    },
     orderBy: { createdAt: 'desc' }
   })
 

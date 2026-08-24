@@ -93,12 +93,26 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
       </div>
 
       {/* Print Template - Certificate Style */}
-      <div id="coc-print-view" className="hidden print:block w-full bg-white text-black relative" style={{ margin: 0, padding: 0, minHeight: "100vh" }}>
+      <div id="coc-print-view" className="hidden print:block w-full bg-white text-black" style={{ margin: 0, padding: 0 }}>
         <style type="text/css" media="print">
           {`
             @media print {
             @page { size: A4; margin: 0; }
             
+            /* Remove all backdrop filters which create false containing blocks for position: fixed */
+            * {
+              -webkit-backdrop-filter: none !important;
+              backdrop-filter: none !important;
+            }
+
+            /* Break out of any parent flex layouts and margins to prevent blank first pages */
+            #coc-print-view {
+              position: absolute !important;
+              top: 0 !important;
+              left: 0 !important;
+              width: 100% !important;
+            }
+
             .cert-container {
               box-sizing: border-box;
               width: 210mm;
@@ -109,6 +123,7 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
               color: #222;
               display: flex;
               flex-direction: column;
+              position: relative;
             }
             .cert-watermark {
               position: fixed;

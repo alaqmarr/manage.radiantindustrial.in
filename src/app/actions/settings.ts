@@ -18,6 +18,7 @@ export async function saveCompanySettings(formData: FormData) {
     const phone = formData.get("phone") ? String(formData.get("phone")) : null
     const quotationMessage = formData.get("quotationMessage") ? String(formData.get("quotationMessage")) : null
     const rfqMessage = formData.get("rfqMessage") ? String(formData.get("rfqMessage")) : null
+    const cocMessage = formData.get("cocMessage") ? String(formData.get("cocMessage")) : null
     const bottomDetails = formData.get("bottomDetails") ? String(formData.get("bottomDetails")) : null
     const smtpEmail = formData.get("smtpEmail") ? String(formData.get("smtpEmail")) : null
     const smtpPassword = formData.get("smtpPassword") ? String(formData.get("smtpPassword")) : null
@@ -33,7 +34,7 @@ export async function saveCompanySettings(formData: FormData) {
     const imageUrl = formData.get("logoUrl") as string | null
 
     const updateData = {
-        companyName, address, billingAddress, shippingAddress, email, phone, quotationMessage, rfqMessage, bottomDetails,
+        companyName, address, billingAddress, shippingAddress, email, phone, quotationMessage, rfqMessage, cocMessage, bottomDetails,
         smtpEmail, smtpPassword, bankName, accountName, accountNumber, ifscCode, swiftCode, bankAddress,
         gstApiKey, ...(imageUrl ? { logoUrl: imageUrl } : {}),
     }

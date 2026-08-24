@@ -72,6 +72,7 @@ model CompanySettings {
   phone            String?
   quotationMessage String?
   rfqMessage       String?
+  cocMessage       String?
   bottomDetails    String?
   
   // Email / SMTP Settings
@@ -121,6 +122,7 @@ model Client {
   location   String?
   address    String?
   quotations Quotation[]
+  cocs       CertificateOfConformance[]
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
 }
@@ -147,6 +149,7 @@ model Product {
   rfqItems            RfqItem[]
   goodsReceiptItems   GoodsReceiptItem[]
   priceHistory        PriceHistory[]
+  cocItems            CocItem[]
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
 }
@@ -165,6 +168,7 @@ model Quotation {
   client           Client          @relation(fields: [clientId], references: [id])
   items            QuotationItem[]
   payments         Payment[]
+  cocs             CertificateOfConformance[]
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 }
@@ -320,4 +324,32 @@ model PriceHistory {
   costPrice    Int      // paise
   sellingPrice Int      // paise
   changedAt    DateTime @default(now())
+}
+
+model CertificateOfConformance {
+  id               String          @id
+  cocNumber        String?         @unique
+  status           String          @default("DRAFT") // DRAFT, ISSUED, CANCELLED
+  date             DateTime        @default(now())
+  clientId         String
+  client           Client          @relation(fields: [clientId], references: [id])
+  quotationId      String?
+  quotation        Quotation?      @relation(fields: [quotationId], references: [id])
+  clientPoRef      String?
+  standardText     String?
+  remarks          String?
+  items            CocItem[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+}
+
+model CocItem {
+  id               String                   @id @default(cuid())
+  cocId            String
+  coc              CertificateOfConformance @relation(fields: [cocId], references: [id], onDelete: Cascade)
+  productId        String
+  product          Product                  @relation(fields: [productId], references: [id])
+  quantity         Float
+  batchNo          String?
+  remarks          String?
 }

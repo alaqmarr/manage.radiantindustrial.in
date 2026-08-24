@@ -12,7 +12,8 @@ import {
   Settings,
   LogOut,
   ChevronRight,
-  Mail
+  Mail,
+  Award
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 
@@ -27,6 +28,7 @@ const menuGroups = [
     label: "Sales & CRM",
     items: [
       { icon: FileText, label: "Quotations", href: "/quotations" },
+      { icon: Award, label: "Certificates (COC)", href: "/cocs" },
       { icon: Users, label: "Clients", href: "/clients" },
       { icon: Mail, label: "Email Templates", href: "/emails" },
     ]

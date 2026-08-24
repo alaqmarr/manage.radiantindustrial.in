@@ -125,8 +125,6 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
               background-color: #fff;
               font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
               color: #222;
-              display: flex;
-              flex-direction: column;
               position: relative;
             }
             .cert-watermark {
@@ -185,7 +183,7 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
               </div>
             )}
 
-            <div style={{ position: 'relative', zIndex: 10, flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ position: 'relative', zIndex: 10 }}>
 
               {/* Header: Logo & Company Name */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid #eaeaea", paddingBottom: "25px", marginBottom: "20px" }}>

@@ -221,7 +221,7 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
               <thead>
                 <tr>
                   <th style={{ width: "40px" }}>#</th>
-                  <th style={{ width: "50%" }}>Part Code</th>
+                  <th style={{ width: "50%" }}>Description of Goods</th>
                   <th style={{ textAlign: "center", width: "80px" }}>Qty</th>
                   <th style={{ textAlign: "center", width: "120px" }}>Batch / Heat No.</th>
                   <th>Remarks</th>
@@ -233,7 +233,8 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
                     <tr key={item.id}>
                       <td style={{ color: "#777", fontWeight: "500" }}>{String(index + 1).padStart(2, '0')}</td>
                       <td>
-                        <div style={{ fontWeight: "600", fontSize: "13px", color: "#111" }}>{item.product.materialCode}</div>
+                        <div style={{ fontWeight: "600", fontSize: "13px", color: "#111", marginBottom: "3px" }}>{item.product.materialDescription}</div>
+                        <div style={{ color: "#666", fontSize: "11px" }}>Part Code: {item.product.materialCode}</div>
                       </td>
                       <td align="center" style={{ fontWeight: "600", fontSize: "13px" }}>{item.quantity} <span style={{ fontSize: "11px", color: "#777", fontWeight: "normal" }}>{item.product.unit}</span></td>
                       <td align="center" style={{ fontWeight: "500" }}>{item.batchNo || '-'}</td>

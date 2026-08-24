@@ -15,7 +15,7 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
 
   const handleDelete = async () => {
     if (!confirm("Are you sure you want to delete this Certificate of Conformance?")) return
-    
+
     setIsDeleting(true)
     try {
       const res = await deleteCocs([id])
@@ -85,7 +85,7 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
           <Edit className="w-4 h-4" />
           <span className="text-sm">Edit</span>
         </button>
-        
+
         <button
           onClick={handleDelete}
           disabled={isDeleting}
@@ -98,8 +98,8 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
 
       {mounted && createPortal(
         <div id="coc-print-view" className="hidden print:block w-full bg-white text-black" style={{ margin: 0, padding: 0 }}>
-        <style type="text/css" media="print">
-          {`
+          <style type="text/css" media="print">
+            {`
             @media print {
             @page { size: A4; margin: 0; }
             
@@ -121,7 +121,6 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
             .cert-container {
               box-sizing: border-box;
               width: 210mm;
-              min-height: 296mm; /* buffer avoids Chrome's mm→px rounding overflow */
               padding: 15mm 20mm;
               background-color: #fff;
               font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -176,151 +175,151 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
             }
             } /* close @media print */
           `}
-        </style>
+          </style>
 
-        <div className="cert-container">
-          {/* Watermark */}
-          {settings?.logoUrl && (
-            <div className="cert-watermark">
-              <img src={settings.logoUrl} style={{ width: '100%', height: 'auto', filter: 'grayscale(100%)' }} alt="Watermark" />
-            </div>
-          )}
+          <div className="cert-container">
+            {/* Watermark */}
+            {settings?.logoUrl && (
+              <div className="cert-watermark">
+                <img src={settings.logoUrl} style={{ width: '100%', height: 'auto', filter: 'grayscale(100%)' }} alt="Watermark" />
+              </div>
+            )}
 
-          <div style={{ position: 'relative', zIndex: 10, flex: 1, display: 'flex', flexDirection: 'column' }}>
-            
-            {/* Header: Logo & Company Name */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid #eaeaea", paddingBottom: "25px", marginBottom: "20px" }}>
-              {settings?.logoUrl ? (
-                <img src={settings.logoUrl} alt={settings.companyName} style={{ maxHeight: "75px", objectFit: "contain" }} />
-              ) : (
-                <h1 style={{ margin: 0, fontSize: "28px", fontWeight: "700" }}>{settings?.companyName || "Company Name"}</h1>
-              )}
-              
-              <div style={{ textAlign: "right", fontSize: "11px", color: "#555", lineHeight: "1.6", maxWidth: "250px" }}>
-                <div style={{ fontWeight: "bold", color: "#222", fontSize: "14px", marginBottom: "4px" }}>{settings?.companyName || "Company Name"}</div>
-                {settings?.address && <div style={{ whiteSpace: "pre-wrap" }}>{settings.address}</div>}
-                {(settings?.phone || settings?.email) && (
-                  <div style={{ marginTop: "4px" }}>
-                    {settings?.phone && <span>T: {settings.phone}<br/></span>}
-                    {settings?.email && <span>E: {settings.email}</span>}
-                  </div>
+            <div style={{ position: 'relative', zIndex: 10, flex: 1, display: 'flex', flexDirection: 'column' }}>
+
+              {/* Header: Logo & Company Name */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid #eaeaea", paddingBottom: "25px", marginBottom: "20px" }}>
+                {settings?.logoUrl ? (
+                  <img src={settings.logoUrl} alt={settings.companyName} style={{ maxHeight: "75px", objectFit: "contain" }} />
+                ) : (
+                  <h1 style={{ margin: 0, fontSize: "28px", fontWeight: "700" }}>{settings?.companyName || "Company Name"}</h1>
                 )}
-                {settings?.gstNumber && <div style={{ marginTop: "4px" }}>GSTIN: {settings.gstNumber}</div>}
-              </div>
-            </div>
 
-            <div className="cert-title">
-              Certificate of Conformance
-            </div>
-
-            {/* Certificate Meta */}
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "30px", backgroundColor: "#fafafa", padding: "15px 20px", borderRadius: "4px" }}>
-              <div>
-                <div style={{ fontSize: "10px", color: "#666", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "4px" }}>Certificate No.</div>
-                <div style={{ fontSize: "15px", fontWeight: "600", color: "#111" }}>{coc.cocNumber || coc.id.slice(0, 8)}</div>
-              </div>
-              <div style={{ textAlign: "center" }}>
-                {coc.clientPoRef && (
-                  <>
-                    <div style={{ fontSize: "10px", color: "#666", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "4px" }}>PO Reference</div>
-                    <div style={{ fontSize: "15px", fontWeight: "600", color: "#111" }}>{coc.clientPoRef}</div>
-                  </>
-                )}
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: "10px", color: "#666", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "4px" }}>Date of Issue</div>
-                <div style={{ fontSize: "15px", fontWeight: "600", color: "#111" }}>{new Date(coc.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
-              </div>
-            </div>
-
-            {/* Statement & Client */}
-            <div style={{ marginBottom: "35px", fontSize: "13px", lineHeight: "1.7", color: "#333", padding: "0 10px" }}>
-              <p style={{ marginBottom: "25px", fontSize: "14px" }}>
-                {coc.standardText ? coc.standardText : "We hereby certify that the materials supplied against this order conform strictly to your company standards and have been procured from genuine sources."}
-              </p>
-              <div style={{ fontSize: "11px", color: "#777", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "6px" }}>Issued To</div>
-              <div style={{ fontSize: "16px", fontWeight: "600", color: "#111" }}>{coc.client.name}</div>
-              {coc.client.address && <div style={{ fontSize: "13px", color: "#555", marginTop: "4px", maxWidth: "400px" }}>{coc.client.address}</div>}
-            </div>
-
-            {/* Items Table */}
-            <table className="cert-table" width="100%" cellSpacing={0} cellPadding={0} style={{ borderCollapse: "collapse", marginBottom: "40px" }}>
-              <thead>
-                <tr>
-                  <th style={{ width: "40px" }}>#</th>
-                  <th style={{ width: "50%" }}>Description of Goods</th>
-                  <th style={{ textAlign: "center", width: "80px" }}>Qty</th>
-                  <th style={{ textAlign: "center", width: "120px" }}>Batch / Heat No.</th>
-                  <th>Remarks</th>
-                </tr>
-              </thead>
-              <tbody>
-                {coc.items.map((item: any, index: number) => {
-                  const attrs = item.attributes ? JSON.parse(item.attributes) : [];
-                  return (
-                    <tr key={item.id}>
-                      <td style={{ color: "#777", fontWeight: "500" }}>{String(index + 1).padStart(2, '0')}</td>
-                      <td>
-                        <div style={{ fontWeight: "600", fontSize: "13px", color: "#111", marginBottom: "3px" }}>{item.product.materialDescription}</div>
-                        <div style={{ color: "#666", fontSize: "11px" }}>Part Code: {item.product.materialCode}</div>
-                        {(() => {
-                          try {
-                            const parsed = JSON.parse(item.attributes || '[]');
-                            if (Array.isArray(parsed) && parsed.length > 0) {
-                              return (
-                                <div style={{ marginTop: "8px" }}>
-                                  {parsed.map((attr: { key: string; value: string }, i: number) => attr.key && attr.value ? (
-                                    <div key={i} style={{ display: 'flex', marginBottom: '3px', fontSize: '11px' }}>
-                                      <span style={{ minWidth: '90px', color: '#777' }}>{attr.key}:</span>
-                                      <strong style={{ color: '#222', fontWeight: "500" }}>{attr.value}</strong>
-                                    </div>
-                                  ) : null)}
-                                </div>
-                              );
-                            }
-                          } catch (e) {
-                            return null;
-                          }
-                          return null;
-                        })()}
-                      </td>
-                      <td align="center" style={{ fontWeight: "600", fontSize: "13px" }}>{item.quantity} <span style={{ fontSize: "11px", color: "#777", fontWeight: "normal" }}>{item.product.unit}</span></td>
-                      <td align="center" style={{ fontWeight: "500" }}>{item.batchNo || '-'}</td>
-                      <td style={{ color: "#555" }}>{item.remarks || '-'}</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-
-            {/* Footer Section flex pusher */}
-            <div style={{ flex: 1 }}></div>
-
-            {/* Bottom Section (Signatures & Details) */}
-            <div style={{ borderTop: "1px solid #eaeaea", paddingTop: "30px", display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: "40px" }}>
-              
-              {/* Left: Notes (Removed per user request) */}
-              <div style={{ width: "55%", fontSize: "11px", color: "#666", lineHeight: "1.6" }}>
+                <div style={{ textAlign: "right", fontSize: "11px", color: "#555", lineHeight: "1.6", maxWidth: "250px" }}>
+                  <div style={{ fontWeight: "bold", color: "#222", fontSize: "14px", marginBottom: "4px" }}>{settings?.companyName || "Company Name"}</div>
+                  {settings?.address && <div style={{ whiteSpace: "pre-wrap" }}>{settings.address}</div>}
+                  {(settings?.phone || settings?.email) && (
+                    <div style={{ marginTop: "4px" }}>
+                      {settings?.phone && <span>T: {settings.phone}<br /></span>}
+                      {settings?.email && <span>E: {settings.email}</span>}
+                    </div>
+                  )}
+                  {settings?.gstNumber && <div style={{ marginTop: "4px" }}>GSTIN: {settings.gstNumber}</div>}
+                </div>
               </div>
 
-              {/* Right: Signature */}
-              <div style={{ width: "35%", textAlign: "center" }}>
-                <div style={{ height: "100px", display: "flex", alignItems: "flex-end", justifyContent: "center", paddingBottom: "15px" }}>
-                  {settings?.signatureUrl && (
-                    <img src={settings.signatureUrl} alt="Signature" style={{ maxHeight: "85px", maxWidth: "100%", objectFit: "contain" }} />
+              <div className="cert-title">
+                Certificate of Conformance
+              </div>
+
+              {/* Certificate Meta */}
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "30px", backgroundColor: "#fafafa", padding: "15px 20px", borderRadius: "4px" }}>
+                <div>
+                  <div style={{ fontSize: "10px", color: "#666", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "4px" }}>Certificate No.</div>
+                  <div style={{ fontSize: "15px", fontWeight: "600", color: "#111" }}>{coc.cocNumber || coc.id.slice(0, 8)}</div>
+                </div>
+                <div style={{ textAlign: "center" }}>
+                  {coc.clientPoRef && (
+                    <>
+                      <div style={{ fontSize: "10px", color: "#666", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "4px" }}>PO Reference</div>
+                      <div style={{ fontSize: "15px", fontWeight: "600", color: "#111" }}>{coc.clientPoRef}</div>
+                    </>
                   )}
                 </div>
-                <div style={{ borderTop: "1px solid #222", paddingTop: "10px", fontWeight: "600", fontSize: "12px", textTransform: "uppercase", letterSpacing: "1px", color: "#111" }}>
-                  Authorized Signatory
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: "10px", color: "#666", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "4px" }}>Date of Issue</div>
+                  <div style={{ fontSize: "15px", fontWeight: "600", color: "#111" }}>{new Date(coc.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
                 </div>
               </div>
 
-            </div>
+              {/* Statement & Client */}
+              <div style={{ marginBottom: "35px", fontSize: "13px", lineHeight: "1.7", color: "#333", padding: "0 10px" }}>
+                <p style={{ marginBottom: "25px", fontSize: "14px" }}>
+                  {coc.standardText ? coc.standardText : "We hereby certify that the materials supplied against this order conform strictly to your company standards and have been procured from genuine sources."}
+                </p>
+                <div style={{ fontSize: "11px", color: "#777", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "6px" }}>Issued To</div>
+                <div style={{ fontSize: "16px", fontWeight: "600", color: "#111" }}>{coc.client.name}</div>
+                {coc.client.address && <div style={{ fontSize: "13px", color: "#555", marginTop: "4px", maxWidth: "400px" }}>{coc.client.address}</div>}
+              </div>
 
+              {/* Items Table */}
+              <table className="cert-table" width="100%" cellSpacing={0} cellPadding={0} style={{ borderCollapse: "collapse", marginBottom: "40px" }}>
+                <thead>
+                  <tr>
+                    <th style={{ width: "40px" }}>#</th>
+                    <th style={{ width: "50%" }}>Description of Goods</th>
+                    <th style={{ textAlign: "center", width: "80px" }}>Qty</th>
+                    <th style={{ textAlign: "center", width: "120px" }}>Batch / Heat No.</th>
+                    <th>Remarks</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {coc.items.map((item: any, index: number) => {
+                    const attrs = item.attributes ? JSON.parse(item.attributes) : [];
+                    return (
+                      <tr key={item.id}>
+                        <td style={{ color: "#777", fontWeight: "500" }}>{String(index + 1).padStart(2, '0')}</td>
+                        <td>
+                          <div style={{ fontWeight: "600", fontSize: "13px", color: "#111", marginBottom: "3px" }}>{item.product.materialDescription}</div>
+                          <div style={{ color: "#666", fontSize: "11px" }}>Part Code: {item.product.materialCode}</div>
+                          {(() => {
+                            try {
+                              const parsed = JSON.parse(item.attributes || '[]');
+                              if (Array.isArray(parsed) && parsed.length > 0) {
+                                return (
+                                  <div style={{ marginTop: "8px" }}>
+                                    {parsed.map((attr: { key: string; value: string }, i: number) => attr.key && attr.value ? (
+                                      <div key={i} style={{ display: 'flex', marginBottom: '3px', fontSize: '11px' }}>
+                                        <span style={{ minWidth: '90px', color: '#777' }}>{attr.key}:</span>
+                                        <strong style={{ color: '#222', fontWeight: "500" }}>{attr.value}</strong>
+                                      </div>
+                                    ) : null)}
+                                  </div>
+                                );
+                              }
+                            } catch (e) {
+                              return null;
+                            }
+                            return null;
+                          })()}
+                        </td>
+                        <td align="center" style={{ fontWeight: "600", fontSize: "13px" }}>{item.quantity} <span style={{ fontSize: "11px", color: "#777", fontWeight: "normal" }}>{item.product.unit}</span></td>
+                        <td align="center" style={{ fontWeight: "500" }}>{item.batchNo || '-'}</td>
+                        <td style={{ color: "#555" }}>{item.remarks || '-'}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+
+              {/* Footer Section flex pusher */}
+              <div style={{ flex: 1 }}></div>
+
+              {/* Bottom Section (Signatures & Details) */}
+              <div style={{ borderTop: "1px solid #eaeaea", paddingTop: "30px", display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: "40px" }}>
+
+                {/* Left: Notes (Removed per user request) */}
+                <div style={{ width: "55%", fontSize: "11px", color: "#666", lineHeight: "1.6" }}>
+                </div>
+
+                {/* Right: Signature */}
+                <div style={{ width: "35%", textAlign: "center" }}>
+                  <div style={{ height: "100px", display: "flex", alignItems: "flex-end", justifyContent: "center", paddingBottom: "15px" }}>
+                    {settings?.signatureUrl && (
+                      <img src={settings.signatureUrl} alt="Signature" style={{ maxHeight: "85px", maxWidth: "100%", objectFit: "contain" }} />
+                    )}
+                  </div>
+                  <div style={{ borderTop: "1px solid #222", paddingTop: "10px", fontWeight: "600", fontSize: "12px", textTransform: "uppercase", letterSpacing: "1px", color: "#111" }}>
+                    Authorized Signatory
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
           </div>
         </div>
-      </div>
-      , document.body)}
+        , document.body)}
     </>
   )
 }

@@ -42,53 +42,55 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      {currentStatus === "DRAFT" && (
+    <>
+      <div className="flex flex-wrap items-center gap-3 print:hidden">
+        {currentStatus === "DRAFT" && (
+          <button
+            onClick={() => handleStatusChange("ISSUED")}
+            disabled={isUpdating}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 font-medium rounded-md transition-colors disabled:opacity-50"
+          >
+            <CheckCircle2 className="w-4 h-4" />
+            <span className="text-sm">Mark as Issued</span>
+          </button>
+        )}
+
+        {currentStatus === "ISSUED" && (
+          <button
+            onClick={() => handleStatusChange("CANCELLED")}
+            disabled={isUpdating}
+            className="flex items-center gap-2 px-4 py-2 bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 font-medium rounded-md transition-colors disabled:opacity-50"
+          >
+            <Ban className="w-4 h-4" />
+            <span className="text-sm">Cancel COC</span>
+          </button>
+        )}
+
         <button
-          onClick={() => handleStatusChange("ISSUED")}
-          disabled={isUpdating}
-          className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 font-medium rounded-md transition-colors disabled:opacity-50"
+          onClick={() => window.print()}
+          className="flex items-center gap-2 px-4 py-2 bg-brand-slate hover:bg-slate-500 text-white font-medium rounded-md transition-colors shadow-lg shadow-brand-slate/20"
         >
-          <CheckCircle2 className="w-4 h-4" />
-          <span className="text-sm">Mark as Issued</span>
+          <Printer className="w-4 h-4" />
+          <span className="text-sm">Print COC</span>
         </button>
-      )}
 
-      {currentStatus === "ISSUED" && (
         <button
-          onClick={() => handleStatusChange("CANCELLED")}
-          disabled={isUpdating}
-          className="flex items-center gap-2 px-4 py-2 bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 font-medium rounded-md transition-colors disabled:opacity-50"
+          onClick={() => router.push(`/cocs/${id}/edit`)}
+          className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-white font-medium rounded-md transition-colors border border-premium-border"
         >
-          <Ban className="w-4 h-4" />
-          <span className="text-sm">Cancel COC</span>
+          <Edit className="w-4 h-4" />
+          <span className="text-sm">Edit</span>
         </button>
-      )}
-
-      <button
-        onClick={() => window.print()}
-        className="flex items-center gap-2 px-4 py-2 bg-brand-slate hover:bg-slate-500 text-white font-medium rounded-md transition-colors shadow-lg shadow-brand-slate/20"
-      >
-        <Printer className="w-4 h-4" />
-        <span className="text-sm">Print COC</span>
-      </button>
-
-      <button
-        onClick={() => router.push(`/cocs/${id}/edit`)}
-        className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-white font-medium rounded-md transition-colors border border-premium-border"
-      >
-        <Edit className="w-4 h-4" />
-        <span className="text-sm">Edit</span>
-      </button>
-      
-      <button
-        onClick={handleDelete}
-        disabled={isDeleting}
-        className="flex items-center justify-center p-2 text-zinc-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-md transition-colors disabled:opacity-50"
-        title="Delete COC"
-      >
-        <Trash2 className="w-5 h-5" />
-      </button>
+        
+        <button
+          onClick={handleDelete}
+          disabled={isDeleting}
+          className="flex items-center justify-center p-2 text-zinc-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-md transition-colors disabled:opacity-50"
+          title="Delete COC"
+        >
+          <Trash2 className="w-5 h-5" />
+        </button>
+      </div>
 
       {/* Print Template - Certificate Style */}
       <div id="coc-print-view" className="hidden print:block w-full bg-white text-black relative" style={{ margin: 0, padding: 0, minHeight: "100vh" }}>
@@ -269,6 +271,6 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
           </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }

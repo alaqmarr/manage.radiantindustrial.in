@@ -67,7 +67,12 @@ export function PurchaseModal({
   }
 
   useEffect(() => {
-    if (purchaseToEdit) {
+    if (action === "new-purchase") {
+      setSelectedSupplierId("")
+      setSelectedQuotationId("")
+      setItems([])
+      setSearchTerm("")
+    } else if (purchaseToEdit) {
       setSelectedSupplierId(purchaseToEdit.supplierId || "")
       setSelectedQuotationId(purchaseToEdit.quotationId || "")
       setItems(purchaseToEdit.items.map((item: any) => ({
@@ -75,12 +80,9 @@ export function PurchaseModal({
         quantity: item.quantity,
         cpSnapshot: item.cpSnapshot
       })))
-    } else {
-      setSelectedSupplierId("")
-      setSelectedQuotationId("")
-      setItems([])
+      setSearchTerm("")
     }
-  }, [purchaseToEdit])
+  }, [action, purchaseToEdit])
 
   // Autocomplete
   const [searchTerm, setSearchTerm] = useState("")

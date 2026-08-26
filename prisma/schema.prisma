@@ -375,3 +375,12 @@ model ObligationPayment {
   notes     String?
   createdAt DateTime @default(now())
 }
+
+model ObligationAda {
+  id        String   @id @default(cuid())
+  type      String   // KHUMUS or ZAKAAT
+  amount    Int      // in paise
+  date      DateTime @default(now())
+  notes     String?
+  createdAt DateTime @default(now())
+}

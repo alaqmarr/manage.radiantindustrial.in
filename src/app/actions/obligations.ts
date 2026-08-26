@@ -19,10 +19,12 @@ export interface ObligationQuotationDetail {
 
 export interface ObligationSummary {
   quotations: ObligationQuotationDetail[]
-  totalDue: number
   totalExpectedDue: number
-  totalPaid: number
-  outstanding: number
+  totalDue: number
+  totalPaid: number // Transferred to holding account
+  totalAda: number  // Actually handed over
+  holdingBalance: number // Paid - Ada
+  outstanding: number // Due - Paid
 }
 
 export async function getObligationSummary(type: ObligationType): Promise<ObligationSummary> {
@@ -92,12 +94,20 @@ export async function getObligationSummary(type: ObligationType): Promise<Obliga
     where: { type }
   })
   const totalPaid = payments.reduce((sum: number, p: any) => sum + p.amount, 0)
+  
+  // 3. Fetch total Ada (handed over)
+  const adas = await prisma.obligationAda.findMany({
+    where: { type }
+  })
+  const totalAda = adas.reduce((sum: number, a: any) => sum + a.amount, 0)
 
   return {
     quotations: quotationDetails,
     totalDue,
     totalExpectedDue,
     totalPaid,
+    totalAda,
+    holdingBalance: totalPaid - totalAda,
     outstanding: totalDue - totalPaid
   }
 }
@@ -164,6 +174,82 @@ export async function recordCombinedObligationPayment(data: {
           amount: remainingAmount,
           date: data.date,
           notes: data.notes ? `[Combined] ${data.notes}` : "Combined Payment (Zakaat portion)"
+        }
+      })
+    }
+
+    revalidatePath("/khumus")
+    revalidatePath("/zakaat")
+    revalidatePath("/obligations-overview")
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
+export async function getObligationAdas(type: ObligationType) {
+  return prisma.obligationAda.findMany({
+    where: { type },
+    orderBy: { date: 'desc' }
+  })
+}
+
+export async function recordObligationAda(data: {
+  type: ObligationType
+  amount: number // paise
+  date: Date
+  notes?: string
+}) {
+  try {
+    const ada = await prisma.obligationAda.create({
+      data: {
+        type: data.type,
+        amount: data.amount,
+        date: data.date,
+        notes: data.notes
+      }
+    })
+    revalidatePath(`/${data.type.toLowerCase()}`)
+    revalidatePath("/obligations-overview")
+    return { success: true, ada }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
+export async function recordCombinedObligationAda(data: {
+  amount: number // paise
+  date: Date
+  notes?: string
+}) {
+  try {
+    const khumusSummary = await getObligationSummary("KHUMUS")
+    
+    let remainingAmount = data.amount
+    
+    // 1. Deduct from Khumus Holding Balance first
+    const khumusHolding = Math.max(0, khumusSummary.holdingBalance)
+    if (khumusHolding > 0 && remainingAmount > 0) {
+      const paymentAmount = Math.min(khumusHolding, remainingAmount)
+      await prisma.obligationAda.create({
+        data: {
+          type: "KHUMUS",
+          amount: paymentAmount,
+          date: data.date,
+          notes: data.notes ? `[Combined] ${data.notes}` : "Combined Ada (Khumus portion)"
+        }
+      })
+      remainingAmount -= paymentAmount
+    }
+
+    // 2. Deduct remaining from Zakaat
+    if (remainingAmount > 0) {
+      await prisma.obligationAda.create({
+        data: {
+          type: "ZAKAAT",
+          amount: remainingAmount,
+          date: data.date,
+          notes: data.notes ? `[Combined] ${data.notes}` : "Combined Ada (Zakaat portion)"
         }
       })
     }

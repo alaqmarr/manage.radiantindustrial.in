@@ -1,9 +1,10 @@
-import { getObligationSummary, getObligationPayments } from "@/app/actions/obligations"
+import { getObligationSummary, getObligationPayments, getObligationAdas } from "@/app/actions/obligations"
 import { ObligationDashboard } from "@/components/ObligationDashboard"
 
 export default async function KhumusPage() {
   const summary = await getObligationSummary("KHUMUS")
   const payments = await getObligationPayments("KHUMUS")
+  const adas = await getObligationAdas("KHUMUS")
 
   return (
     <ObligationDashboard
@@ -13,9 +14,12 @@ export default async function KhumusPage() {
       totalDue={summary.totalDue}
       totalExpectedDue={summary.totalExpectedDue}
       totalPaid={summary.totalPaid}
+      totalAda={summary.totalAda}
+      holdingBalance={summary.holdingBalance}
       outstanding={summary.outstanding}
       quotations={summary.quotations}
       payments={payments}
+      adas={adas}
     />
   )
 }

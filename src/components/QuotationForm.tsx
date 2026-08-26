@@ -229,9 +229,37 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
       e.preventDefault()
       if (highlightedIndex >= 0 && highlightedIndex < filteredProducts.length) {
         addProductToQuotation(filteredProducts[highlightedIndex])
+      } else if (searchTerm.trim() !== "") {
+        handleQuickCreateFromSearch()
       }
     } else if (e.key === "Escape") {
       setIsDropdownOpen(false)
+    }
+  }
+
+  const handleQuickCreateFromSearch = async () => {
+    if (!searchTerm.trim()) return;
+    
+    const existing = products.find(p => p.materialDescription.toLowerCase() === searchTerm.toLowerCase());
+    if (existing) {
+      addProductToQuotation(existing);
+      return;
+    }
+
+    try {
+      const res = await createQuickProduct({
+        materialCode: "RAD-" + Math.floor(10000000 + Math.random() * 90000000).toString(),
+        materialDescription: searchTerm.trim(),
+        unit: "NOS",
+        gstRate: 18
+      });
+      if (res.success && res.product) {
+        addProductToQuotation(res.product);
+      } else {
+        alert(res.error || "Failed to create product");
+      }
+    } catch (e) {
+      alert("Failed to create product automatically");
     }
   }
 

@@ -11,6 +11,7 @@ interface ObligationDashboardProps {
   title: string
   description: string
   totalDue: number
+  totalExpectedDue: number
   totalPaid: number
   outstanding: number
   quotations: ObligationQuotationDetail[]
@@ -22,6 +23,7 @@ export function ObligationDashboard({
   title,
   description,
   totalDue,
+  totalExpectedDue,
   totalPaid,
   outstanding,
   quotations,
@@ -64,26 +66,38 @@ export function ObligationDashboard({
           </h1>
           <p className="text-sm text-zinc-400 mt-1">{description}</p>
         </div>
-        <button onClick={() => setIsPaymentModalOpen(true)} className="flex items-center gap-2 bg-brand-slate hover:bg-brand-slate/90">
+        <button onClick={() => setIsPaymentModalOpen(true)} className="flex items-center gap-2 px-4 py-2 rounded-md font-medium text-sm text-white bg-brand-slate hover:bg-brand-slate/90">
           <Plus className="w-4 h-4" />
           Mark as Paid
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="p-6 bg-zinc-900 border-premium-border">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="p-6 bg-zinc-900 border-premium-border rounded-xl border shadow-sm">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center">
+              <FileText className="w-6 h-6 text-blue-400" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-zinc-400" title="Expected total once all invoices are paid">Total Expected</p>
+              <h3 className="text-2xl font-bold text-white">{formatRupee(totalExpectedDue)}</h3>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6 bg-zinc-900 border-premium-border rounded-xl border shadow-sm">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-lg bg-red-500/10 flex items-center justify-center">
               <IndianRupee className="w-6 h-6 text-red-400" />
             </div>
             <div>
-              <p className="text-sm font-medium text-zinc-400">Total Due Generated</p>
+              <p className="text-sm font-medium text-zinc-400" title="Actually generated from received payments">Total Due (Realized)</p>
               <h3 className="text-2xl font-bold text-white">{formatRupee(totalDue)}</h3>
             </div>
           </div>
         </div>
         
-        <div className="p-6 bg-zinc-900 border-premium-border">
+        <div className="p-6 bg-zinc-900 border-premium-border rounded-xl border shadow-sm">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center">
               <Wallet className="w-6 h-6 text-green-400" />
@@ -95,13 +109,13 @@ export function ObligationDashboard({
           </div>
         </div>
 
-        <div className="p-6 bg-brand-slate/10 border-brand-slate/30">
+        <div className="p-6 bg-brand-slate/10 border-brand-slate/30 rounded-xl border shadow-sm">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-lg bg-brand-slate/20 flex items-center justify-center">
               <AlertCircle className="w-6 h-6 text-brand-slate" />
             </div>
             <div>
-              <p className="text-sm font-medium text-brand-slate">Outstanding Balance</p>
+              <p className="text-sm font-medium text-brand-slate">Outstanding Bal.</p>
               <h3 className="text-2xl font-bold text-white">{formatRupee(outstanding)}</h3>
             </div>
           </div>
@@ -109,7 +123,7 @@ export function ObligationDashboard({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="p-6 bg-zinc-900 border-premium-border">
+        <div className="p-6 bg-zinc-900 border-premium-border rounded-xl border shadow-sm">
           <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
             <FileText className="w-5 h-5" />
             Generated {title} Due from Quotations
@@ -121,7 +135,7 @@ export function ObligationDashboard({
                   <th className="px-4 py-3 font-medium">Quotation</th>
                   <th className="px-4 py-3 font-medium">Profit</th>
                   <th className="px-4 py-3 font-medium">% Paid</th>
-                  <th className="px-4 py-3 font-medium text-right text-brand-slate">{title} Due</th>
+                  <th className="px-4 py-3 font-medium text-right text-brand-slate">Realized / Expected</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-premium-border">
@@ -137,11 +151,12 @@ export function ObligationDashboard({
                     </td>
                     <td className="px-4 py-3">
                       <div className="font-medium text-white">
-                        {Math.round((q.amountPaid / q.totalValue) * 100)}%
+                        {Math.round((q.amountPaid / (q.totalValue || 1)) * 100)}%
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-right font-medium text-brand-slate">
-                      {formatRupee(q.dueAmount)}
+                    <td className="px-4 py-3 text-right">
+                      <div className="font-bold text-brand-slate">{formatRupee(q.dueAmount)}</div>
+                      <div className="text-xs text-zinc-500">Exp: {formatRupee(q.expectedDueAmount)}</div>
                     </td>
                   </tr>
                 ))}

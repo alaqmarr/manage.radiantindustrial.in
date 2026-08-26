@@ -11,6 +11,7 @@ export default async function KhumusPage() {
       title="Khumus"
       description="1/5th (20%) of realized profit generated from payments received on accepted quotations."
       totalDue={summary.totalDue}
+      totalExpectedDue={summary.totalExpectedDue}
       totalPaid={summary.totalPaid}
       outstanding={summary.outstanding}
       quotations={summary.quotations}

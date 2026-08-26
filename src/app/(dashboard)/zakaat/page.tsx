@@ -11,6 +11,7 @@ export default async function ZakaatPage() {
       title="Zakaat"
       description="1/40th (2.5%) of realized profit generated from payments received on accepted quotations."
       totalDue={summary.totalDue}
+      totalExpectedDue={summary.totalExpectedDue}
       totalPaid={summary.totalPaid}
       outstanding={summary.outstanding}
       quotations={summary.quotations}

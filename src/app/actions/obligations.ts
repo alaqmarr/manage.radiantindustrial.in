@@ -81,7 +81,7 @@ export async function getObligationSummary(type: ObligationType): Promise<Obliga
   const payments = await prisma.obligationPayment.findMany({
     where: { type }
   })
-  const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0)
+  const totalPaid = payments.reduce((sum: number, p: any) => sum + p.amount, 0)
 
   return {
     quotations: quotationDetails,

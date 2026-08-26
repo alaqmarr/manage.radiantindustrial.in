@@ -4,7 +4,7 @@ import { useState } from "react"
 import { formatRupee } from "@/lib/utils"
 import { recordObligationPayment, ObligationQuotationDetail, ObligationType } from "@/app/actions/obligations"
 import { Plus, Wallet, FileText, IndianRupee, HandCoins, AlertCircle } from "lucide-react"
-import { ObligationPayment } from "@prisma/client"
+import { ObligationPayment } from "@/generated/prisma/client"
 
 interface ObligationDashboardProps {
   type: ObligationType

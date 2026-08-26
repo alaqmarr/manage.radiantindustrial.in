@@ -1,12 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { formatRupee, parseRupee } from "@/lib/utils"
+import { formatRupee } from "@/lib/utils"
 import { recordObligationPayment, ObligationQuotationDetail, ObligationType } from "@/app/actions/obligations"
-import { Card } from "./ui/Card"
-import { Button } from "./ui/Button"
 import { Plus, Wallet, FileText, IndianRupee, HandCoins, AlertCircle } from "lucide-react"
-import { format } from "date-fns"
 import { ObligationPayment } from "@prisma/client"
 
 interface ObligationDashboardProps {
@@ -37,7 +34,7 @@ export function ObligationDashboard({
 
   const handleRecordPayment = async (e: React.FormEvent) => {
     e.preventDefault()
-    const amountPaise = parseRupee(amountStr)
+    const amountPaise = Math.round(parseFloat(amountStr) * 100)
     if (amountPaise <= 0) return alert("Enter a valid amount")
     
     setIsSubmitting(true)
@@ -67,14 +64,14 @@ export function ObligationDashboard({
           </h1>
           <p className="text-sm text-zinc-400 mt-1">{description}</p>
         </div>
-        <Button onClick={() => setIsPaymentModalOpen(true)} className="flex items-center gap-2 bg-brand-slate hover:bg-brand-slate/90">
+        <button onClick={() => setIsPaymentModalOpen(true)} className="flex items-center gap-2 bg-brand-slate hover:bg-brand-slate/90">
           <Plus className="w-4 h-4" />
           Mark as Paid
-        </Button>
+        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="p-6 bg-zinc-900 border-premium-border">
+        <div className="p-6 bg-zinc-900 border-premium-border">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-lg bg-red-500/10 flex items-center justify-center">
               <IndianRupee className="w-6 h-6 text-red-400" />
@@ -84,9 +81,9 @@ export function ObligationDashboard({
               <h3 className="text-2xl font-bold text-white">{formatRupee(totalDue)}</h3>
             </div>
           </div>
-        </Card>
+        </div>
         
-        <Card className="p-6 bg-zinc-900 border-premium-border">
+        <div className="p-6 bg-zinc-900 border-premium-border">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center">
               <Wallet className="w-6 h-6 text-green-400" />
@@ -96,9 +93,9 @@ export function ObligationDashboard({
               <h3 className="text-2xl font-bold text-white">{formatRupee(totalPaid)}</h3>
             </div>
           </div>
-        </Card>
+        </div>
 
-        <Card className="p-6 bg-brand-slate/10 border-brand-slate/30">
+        <div className="p-6 bg-brand-slate/10 border-brand-slate/30">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-lg bg-brand-slate/20 flex items-center justify-center">
               <AlertCircle className="w-6 h-6 text-brand-slate" />
@@ -108,11 +105,11 @@ export function ObligationDashboard({
               <h3 className="text-2xl font-bold text-white">{formatRupee(outstanding)}</h3>
             </div>
           </div>
-        </Card>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card className="p-6 bg-zinc-900 border-premium-border">
+        <div className="p-6 bg-zinc-900 border-premium-border">
           <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
             <FileText className="w-5 h-5" />
             Generated {title} Due from Quotations
@@ -158,9 +155,9 @@ export function ObligationDashboard({
               </tbody>
             </table>
           </div>
-        </Card>
+        </div>
 
-        <Card className="p-6 bg-zinc-900 border-premium-border">
+        <div className="p-6 bg-zinc-900 border-premium-border">
           <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
             <Wallet className="w-5 h-5" />
             Payment Ledger
@@ -178,7 +175,7 @@ export function ObligationDashboard({
                 {payments.map((p) => (
                   <tr key={p.id} className="hover:bg-zinc-800/30">
                     <td className="px-4 py-3 text-zinc-300">
-                      {format(new Date(p.date), 'dd MMM yyyy')}
+                      {new Date(p.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </td>
                     <td className="px-4 py-3 text-zinc-400">
                       {p.notes || '-'}
@@ -198,7 +195,7 @@ export function ObligationDashboard({
               </tbody>
             </table>
           </div>
-        </Card>
+        </div>
       </div>
 
       {isPaymentModalOpen && (
@@ -229,20 +226,20 @@ export function ObligationDashboard({
                 />
               </div>
               <div className="flex justify-end gap-3 pt-4">
-                <Button 
+                <button 
                   type="button" 
-                  variant="outline" 
                   onClick={() => setIsPaymentModalOpen(false)}
+                  className="px-4 py-2 rounded-md font-medium text-sm border border-premium-border text-zinc-300 hover:bg-zinc-800 transition-colors"
                 >
                   Cancel
-                </Button>
-                <Button 
+                </button>
+                <button 
                   type="submit" 
                   disabled={isSubmitting}
-                  className="bg-brand-slate hover:bg-brand-slate/90"
+                  className="px-4 py-2 rounded-md font-medium text-sm bg-brand-slate text-white hover:bg-brand-slate/90 transition-colors disabled:opacity-50"
                 >
                   {isSubmitting ? "Saving..." : "Mark as Paid"}
-                </Button>
+                </button>
               </div>
             </form>
           </div>

@@ -59,6 +59,19 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
   const [newClientContact, setNewClientContact] = useState("")
   const [isCreatingClient, setIsCreatingClient] = useState(false)
 
+  // Accordion State
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
+  const toggleExpand = (id: string) => {
+    setExpandedItems(prev => {
+      const n = new Set(prev)
+      if (n.has(id)) n.delete(id)
+      else n.add(id)
+      return n
+    })
+  }
+  const expandAll = () => setExpandedItems(new Set(items.map(i => i.product.id)))
+  const collapseAll = () => setExpandedItems(new Set())
+
   const [newClientGst, setNewClientGst] = useState("")
   const [newClientLocation, setNewClientLocation] = useState("")
   const [newClientAddress, setNewClientAddress] = useState("")
@@ -232,6 +245,11 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
         commissionCpSnapshot: product.commissionCostPrice || undefined,
         spSnapshot: 0 // Default to 0, requires manual entry
       }]
+    })
+    setExpandedItems(prev => {
+      const n = new Set(prev)
+      n.add(product.id)
+      return n
     })
     setSearchTerm("")
     setIsDropdownOpen(false)
@@ -550,10 +568,28 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
       </div>
 
       {/* Items Area */}
-      <div className="space-y-4 mb-16">
+      <div className="space-y-4 pb-32 mb-8">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-medium text-white">Quotation Items</h2>
-          <div>
+          <div className="flex items-center gap-3">
+            {items.length > 0 && (
+              <div className="flex bg-zinc-900 rounded-md border border-premium-border overflow-hidden p-0.5">
+                <button 
+                  type="button" 
+                  onClick={expandAll}
+                  className="px-3 py-1.5 text-xs font-medium text-zinc-300 hover:text-white hover:bg-zinc-800 rounded transition-colors"
+                >
+                  Expand All
+                </button>
+                <button 
+                  type="button" 
+                  onClick={collapseAll}
+                  className="px-3 py-1.5 text-xs font-medium text-zinc-300 hover:text-white hover:bg-zinc-800 rounded transition-colors"
+                >
+                  Collapse All
+                </button>
+              </div>
+            )}
             <input 
               type="file" 
               accept=".xlsx,.xls" 
@@ -636,213 +672,255 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
               const isPending = !cp || !sp
               
               return (
-                <div key={item.product.id} className="glass-panel border border-premium-border rounded-lg p-5 group hover:bg-white/[0.03] transition-colors relative">
-                  {/* Top Row: Product Info & Remove */}
-                  <div className="flex items-start justify-between gap-4 mb-4">
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-center gap-3">
-                        <input 
-                          type="text"
-                          value={item.product.materialCode}
-                          onChange={e => handleProductChange(item.product.id, 'materialCode', e.target.value)}
-                          placeholder="Code"
-                          className="w-32 bg-zinc-950/50 border border-transparent hover:border-premium-border focus:border-brand-slate px-2 py-1 font-mono text-sm text-white focus:outline-none transition-colors rounded"
-                        />
-                        <input 
-                          type="text"
-                          value={item.product.materialDescription}
-                          onChange={e => handleProductChange(item.product.id, 'materialDescription', e.target.value)}
-                          placeholder="Description"
-                          className="flex-1 bg-zinc-950/50 border border-transparent hover:border-premium-border focus:border-brand-slate px-2 py-1 text-sm font-medium text-white focus:outline-none transition-colors rounded"
-                        />
-                        {isPending && (
-                          <span className="flex-shrink-0 inline-flex items-center gap-1 text-[10px] uppercase tracking-wider bg-rose-500/10 text-rose-400 px-2 py-1 rounded border border-rose-500/20">
-                            <AlertCircle className="w-3 h-3" /> Price Pending
-                          </span>
-                        )}
-                      </div>
-                      
-                      {item.product.specification && (
-                        <div className="text-xs text-zinc-500 px-2 line-clamp-2">
-                          {item.product.specification}
-                        </div>
-                      )}
-                      
-                      <div>
-                        <input
-                          type="text"
-                          placeholder="Add internal comment (optional)..."
-                          value={item.comment || ""}
-                          onChange={(e) => handleCommentChange(item.product.id, e.target.value)}
-                          className="w-full bg-zinc-950/30 border border-transparent hover:border-premium-border focus:border-brand-slate px-2 py-1.5 text-xs text-red-400 focus:text-red-300 rounded focus:outline-none transition-colors placeholder:text-zinc-600"
-                        />
-                      </div>
-                    </div>
-                    
-                    <button 
-                      type="button" 
-                      onClick={() => handleRemoveItem(item.product.id)}
-                      className="text-zinc-500 hover:text-rose-500 hover:bg-rose-500/10 p-2 rounded-md transition-all active:scale-95"
-                      title="Remove Item"
+                <div key={item.product.id} className="glass-panel border border-premium-border rounded-lg group hover:bg-white/[0.03] transition-colors relative">
+                  
+                  {/* Collapsed/Always-Visible Header */}
+                  <div className={`p-4 flex items-center justify-between gap-4 ${expandedItems.has(item.product.id) ? 'bg-black/20' : ''}`}>
+                    <div 
+                      className="flex-1 grid grid-cols-2 md:grid-cols-6 gap-4 items-center cursor-pointer" 
+                      onClick={() => toggleExpand(item.product.id)}
                     >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  {/* Bottom Row: Financials & Metrics */}
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-6 pt-4 border-t border-premium-border/30">
+                      <div className="col-span-2 md:col-span-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-white">{item.product.materialCode}</span>
+                          {isPending && (
+                            <span className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider bg-rose-500/10 text-rose-400 px-1.5 py-0.5 rounded border border-rose-500/20">
+                              <AlertCircle className="w-2 h-2" /> Pending
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-zinc-400 truncate">{item.product.materialDescription}</div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Quantity</div>
+                        <div className="text-sm font-mono text-white">{item.quantity} <span className="text-zinc-500 text-xs">{item.product.unit}</span></div>
+                      </div>
+                      <div className="hidden md:block">
+                        <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Actual CP</div>
+                        <div className="text-sm font-mono text-zinc-300">{cp ? formatRupee(cp) : '-'}</div>
+                      </div>
+                      <div className="hidden md:block">
+                        <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Selling Price</div>
+                        <div className="text-sm font-mono text-zinc-300">{sp > 0 ? formatRupee(sp) : '-'}</div>
+                      </div>
+                    </div>
                     
-                    {/* Quantity & UOM */}
-                    <div>
-                      <label className="block text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-2">Quantity</label>
-                      <div className="flex items-center gap-2">
-                        <input 
-                          type="number" 
-                          min="0"
-                          step="any"
-                          value={item.quantity}
-                          onChange={e => handleQuantityChange(item.product.id, parseFloat(e.target.value) || 0)}
-                          className="w-20 bg-zinc-950 border border-premium-border rounded px-2 py-1.5 text-white font-medium focus:outline-none focus:ring-1 focus:ring-brand-slate"
-                        />
-                        <input 
-                          type="text"
-                          value={item.product.unit}
-                          onChange={e => handleProductChange(item.product.id, 'unit', e.target.value)}
-                          className="w-14 bg-zinc-950/50 border border-transparent hover:border-premium-border focus:border-brand-slate px-1 py-1.5 font-mono text-xs text-zinc-400 text-center focus:outline-none transition-colors rounded uppercase"
-                        />
-                      </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button 
+                        type="button" 
+                        onClick={() => toggleExpand(item.product.id)}
+                        className="px-3 py-1.5 text-xs font-medium bg-white/5 hover:bg-white/10 border border-premium-border text-white rounded transition-colors"
+                      >
+                        {expandedItems.has(item.product.id) ? "Close" : "Edit"}
+                      </button>
+                      <button 
+                        type="button" 
+                        onClick={() => handleRemoveItem(item.product.id)}
+                        className="text-zinc-500 hover:text-rose-500 hover:bg-rose-500/10 p-2 rounded-md transition-all active:scale-95"
+                        title="Remove Item"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
-
-                    {/* Cost Price */}
-                    <div>
-                      <label className="block text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-2">Cost Price & Comm. CP</label>
-                      <div className="flex flex-col items-start gap-3">
-                        <div className="flex flex-col items-start gap-1">
-                          <button 
-                            onClick={() => setVendorDialogItem({
-                              productId: item.product.id,
-                              productName: item.product.materialDescription,
-                              currentCp: item.cpSnapshot,
-                              currentSp: sp
-                            })}
-                            className={`flex items-center justify-center px-3 py-1 rounded border text-xs font-medium transition-colors ${
-                              cp 
-                                ? 'bg-zinc-950 border-zinc-700 text-zinc-300 hover:border-brand-slate hover:text-white' 
-                                : 'bg-brand-orange/10 border-brand-orange/50 text-brand-orange hover:bg-brand-orange hover:text-white'
-                            }`}
-                          >
-                            {cp ? `Act: ${formatRupee(cp)}` : 'Set Act. CP'}
-                          </button>
-                          {cp && item.quantity > 0 ? (
-                            <span className="text-[11px] text-amber-500/90 font-mono font-bold pl-1">
-                              Σ {formatRupee(cp * item.quantity)}
-                            </span>
-                          ) : null}
-                        </div>
-                        <div className="flex flex-col items-start gap-1 w-full max-w-[120px]">
-                           <div className="relative w-full">
-                             <span className="absolute left-2 top-1/2 -translate-y-1/2 text-zinc-500 text-xs font-mono">₹</span>
-                             <input 
-                               type="number"
-                               min="0" step="any"
-                               value={item.commissionCpSnapshot !== undefined ? item.commissionCpSnapshot / 100 : ''}
-                               onChange={e => handleCommissionCpChange(item.product.id, Math.round(parseFloat(e.target.value) * 100) || 0)}
-                               placeholder="Comm CP"
-                               className="w-full bg-brand-orange/5 border border-brand-orange/20 rounded pl-5 pr-2 py-1 text-xs font-medium text-brand-orange focus:outline-none focus:border-brand-orange/50 transition-colors"
-                             />
-                           </div>
-                           {item.commissionCpSnapshot && item.quantity > 0 ? (
-                             <span className="text-[11px] text-brand-orange/80 font-mono font-bold pl-1">
-                               Σ {formatRupee((item.commissionCpSnapshot * item.quantity) / 100)}
-                             </span>
-                           ) : null}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Selling Price */}
-                    <div>
-                      <label className="block text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-2">Selling Price</label>
-                      <div className="flex flex-col items-start gap-1">
-                        <button
-                          onClick={() => setVendorDialogItem({
-                            productId: item.product.id,
-                            productName: item.product.materialDescription,
-                            currentCp: item.cpSnapshot,
-                            currentSp: sp
-                          })}
-                          className={`text-sm font-mono font-medium hover:underline ${sp === 0 ? 'text-rose-500' : 'text-white'}`}
-                        >
-                          {sp > 0 ? formatRupee(sp) : 'Set SP'}
-                        </button>
-                        {sp > 0 && item.quantity > 0 ? (
-                          <span className="text-sm text-zinc-300 font-mono font-bold pl-1">
-                            Σ {formatRupee(sp * item.quantity)}
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    {/* Profit */}
-                    <div>
-                      <label className="block text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-2">Est. Profit (incl. Addnl Costs)</label>
-                      <div className="flex flex-col gap-3">
-                        {sp > 0 && cp ? (
-                          <div className="flex flex-col items-start gap-0.5">
-                            <span className="text-[10px] text-zinc-500 font-bold tracking-wider">ACTUAL</span>
-                            <span className={`text-sm font-mono font-bold ${(sp - cp) * item.quantity - (item.additionalCost || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                              {formatRupee((sp - cp) * item.quantity - (item.additionalCost || 0))}
-                            </span>
-                          </div>
-                        ) : (
-                          <div className="flex flex-col items-start gap-0.5">
-                            <span className="text-[10px] text-zinc-500 font-bold tracking-wider">ACTUAL</span>
-                            <span className="text-zinc-600 font-mono text-sm">-</span>
-                          </div>
-                        )}
-                        
-                        {sp > 0 && item.commissionCpSnapshot ? (
-                          <div className="flex flex-col items-start gap-0.5">
-                            <span className="text-[10px] text-brand-orange/80 font-bold tracking-wider">COMMISSION</span>
-                            <span className={`text-sm font-mono font-bold ${(sp - item.commissionCpSnapshot) * item.quantity - (item.additionalCost || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                              {formatRupee((sp - item.commissionCpSnapshot) * item.quantity - (item.additionalCost || 0))}
-                            </span>
-                          </div>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    {/* Addnl Cost & GST */}
-                    <div className="flex flex-col gap-4">
-                      <div>
-                        <label className="block text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-2">Addnl. Cost (Freight)</label>
-                        <div className="relative w-full max-w-[120px]">
-                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-zinc-500 text-xs font-mono">₹</span>
-                          <input 
-                            type="number"
-                            min="0" step="any"
-                            value={item.additionalCost !== undefined ? item.additionalCost / 100 : ''}
-                            onChange={e => setItems(items.map(i => i.product.id === item.product.id ? { ...i, additionalCost: Math.round(parseFloat(e.target.value) * 100) || 0 } : i))}
-                            placeholder="Cost"
-                            className="w-full bg-zinc-950 border border-premium-border rounded pl-5 pr-2 py-1 text-xs font-medium text-rose-400 focus:outline-none focus:border-rose-500/50 transition-colors"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-1">GST Rate</label>
-                        <div className="flex items-center">
-                          <input 
-                            type="number"
-                            value={item.product.gstRate}
-                            onChange={e => handleProductChange(item.product.id, 'gstRate', parseFloat(e.target.value) || 0)}
-                            className="w-14 bg-zinc-950/50 border border-transparent hover:border-premium-border focus:border-brand-slate px-2 py-1 text-xs text-white focus:outline-none transition-colors rounded"
-                          />
-                          <span className="text-zinc-500 text-xs ml-2">%</span>
-                        </div>
-                      </div>
-                    </div>
-
                   </div>
+
+                  {/* Expanded Content */}
+                  {expandedItems.has(item.product.id) && (
+                    <div className="p-5 border-t border-premium-border/30 animate-in slide-in-from-top-2">
+                      {/* Top Row: Product Info */}
+                      <div className="flex items-start justify-between gap-4 mb-4">
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-3">
+                            <input 
+                              type="text"
+                              value={item.product.materialCode}
+                              onChange={e => handleProductChange(item.product.id, 'materialCode', e.target.value)}
+                              placeholder="Code"
+                              className="w-32 bg-zinc-950/50 border border-transparent hover:border-premium-border focus:border-brand-slate px-2 py-1 font-mono text-sm text-white focus:outline-none transition-colors rounded"
+                            />
+                            <input 
+                              type="text"
+                              value={item.product.materialDescription}
+                              onChange={e => handleProductChange(item.product.id, 'materialDescription', e.target.value)}
+                              placeholder="Description"
+                              className="flex-1 bg-zinc-950/50 border border-transparent hover:border-premium-border focus:border-brand-slate px-2 py-1 text-sm font-medium text-white focus:outline-none transition-colors rounded"
+                            />
+                          </div>
+                          
+                          {item.product.specification && (
+                            <div className="text-xs text-zinc-500 px-2 line-clamp-2">
+                              {item.product.specification}
+                            </div>
+                          )}
+                          
+                          <div>
+                            <input
+                              type="text"
+                              placeholder="Add internal comment (optional)..."
+                              value={item.comment || ""}
+                              onChange={(e) => handleCommentChange(item.product.id, e.target.value)}
+                              className="w-full bg-zinc-950/30 border border-transparent hover:border-premium-border focus:border-brand-slate px-2 py-1.5 text-xs text-red-400 focus:text-red-300 rounded focus:outline-none transition-colors placeholder:text-zinc-600"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Bottom Row: Financials & Metrics */}
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-6 pt-4 border-t border-premium-border/30">
+                        
+                        {/* Quantity & UOM */}
+                        <div>
+                          <label className="block text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-2">Quantity</label>
+                          <div className="flex items-center gap-2">
+                            <input 
+                              type="number" 
+                              min="0"
+                              step="any"
+                              value={item.quantity}
+                              onChange={e => handleQuantityChange(item.product.id, parseFloat(e.target.value) || 0)}
+                              className="w-20 bg-zinc-950 border border-premium-border rounded px-2 py-1.5 text-white font-medium focus:outline-none focus:ring-1 focus:ring-brand-slate"
+                            />
+                            <input 
+                              type="text"
+                              value={item.product.unit}
+                              onChange={e => handleProductChange(item.product.id, 'unit', e.target.value)}
+                              className="w-14 bg-zinc-950/50 border border-transparent hover:border-premium-border focus:border-brand-slate px-1 py-1.5 font-mono text-xs text-zinc-400 text-center focus:outline-none transition-colors rounded uppercase"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Cost Price */}
+                        <div>
+                          <label className="block text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-2">Cost Price & Comm. CP</label>
+                          <div className="flex flex-col items-start gap-3">
+                            <div className="flex flex-col items-start gap-1">
+                              <button 
+                                onClick={() => setVendorDialogItem({
+                                  productId: item.product.id,
+                                  productName: item.product.materialDescription,
+                                  currentCp: item.cpSnapshot,
+                                  currentSp: sp
+                                })}
+                                className={`flex items-center justify-center px-3 py-1 rounded border text-xs font-medium transition-colors ${
+                                  cp 
+                                    ? 'bg-zinc-950 border-zinc-700 text-zinc-300 hover:border-brand-slate hover:text-white' 
+                                    : 'bg-brand-orange/10 border-brand-orange/50 text-brand-orange hover:bg-brand-orange hover:text-white'
+                                }`}
+                              >
+                                {cp ? `Act: ${formatRupee(cp)}` : 'Set Act. CP'}
+                              </button>
+                              {cp && item.quantity > 0 ? (
+                                <span className="text-[11px] text-amber-500/90 font-mono font-bold pl-1">
+                                  Σ {formatRupee(cp * item.quantity)}
+                                </span>
+                              ) : null}
+                            </div>
+                            <div className="flex flex-col items-start gap-1 w-full max-w-[120px]">
+                              <div className="relative w-full">
+                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-zinc-500 text-xs font-mono">₹</span>
+                                <input 
+                                  type="number"
+                                  min="0" step="any"
+                                  value={item.commissionCpSnapshot !== undefined ? item.commissionCpSnapshot / 100 : ''}
+                                  onChange={e => handleCommissionCpChange(item.product.id, Math.round(parseFloat(e.target.value) * 100) || 0)}
+                                  placeholder="Comm CP"
+                                  className="w-full bg-brand-orange/5 border border-brand-orange/20 rounded pl-5 pr-2 py-1 text-xs font-medium text-brand-orange focus:outline-none focus:border-brand-orange/50 transition-colors"
+                                />
+                              </div>
+                              {item.commissionCpSnapshot && item.quantity > 0 ? (
+                                <span className="text-[11px] text-brand-orange/80 font-mono font-bold pl-1">
+                                  Σ {formatRupee((item.commissionCpSnapshot * item.quantity) / 100)}
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Selling Price */}
+                        <div>
+                          <label className="block text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-2">Selling Price</label>
+                          <div className="flex flex-col items-start gap-1">
+                            <button
+                              onClick={() => setVendorDialogItem({
+                                productId: item.product.id,
+                                productName: item.product.materialDescription,
+                                currentCp: item.cpSnapshot,
+                                currentSp: sp
+                              })}
+                              className={`text-sm font-mono font-medium hover:underline ${sp === 0 ? 'text-rose-500' : 'text-white'}`}
+                            >
+                              {sp > 0 ? formatRupee(sp) : 'Set SP'}
+                            </button>
+                            {sp > 0 && item.quantity > 0 ? (
+                              <span className="text-sm text-zinc-300 font-mono font-bold pl-1">
+                                Σ {formatRupee(sp * item.quantity)}
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+
+                        {/* Profit */}
+                        <div>
+                          <label className="block text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-2">Est. Profit (incl. Addnl Costs)</label>
+                          <div className="flex flex-col gap-3">
+                            {sp > 0 && cp ? (
+                              <div className="flex flex-col items-start gap-0.5">
+                                <span className="text-[10px] text-zinc-500 font-bold tracking-wider">ACTUAL</span>
+                                <span className={`text-sm font-mono font-bold ${(sp - cp) * item.quantity - (item.additionalCost || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                  {formatRupee((sp - cp) * item.quantity - (item.additionalCost || 0))}
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="flex flex-col items-start gap-0.5">
+                                <span className="text-[10px] text-zinc-500 font-bold tracking-wider">ACTUAL</span>
+                                <span className="text-zinc-600 font-mono text-sm">-</span>
+                              </div>
+                            )}
+                            
+                            {sp > 0 && item.commissionCpSnapshot ? (
+                              <div className="flex flex-col items-start gap-0.5">
+                                <span className="text-[10px] text-brand-orange/80 font-bold tracking-wider">COMMISSION</span>
+                                <span className={`text-sm font-mono font-bold ${(sp - item.commissionCpSnapshot) * item.quantity - (item.additionalCost || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                  {formatRupee((sp - item.commissionCpSnapshot) * item.quantity - (item.additionalCost || 0))}
+                                </span>
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+
+                        {/* Addnl Cost & GST */}
+                        <div className="flex flex-col gap-4">
+                          <div>
+                            <label className="block text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-2">Addnl. Cost (Freight)</label>
+                            <div className="relative w-full max-w-[120px]">
+                              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-zinc-500 text-xs font-mono">₹</span>
+                              <input 
+                                type="number"
+                                min="0" step="any"
+                                value={item.additionalCost !== undefined ? item.additionalCost / 100 : ''}
+                                onChange={e => setItems(items.map(i => i.product.id === item.product.id ? { ...i, additionalCost: Math.round(parseFloat(e.target.value) * 100) || 0 } : i))}
+                                placeholder="Cost"
+                                className="w-full bg-zinc-950 border border-premium-border rounded pl-5 pr-2 py-1 text-xs font-medium text-rose-400 focus:outline-none focus:border-rose-500/50 transition-colors"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-1">GST Rate</label>
+                            <div className="flex items-center">
+                              <input 
+                                type="number"
+                                value={item.product.gstRate}
+                                onChange={e => handleProductChange(item.product.id, 'gstRate', parseFloat(e.target.value) || 0)}
+                                className="w-14 bg-zinc-950/50 border border-transparent hover:border-premium-border focus:border-brand-slate px-2 py-1 text-xs text-white focus:outline-none transition-colors rounded"
+                              />
+                              <span className="text-zinc-500 text-xs ml-2">%</span>
+                            </div>
+                          </div>
+                        </div>
+
+                      </div>
+                    </div>
+                  )}
                 </div>
               )
             })}

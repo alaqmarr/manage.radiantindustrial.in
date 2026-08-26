@@ -104,6 +104,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
 
   // Autocomplete
   const [searchTerm, setSearchTerm] = useState("")
+  const [quickUom, setQuickUom] = useState("NOS")
   const [isProductModalOpen, setIsProductModalOpen] = useState(false)
   const [newProdCode, setNewProdCode] = useState("")
   const [newProdDesc, setNewProdDesc] = useState("")
@@ -250,7 +251,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
       const res = await createQuickProduct({
         materialCode: "RAD-" + Math.floor(10000000 + Math.random() * 90000000).toString(),
         materialDescription: searchTerm.trim(),
-        unit: "NOS",
+        unit: quickUom.trim().toUpperCase() || "NOS",
         gstRate: 18
       });
       if (res.success && res.product) {
@@ -651,6 +652,15 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
               onKeyDown={handleKeyDown}
               placeholder="Search products by code or description..."
               className="flex-1 bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate shadow-lg shadow-black/20"
+            />
+            <input 
+              type="text"
+              value={quickUom}
+              onChange={e => setQuickUom(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="UOM"
+              className="w-20 bg-zinc-950 border border-premium-border rounded-md px-3 py-2 text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-brand-slate shadow-lg uppercase"
+              title="Default Unit of Measurement for quick add"
             />
             <button
               type="button"

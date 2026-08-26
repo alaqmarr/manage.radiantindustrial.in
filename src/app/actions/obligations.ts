@@ -130,3 +130,49 @@ export async function recordObligationPayment(data: {
     return { success: false, error: error.message }
   }
 }
+
+export async function recordCombinedObligationPayment(data: {
+  amount: number // paise
+  date: Date
+  notes?: string
+}) {
+  try {
+    const khumusSummary = await getObligationSummary("KHUMUS")
+    
+    let remainingAmount = data.amount
+    
+    // 1. Deduct from Khumus first
+    const khumusOutstanding = Math.max(0, khumusSummary.outstanding)
+    if (khumusOutstanding > 0 && remainingAmount > 0) {
+      const paymentAmount = Math.min(khumusOutstanding, remainingAmount)
+      await prisma.obligationPayment.create({
+        data: {
+          type: "KHUMUS",
+          amount: paymentAmount,
+          date: data.date,
+          notes: data.notes ? `[Combined] ${data.notes}` : "Combined Payment (Khumus portion)"
+        }
+      })
+      remainingAmount -= paymentAmount
+    }
+
+    // 2. Deduct remaining from Zakaat
+    if (remainingAmount > 0) {
+      await prisma.obligationPayment.create({
+        data: {
+          type: "ZAKAAT",
+          amount: remainingAmount,
+          date: data.date,
+          notes: data.notes ? `[Combined] ${data.notes}` : "Combined Payment (Zakaat portion)"
+        }
+      })
+    }
+
+    revalidatePath("/khumus")
+    revalidatePath("/zakaat")
+    revalidatePath("/obligations-overview")
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}

@@ -17,7 +17,8 @@ import {
   Wallet,
   ClipboardList,
   HandCoins,
-  Heart
+  Heart,
+  HandHeart
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 
@@ -46,6 +47,7 @@ const menuGroups = [
   {
     label: "Religious Obligations",
     items: [
+      { icon: HandHeart, label: "Overview", href: "/obligations-overview" },
       { icon: HandCoins, label: "Khumus", href: "/khumus" },
       { icon: Heart, label: "Zakaat", href: "/zakaat" },
     ]

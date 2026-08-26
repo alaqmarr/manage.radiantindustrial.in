@@ -15,7 +15,9 @@ import {
   Mail,
   Award,
   Wallet,
-  ClipboardList
+  ClipboardList,
+  HandCoins,
+  Heart
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 
@@ -39,6 +41,13 @@ const menuGroups = [
     label: "Finance",
     items: [
       { icon: Wallet, label: "Accounts & Ledger", href: "/accounts" },
+    ]
+  },
+  {
+    label: "Religious Obligations",
+    items: [
+      { icon: HandCoins, label: "Khumus", href: "/khumus" },
+      { icon: Heart, label: "Zakaat", href: "/zakaat" },
     ]
   },
   {

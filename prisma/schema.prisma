@@ -366,3 +366,12 @@ model CocItem {
   remarks          String?
   attributes       String? // JSON string for key-value pairs
 }
+
+model ObligationPayment {
+  id        String   @id @default(cuid())
+  type      String   // "KHUMUS" or "ZAKAAT"
+  amount    Int      // in paise
+  date      DateTime @default(now())
+  notes     String?
+  createdAt DateTime @default(now())
+}

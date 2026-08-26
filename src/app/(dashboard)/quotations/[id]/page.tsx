@@ -128,7 +128,7 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
                     {formatRupee(Math.round(Math.round((item.cpSnapshot || 0) * item.quantity) * (item.gstSnapshot / 100)))}
                   </td>
                   <td className="py-4 px-4 text-right text-emerald-500 font-medium">
-                    {formatRupee(Math.round((item.spSnapshot - (item.cpSnapshot || 0)) * item.quantity))}
+                    {formatRupee(Math.round((item.spSnapshot - (item.cpSnapshot || 0)) * item.quantity) - (item.additionalCost || 0))}
                   </td>
                 </tr>
               ))}
@@ -177,7 +177,7 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
                 <span>
                   {formatRupee(
                     quotation.items.reduce((sum, item) => {
-                      return sum + Math.round((item.spSnapshot - (item.cpSnapshot || 0)) * item.quantity);
+                      return sum + Math.round((item.spSnapshot - (item.cpSnapshot || 0)) * item.quantity) - (item.additionalCost || 0);
                     }, 0)
                   )}
                 </span>
@@ -244,7 +244,8 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
           const totalAmount = quotation.totalAmount;
           const totalGst = quotation.totalGst;
           const totalPCost = quotation.items.reduce((sum, item) => sum + Math.round((item.cpSnapshot || 0) * item.quantity), 0);
-          const totalProfit = totalAmount - totalPCost;
+          const totalAddnlCost = quotation.items.reduce((sum, item) => sum + (item.additionalCost || 0), 0);
+          const totalProfit = totalAmount - totalPCost - totalAddnlCost;
           const marginPercent = totalAmount > 0 ? (totalProfit / totalAmount) * 100 : 0;
           
           const totalCommCost = quotation.items.reduce((sum, item) => {
@@ -253,7 +254,7 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
               : (item.cpSnapshot || 0);
             return sum + Math.round(commCp * item.quantity);
           }, 0);
-          const totalCommProfit = totalAmount - totalCommCost;
+          const totalCommProfit = totalAmount - totalCommCost - totalAddnlCost;
           const commMarginPercent = totalAmount > 0 ? (totalCommProfit / totalAmount) * 100 : 0;
           
           const hasCommSplit = totalCommCost !== totalPCost;

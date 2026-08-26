@@ -57,7 +57,7 @@ export async function getObligationSummary(type: ObligationType): Promise<Obliga
       const sp = item.spSnapshot || 0
       const cp = item.cpSnapshot || 0
       const additionalCost = item.additionalCost || 0
-      totalProfit += (sp - cp - additionalCost) * item.quantity
+      totalProfit += ((sp - cp) * item.quantity) - additionalCost
     }
 
     // Cap payment ratio at 1

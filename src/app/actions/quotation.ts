@@ -302,3 +302,40 @@ export async function updateQuotationStatus(id: string, newStatus: string) {
     return { error: error.message || "Failed to update quotation status" }
   }
 }
+
+export async function getQuotationsForImport() {
+  try {
+    const session = await auth()
+    if (!session?.user) return { error: "Unauthorized" }
+    const quotations = await prisma.quotation.findMany({
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        client: { select: { name: true } },
+        prNo: true,
+        items: {
+          select: {
+            id: true,
+            quantity: true,
+            comment: true,
+            product: {
+              select: {
+                id: true,
+                materialCode: true,
+                materialDescription: true,
+                sellingPrice: true,
+                costPrice: true,
+                gstRate: true,
+                unit: true,
+                specification: true
+              }
+            }
+          }
+        }
+      }
+    })
+    return { success: true, quotations }
+  } catch (e: any) {
+    return { error: "Failed to fetch quotations" }
+  }
+}

@@ -5,8 +5,9 @@ import { createQuickProduct } from "@/app/actions/product"
 import { upsertDraftRfq, getRfqUpdatedAt } from "@/app/actions/rfq"
 import { createSupplier } from "@/app/actions/supplier"
 import { parseQuotationExcelAction } from "@/app/actions/import"
+import { getQuotationsForImport } from "@/app/actions/quotation"
 import { formatRupee, numberToWordsRupees } from "@/lib/utils"
-import { Loader2, Plus, Trash2, Upload, X, Check, AlertCircle, Search } from "lucide-react"
+import { Loader2, Plus, Trash2, Upload, X, Check, AlertCircle, Search, Download } from "lucide-react"
 import { verifyGSTAction } from "@/app/actions/gst"
 
 type Supplier = { id: string, name: string }
@@ -78,6 +79,52 @@ export function RfqForm({ suppliers: initialSuppliers, products, initialData, in
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
+
+  const [isImportQuotModalOpen, setIsImportQuotModalOpen] = useState(false)
+  const [importQuotations, setImportQuotations] = useState<any[]>([])
+  const [selectedQuotId, setSelectedQuotId] = useState("")
+  const [loadingQuotations, setLoadingQuotations] = useState(false)
+  const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set())
+  const [importItemSearch, setImportItemSearch] = useState("")
+
+  const handleOpenImportQuot = async () => {
+    setIsImportQuotModalOpen(true)
+    setLoadingQuotations(true)
+    setSelectedQuotId("")
+    setSelectedItemIds(new Set())
+    setImportItemSearch("")
+    try {
+      const res = await getQuotationsForImport()
+      if (res.success && res.quotations) {
+        setImportQuotations(res.quotations)
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLoadingQuotations(false)
+    }
+  }
+
+  const handleImportSelectedItems = () => {
+    const quot = importQuotations.find(q => q.id === selectedQuotId)
+    if (!quot) return
+    const itemsToAdd = quot.items.filter((i: any) => selectedItemIds.has(i.id))
+    
+    setItems(prev => {
+      const newItems = [...prev]
+      itemsToAdd.forEach((i: any) => {
+        if (!newItems.find(exist => exist.product.id === i.product.id)) {
+          newItems.push({
+            product: i.product,
+            quantity: i.quantity,
+            comment: i.comment || undefined
+          })
+        }
+      })
+      return newItems
+    })
+    setIsImportQuotModalOpen(false)
+  }
 
   useEffect(() => {
     if (!rfqId || conflictDetected) return
@@ -466,6 +513,172 @@ export function RfqForm({ suppliers: initialSuppliers, products, initialData, in
         </div>
       )}
 
+      {isImportQuotModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-zinc-900 w-full max-w-4xl p-6 rounded-md border border-premium-border flex flex-col max-h-[80vh]">
+            <div className="flex items-center justify-between mb-6 shrink-0">
+              <h3 className="text-xl font-medium text-white">Import from Quotation</h3>
+              <button onClick={() => setIsImportQuotModalOpen(false)} className="text-zinc-400 hover:text-white transition-colors">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+              {loadingQuotations ? (
+                <div className="flex-1 flex items-center justify-center">
+                  <Loader2 className="w-8 h-8 animate-spin text-brand-orange" />
+                </div>
+              ) : (
+                <div className="flex flex-col md:flex-row gap-6 h-full min-h-0">
+                  <div className="w-full md:w-1/3 flex flex-col min-h-0 border-r border-premium-border pr-6">
+                    <h4 className="text-sm font-bold text-zinc-400 mb-3 shrink-0">Select Quotation</h4>
+                    <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar pr-2">
+                      {importQuotations.map(q => (
+                        <div 
+                          key={q.id} 
+                          onClick={() => { setSelectedQuotId(q.id); setSelectedItemIds(new Set(q.items.map((i:any)=>i.id))) }}
+                          className={`p-3 rounded-md cursor-pointer border transition-colors ${selectedQuotId === q.id ? 'bg-brand-slate/20 border-brand-slate text-white' : 'bg-zinc-950 border-premium-border hover:bg-white/5 text-zinc-300'}`}
+                        >
+                          <div className="font-mono text-xs mb-1">{q.id.slice(-6).toUpperCase()}</div>
+                          <div className="font-medium truncate">{q.client.name}</div>
+                          {q.prNo && <div className="text-xs text-zinc-500 mt-1">PR: {q.prNo}</div>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="w-full md:w-2/3 flex flex-col min-h-0">
+                    <div className="flex items-center justify-between mb-3 shrink-0">
+                      <h4 className="text-sm font-bold text-zinc-400">Select Items to Import</h4>
+                      {selectedQuotId && (
+                        <div className="relative">
+                          <Search className="w-4 h-4 text-zinc-500 absolute left-2 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            placeholder="Search items..."
+                            value={importItemSearch}
+                            onChange={(e) => setImportItemSearch(e.target.value)}
+                            className="bg-zinc-950 border border-zinc-800 rounded-md pl-8 pr-3 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-brand-slate"
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 overflow-y-auto custom-scrollbar">
+                      {!selectedQuotId ? (
+                        <div className="h-full flex items-center justify-center text-zinc-500">
+                          Select a quotation to view items
+                        </div>
+                      ) : (
+                        <table className="w-full text-sm text-left">
+                          <thead className="text-xs text-zinc-400 sticky top-0 bg-zinc-900 border-b border-premium-border z-10">
+                            <tr>
+                              <th className="py-2 px-3">
+                                <input 
+                                  type="checkbox" 
+                                  checked={(() => {
+                                    const filtered = importQuotations.find(q=>q.id===selectedQuotId)?.items.filter((i: any) => {
+                                      if (!importItemSearch) return true
+                                      const term = importItemSearch.toLowerCase()
+                                      return i.product.materialCode?.toLowerCase().includes(term) ||
+                                             i.product.materialDescription?.toLowerCase().includes(term) ||
+                                             i.product.specification?.toLowerCase().includes(term) ||
+                                             i.comment?.toLowerCase().includes(term)
+                                    }) || []
+                                    const available = filtered.filter((i:any) => !items.some(exist => exist.product.id === i.product.id))
+                                    return available.length > 0 && available.every((i:any) => selectedItemIds.has(i.id))
+                                  })()}
+                                  onChange={(e) => {
+                                    const filtered = importQuotations.find(q=>q.id===selectedQuotId)?.items.filter((i: any) => {
+                                      if (!importItemSearch) return true
+                                      const term = importItemSearch.toLowerCase()
+                                      return i.product.materialCode?.toLowerCase().includes(term) ||
+                                             i.product.materialDescription?.toLowerCase().includes(term) ||
+                                             i.product.specification?.toLowerCase().includes(term) ||
+                                             i.comment?.toLowerCase().includes(term)
+                                    }) || []
+                                    const available = filtered.filter((i:any) => !items.some(exist => exist.product.id === i.product.id))
+                                    const newSet = new Set(selectedItemIds)
+                                    if (e.target.checked) {
+                                      available.forEach((i:any) => newSet.add(i.id))
+                                    } else {
+                                      available.forEach((i:any) => newSet.delete(i.id))
+                                    }
+                                    setSelectedItemIds(newSet)
+                                  }}
+                                  className="rounded border-zinc-700 text-brand-slate focus:ring-brand-slate bg-zinc-950"
+                                />
+                              </th>
+                              <th className="py-2 px-3">Code</th>
+                              <th className="py-2 px-3">Description</th>
+                              <th className="py-2 px-3 text-center">Qty</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-premium-border">
+                            {importQuotations.find(q=>q.id===selectedQuotId)?.items
+                              .filter((i: any) => {
+                                if (!importItemSearch) return true
+                                const term = importItemSearch.toLowerCase()
+                                return i.product.materialCode?.toLowerCase().includes(term) ||
+                                       i.product.materialDescription?.toLowerCase().includes(term) ||
+                                       i.product.specification?.toLowerCase().includes(term) ||
+                                       i.comment?.toLowerCase().includes(term)
+                              })
+                              .map((item: any) => {
+                                const isAdded = items.some(exist => exist.product.id === item.product.id)
+                                return (
+                                  <tr key={item.id} className={`hover:bg-white/5 ${isAdded ? 'opacity-50 bg-white/5' : ''}`}>
+                                    <td className="py-3 px-3 align-top">
+                                      <input 
+                                        type="checkbox" 
+                                        checked={selectedItemIds.has(item.id) || isAdded}
+                                        disabled={isAdded}
+                                        onChange={(e) => {
+                                          const newSet = new Set(selectedItemIds)
+                                          if (e.target.checked) newSet.add(item.id)
+                                          else newSet.delete(item.id)
+                                          setSelectedItemIds(newSet)
+                                        }}
+                                        className="rounded border-zinc-700 text-brand-slate focus:ring-brand-slate bg-zinc-950 disabled:opacity-50 mt-1"
+                                      />
+                                    </td>
+                                    <td className="py-3 px-3 font-mono text-xs align-top pt-4">{item.product.materialCode}</td>
+                                    <td className="py-3 px-3 align-top">
+                                      <div className="font-medium text-zinc-200">{item.product.materialDescription}</div>
+                                      {item.product.specification && <div className="text-xs text-zinc-500 mt-1 whitespace-pre-wrap">{item.product.specification}</div>}
+                                      {item.comment && <div className="text-xs text-brand-orange mt-1 italic whitespace-pre-wrap">Note: {item.comment}</div>}
+                                      {isAdded && <div className="text-[10px] font-bold text-emerald-500 mt-2">ALREADY ADDED</div>}
+                                    </td>
+                                    <td className="py-3 px-3 text-center align-top pt-4">{item.quantity}</td>
+                                  </tr>
+                                )
+                              })}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-premium-border shrink-0">
+              <button 
+                onClick={() => setIsImportQuotModalOpen(false)}
+                className="px-4 py-2 text-zinc-300 hover:text-white transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleImportSelectedItems}
+                disabled={selectedItemIds.size === 0}
+                className="px-4 py-2 bg-brand-orange hover:bg-orange-600 disabled:opacity-50 text-white font-medium rounded-md transition-colors"
+              >
+                Import {selectedItemIds.size > 0 ? `(${selectedItemIds.size})` : ''} Items
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 mt-2">
         <div>
           <label className="block text-sm font-medium text-zinc-400 mb-1">Supplier *</label>
@@ -493,7 +706,16 @@ export function RfqForm({ suppliers: initialSuppliers, products, initialData, in
       <div className="space-y-4 mb-16">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-medium text-white">Purchase Items</h2>
-          <div>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleOpenImportQuot}
+              className="flex items-center gap-2 px-4 py-2 bg-brand-orange/10 text-brand-orange hover:bg-brand-orange/20 font-medium rounded-md transition-colors text-sm border border-brand-orange/20 active:scale-95"
+            >
+              <Download className="w-4 h-4" />
+              Import from Quotation
+            </button>
+
             <input 
               type="file" 
               accept=".xlsx,.xls" 

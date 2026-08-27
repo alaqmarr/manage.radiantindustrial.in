@@ -198,6 +198,7 @@ export default async function QuotationsPage(props: { searchParams: Promise<{ se
                         <th className="px-6 py-4 font-medium tracking-wider">ID</th>
                         <th className="px-6 py-4 font-medium tracking-wider">Client</th>
                         <th className="px-6 py-4 font-medium tracking-wider">PR No</th>
+                        <th className="px-6 py-4 font-medium tracking-wider">Items</th>
                         <th className="px-6 py-4 font-medium tracking-wider">Status</th>
                         <th className="px-6 py-4 font-medium tracking-wider">Total Amount</th>
                         <th className="px-6 py-4 font-medium tracking-wider">Est. Profit</th>
@@ -215,6 +216,24 @@ export default async function QuotationsPage(props: { searchParams: Promise<{ se
                           <td className="px-6 py-4 font-medium text-white font-mono text-xs">{quote.id.slice(-6).toUpperCase()}</td>
                           <td className="px-6 py-4 text-zinc-300 font-medium group-hover:text-brand-orange transition-colors">{quote.client.name}</td>
                           <td className="px-6 py-4 text-zinc-300">{quote.prNo || '-'}</td>
+                          <td className="px-6 py-4">
+                            {(() => {
+                              const total = quote.items.length
+                              const pending = quote.items.filter(i => !i.cpSnapshot || i.cpSnapshot === 0).length
+                              const quoted = total - pending
+                              return (
+                                <div className="flex flex-col">
+                                  <span className="text-zinc-300 font-medium">{total} total</span>
+                                  {total > 0 && (
+                                    <div className="text-[10px] uppercase font-bold tracking-wider flex gap-2 mt-0.5">
+                                      {pending > 0 && <span className="text-amber-400">{pending} pending</span>}
+                                      {quoted > 0 && <span className="text-emerald-400">{quoted} quoted</span>}
+                                    </div>
+                                  )}
+                                </div>
+                              )
+                            })()}
+                          </td>
                           <td className="px-6 py-4">
                             <QuotationStatusBadge id={quote.id} currentStatus={quote.status} />
                           </td>

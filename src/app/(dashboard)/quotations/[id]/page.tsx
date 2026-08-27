@@ -133,6 +133,35 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
                 </tr>
               ))}
             </tbody>
+            <tfoot className="border-t border-premium-border text-xs bg-zinc-950/30">
+              <tr>
+                <td colSpan={9} className="py-3 px-4">
+                  {(() => {
+                    const total = quotation.items.length;
+                    const pending = quotation.items.filter(i => !i.cpSnapshot || i.cpSnapshot === 0).length;
+                    const quoted = total - pending;
+                    return (
+                      <div className="flex gap-8 text-zinc-400">
+                        <span className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-zinc-500"></span>
+                          Total Items: <strong className="text-white text-sm">{total}</strong>
+                        </span>
+                        <span className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                          Quoted: <strong className="text-emerald-400 text-sm">{quoted}</strong>
+                        </span>
+                        {pending > 0 && (
+                          <span className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                            Pending (No CP): <strong className="text-amber-400 text-sm">{pending}</strong>
+                          </span>
+                        )}
+                      </div>
+                    )
+                  })()}
+                </td>
+              </tr>
+            </tfoot>
           </table>
         </div>
 

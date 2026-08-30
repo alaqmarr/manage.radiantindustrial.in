@@ -729,7 +729,11 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
 
         {items.length > 0 && (
           <div className="space-y-4 mt-4">
-            {items.map((item) => {
+            {[...items].sort((a, b) => {
+              const aPending = (!a.cpSnapshot || !a.spSnapshot) ? 1 : 0
+              const bPending = (!b.cpSnapshot || !b.spSnapshot) ? 1 : 0
+              return bPending - aPending
+            }).map((item) => {
               const sp = item.spSnapshot ?? 0
               const cp = item.cpSnapshot
               const isPending = !cp || !sp

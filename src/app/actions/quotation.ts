@@ -18,6 +18,7 @@ type QuotationItemData = {
   commissionCpSnapshot?: number // paise
   supplierId?: string
   comment?: string
+  leadTime?: string
   additionalCost?: number // paise
 }
 
@@ -114,6 +115,7 @@ export async function createQuotation(data: {
             gstSnapshot: item.product.gstRate,
             supplierId: item.supplierId || null,
             comment: item.comment || null,
+            leadTime: item.leadTime || null,
             additionalCost: item.additionalCost || 0
           }))
         }
@@ -215,6 +217,7 @@ export async function upsertDraftQuotation(data: {
               gstSnapshot: item.product.gstRate,
               supplierId: item.supplierId || null,
               comment: item.comment || null,
+              leadTime: item.leadTime || null,
               additionalCost: item.additionalCost || 0
             }))
           }
@@ -248,6 +251,7 @@ export async function upsertDraftQuotation(data: {
               gstSnapshot: item.product.gstRate,
               supplierId: item.supplierId || null,
               comment: item.comment || null,
+              leadTime: item.leadTime || null,
               additionalCost: item.additionalCost || 0
             }))
           }

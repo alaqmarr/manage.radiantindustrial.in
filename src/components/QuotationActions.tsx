@@ -91,6 +91,21 @@ export function QuotationActions({
     }
   }
 
+  const handleCopyLeadTime = async () => {
+    const lines = quotation.items.map((item: any) => {
+      const desc = item.product.materialDescription
+      const lt = item.leadTime || "To be informed"
+      return `${desc} - ${lt}`
+    }).join("\n")
+    
+    try {
+      await navigator.clipboard.writeText(lines)
+      alert("Lead times copied to clipboard!")
+    } catch (err) {
+      alert("Failed to copy lead times")
+    }
+  }
+
   const handleExportExcel = async () => {
     try {
       const XLSX = await import("xlsx");
@@ -200,6 +215,13 @@ export function QuotationActions({
           <span className="text-sm">{copied ? "Copied!" : "Copy for Email"}</span>
         </button>
         <button 
+          onClick={handleCopyLeadTime}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 font-medium rounded-md transition-colors border border-blue-500/20 active:scale-95"
+        >
+          <Copy className="w-4 h-4" />
+          <span className="text-sm">Copy Lead Time</span>
+        </button>
+        <button 
           onClick={handlePrint}
           className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-brand-orange to-brand-orange-dark hover:from-brand-orange-dark hover:to-brand-orange shadow-lg shadow-brand-orange/20 text-white font-medium rounded-md transition-all active:scale-95"
         >
@@ -291,6 +313,9 @@ export function QuotationActions({
                     )}
                     {item.comment && (
                       <div style={{ fontSize: "11px", color: "#dc2626", fontWeight: "bold", whiteSpace: "pre-wrap", marginTop: "4px" }}>{item.comment}</div>
+                    )}
+                    {item.leadTime && (
+                      <div style={{ fontSize: "11px", color: "#2563eb", fontWeight: "bold", whiteSpace: "pre-wrap", marginTop: "4px" }}>Lead Time: {item.leadTime}</div>
                     )}
                   </td>
                   <td style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "center", verticalAlign: "top" }}>

@@ -40,6 +40,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
     spSnapshot?: number,
     supplierId?: string,
     comment?: string,
+    leadTime?: string,
     additionalCost?: number
   }[]>(initialData?.items?.map((item: any) => ({
     product: item.product,
@@ -50,6 +51,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
     spSnapshot: item.spSnapshot || 0,
     supplierId: item.supplierId || undefined,
     comment: item.comment || undefined,
+    leadTime: item.leadTime || undefined,
     additionalCost: item.additionalCost || 0
   })) || [])
   
@@ -71,6 +73,14 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
   }
   const expandAll = () => setExpandedItems(new Set(items.map(i => i.product.id)))
   const collapseAll = () => setExpandedItems(new Set())
+
+  const applyDefaultLeadTime = () => {
+    const defaultLT = items.find(i => i.leadTime?.trim())?.leadTime || "To be informed"
+    setItems(prev => prev.map(item => ({
+      ...item,
+      leadTime: item.leadTime || defaultLT
+    })))
+  }
 
   const [newClientGst, setNewClientGst] = useState("")
   const [newClientLocation, setNewClientLocation] = useState("")
@@ -301,6 +311,12 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
     ))
   }
 
+  const handleLeadTimeChange = (productId: string, leadTime: string) => {
+    setItems(prev => prev.map(item => 
+      item.product.id === productId ? { ...item, leadTime } : item
+    ))
+  }
+
   const handleProductChange = (productId: string, field: 'materialCode' | 'materialDescription' | 'unit' | 'gstRate', value: any) => {
     setItems(items.map(i => i.product.id === productId ? { 
       ...i, 
@@ -390,6 +406,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
           commissionCpSnapshot: item.commissionCpSnapshot,
           supplierId: item.supplierId,
           comment: item.comment,
+          leadTime: item.leadTime,
           additionalCost: item.additionalCost || 0
         }))
       }
@@ -605,6 +622,14 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
               <div className="flex bg-zinc-900 rounded-md border border-premium-border overflow-hidden p-0.5">
                 <button 
                   type="button" 
+                  onClick={applyDefaultLeadTime}
+                  className="px-3 py-1.5 text-xs font-medium text-blue-400 hover:text-blue-300 hover:bg-zinc-800 rounded transition-colors border-r border-premium-border/50"
+                  title="Applies the first found lead time (or 'To be informed') to all items missing one"
+                >
+                  Fill Lead Times
+                </button>
+                <button 
+                  type="button" 
                   onClick={expandAll}
                   className="px-3 py-1.5 text-xs font-medium text-zinc-300 hover:text-white hover:bg-zinc-800 rounded transition-colors"
                 >
@@ -791,14 +816,25 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                             </div>
                           )}
                           
-                          <div>
-                            <input
-                              type="text"
-                              placeholder="Add internal comment (optional)..."
-                              value={item.comment || ""}
-                              onChange={(e) => handleCommentChange(item.product.id, e.target.value)}
-                              className="w-full bg-zinc-950/30 border border-transparent hover:border-premium-border focus:border-brand-slate px-2 py-1.5 text-xs text-red-400 focus:text-red-300 rounded focus:outline-none transition-colors placeholder:text-zinc-600"
-                            />
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                            <div>
+                              <input
+                                type="text"
+                                placeholder="Add internal comment (optional)..."
+                                value={item.comment || ""}
+                                onChange={(e) => handleCommentChange(item.product.id, e.target.value)}
+                                className="w-full bg-zinc-950/30 border border-transparent hover:border-premium-border focus:border-brand-slate px-2 py-1.5 text-xs text-red-400 focus:text-red-300 rounded focus:outline-none transition-colors placeholder:text-zinc-600"
+                              />
+                            </div>
+                            <div>
+                              <input
+                                type="text"
+                                placeholder="Lead time (e.g. 2-3 weeks)..."
+                                value={item.leadTime || ""}
+                                onChange={(e) => handleLeadTimeChange(item.product.id, e.target.value)}
+                                className="w-full bg-zinc-950/30 border border-transparent hover:border-premium-border focus:border-brand-slate px-2 py-1.5 text-xs text-blue-400 focus:text-blue-300 rounded focus:outline-none transition-colors placeholder:text-zinc-600"
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>

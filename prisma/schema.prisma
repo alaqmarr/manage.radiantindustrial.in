@@ -191,6 +191,7 @@ model QuotationItem {
   supplierId   String?
   supplier     Supplier? @relation(fields: [supplierId], references: [id])
   comment      String?   // User comment for this item in the quotation
+  leadTime     String?   // Lead time for delivery
   additionalCost Int?    @default(0) // paise. Internal cost (e.g. freight) borne by us, reduces profit.
 }
 

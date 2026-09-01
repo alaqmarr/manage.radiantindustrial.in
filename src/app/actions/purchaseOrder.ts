@@ -73,9 +73,17 @@ export async function createPurchaseOrder(data: {
       })
     }
 
-    const count = await prisma.purchaseOrder.count()
-    const id = generateSlug(`PO-${Date.now()}-${count + 1}`)
-    const poNumber = `PO-${String(count + 1).padStart(6, '0')}`
+        const lastPo = await prisma.purchaseOrder.findFirst({
+      orderBy: { poNumber: 'desc' },
+      select: { poNumber: true }
+    });
+    let nextNum = 1;
+    if (lastPo && lastPo.poNumber) {
+      const match = lastPo.poNumber.match(/PO-(\d+)/);
+      if (match) nextNum = parseInt(match[1], 10) + 1;
+    }
+    const id = generateSlug(`PO-${Date.now()}-${nextNum}`);
+    const poNumber = `PO-${String(nextNum).padStart(6, '0')}`;
 
     const po = await prisma.purchaseOrder.create({
       data: {
@@ -205,7 +213,7 @@ export async function updatePurchaseOrder(id: string, data: any) {
         totalGst,
         items: {
           create: data.items.map((item: any, index: number) => ({
-            id: generateSlug(`POI--`),
+            id: generateSlug(`POI-${id}-${index}`),
             productId: item.product.id,
             quantity: item.quantity,
             unitPrice: item.unitPrice,

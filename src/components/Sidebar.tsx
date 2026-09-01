@@ -42,6 +42,7 @@ const menuGroups = [
     label: "Finance",
     items: [
       { icon: Wallet, label: "Accounts & Ledger", href: "/accounts" },
+      { icon: FileText, label: "Quotation Dues", href: "/quotation-dues" },
     ]
   },
   {
@@ -58,6 +59,7 @@ const menuGroups = [
       { icon: PackageSearch, label: "Products", href: "/products" },
       { icon: FileText, label: "RFQ", href: "/rfq" },
       { icon: ClipboardList, label: "Purchase Orders", href: "/purchase-orders" },
+      { icon: Truck, label: "Deliveries (GRN)", href: "/deliveries" },
       { icon: ShoppingCart, label: "Purchases", href: "/purchases" },
       { icon: Truck, label: "Suppliers", href: "/suppliers" },
     ]

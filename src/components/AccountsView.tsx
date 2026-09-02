@@ -65,6 +65,8 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos, 
   const totalExpectedCash = balance + accountsReceivable
   const totalExpectedLiabilities = accountsPayable + uncoveredFulfillment + pendingOut
   const workingCapital = totalExpectedCash - totalExpectedLiabilities
+  
+  const availableCapital = balance - totalExpectedLiabilities
 
   const isLowBalance = balance < pendingOut
 
@@ -208,7 +210,7 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos, 
         <p className="text-sm text-zinc-400">
           This shows the estimated cash flow considering unfulfilled obligations (Accepted Quotations and Unpaid POs). Mark quotations as COMPLETED when they are fulfilled to drop their estimated cost (since you would have already raised POs for them).
         </p>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-premium-border/50">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 pt-4 border-t border-premium-border/50">
           <div>
             <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Accounts Receivable</p>
             <p className="text-lg font-bold text-emerald-400">+{formatRupee(accountsReceivable)}</p>
@@ -230,7 +232,16 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos, 
               {formatRupee(workingCapital)}
             </p>
             <p className="text-[10px] text-zinc-500 mt-1">
-              {workingCapital < 0 ? "Additional funds needed" : "Surplus funds available"}
+              {workingCapital < 0 ? "Additional funds needed" : "Surplus funds expected"}
+            </p>
+          </div>
+          <div className="pl-4 border-l border-premium-border/50">
+            <p className="text-xs text-brand-orange uppercase tracking-wider mb-1">Available Capital</p>
+            <p className={`text-2xl font-bold ${availableCapital < 0 ? 'text-rose-500' : 'text-brand-orange'}`}>
+              {formatRupee(availableCapital)}
+            </p>
+            <p className="text-[10px] text-zinc-500 mt-1">
+              Working Capital minus Receivables
             </p>
           </div>
         </div>

@@ -8,7 +8,9 @@ export const dynamic = "force-dynamic"
 export default async function QuotationDuesPage() {
   const dues = await prisma.quotation.findMany({
     where: {
-      status: 'ACCEPTED'
+      status: {
+        in: ['ACCEPTED', 'COMPLETED']
+      }
     },
     orderBy: { createdAt: 'desc' },
     include: {
@@ -32,7 +34,7 @@ export default async function QuotationDuesPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="glass-panel border border-premium-border p-6 rounded-lg">
-          <div className="text-zinc-400 text-sm font-medium mb-1">Total Receivable (Accepted)</div>
+          <div className="text-zinc-400 text-sm font-medium mb-1">Total Receivable (Accepted / Fulfilled)</div>
           <div className="text-2xl font-bold text-white">{formatRupee(totalReceivable)}</div>
         </div>
         <div className="glass-panel border border-premium-border p-6 rounded-lg">
@@ -65,7 +67,7 @@ export default async function QuotationDuesPage() {
                   <td colSpan={7} className="py-12 text-center text-zinc-500">
                     <div className="flex flex-col items-center justify-center">
                       <AlertCircle className="w-8 h-8 mb-2 opacity-50" />
-                      <p>No outstanding dues found for accepted quotations.</p>
+                      <p>No dues found for accepted or fulfilled quotations.</p>
                     </div>
                   </td>
                 </tr>

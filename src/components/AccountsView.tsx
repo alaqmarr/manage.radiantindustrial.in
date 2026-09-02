@@ -59,8 +59,11 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos, 
   const accountsPayable = initialMetrics?.accountsPayable || 0
   const pendingFulfillmentCost = initialMetrics?.pendingFulfillmentCost || 0
   
+  // To avoid double-counting, assume Payables are at least partially covering Fulfillments
+  const uncoveredFulfillment = Math.max(0, pendingFulfillmentCost - accountsPayable)
+  
   const totalExpectedCash = balance + accountsReceivable
-  const totalExpectedLiabilities = accountsPayable + pendingFulfillmentCost + pendingOut
+  const totalExpectedLiabilities = accountsPayable + uncoveredFulfillment + pendingOut
   const workingCapital = totalExpectedCash - totalExpectedLiabilities
 
   const isLowBalance = balance < pendingOut
@@ -217,9 +220,9 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos, 
             <p className="text-[10px] text-zinc-500 mt-1">Unpaid on Purchase Orders & Purchases</p>
           </div>
           <div>
-            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Pending Fulfillments</p>
-            <p className="text-lg font-bold text-amber-400">-{formatRupee(pendingFulfillmentCost)}</p>
-            <p className="text-[10px] text-zinc-500 mt-1">Est. cost for Accepted Quotes (not yet PO'd)</p>
+            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Uncovered Fulfillment</p>
+            <p className="text-lg font-bold text-amber-400">-{formatRupee(uncoveredFulfillment)}</p>
+            <p className="text-[10px] text-zinc-500 mt-1">Est. cost for Fulfillments (minus PO Payables)</p>
           </div>
           <div className="pl-4 border-l border-premium-border/50">
             <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Working Capital</p>
@@ -246,15 +249,21 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos, 
           
           <span className="text-zinc-500 font-bold ml-2">-</span>
           
-          <div className="flex items-center gap-2 bg-rose-500/10 px-2 py-1 rounded border border-rose-500/20 ml-2">
+          <div className="flex items-center gap-2 bg-rose-500/10 px-2 py-1 rounded border border-rose-500/20 ml-2" title="Money you owe to suppliers">
             <span className="text-rose-400 font-medium">Payables</span>
             <span className="text-rose-400">{formatRupee(accountsPayable)}</span>
           </div>
-          <span className="text-zinc-500 font-bold">-</span>
-          <div className="flex items-center gap-2 bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20">
-            <span className="text-amber-400 font-medium">Est. Fulfillment</span>
-            <span className="text-amber-400">{formatRupee(pendingFulfillmentCost)}</span>
-          </div>
+          
+          {uncoveredFulfillment > 0 && (
+            <>
+              <span className="text-zinc-500 font-bold">-</span>
+              <div className="flex items-center gap-2 bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20" title="Estimated fulfillment cost that isn't already covered by a raised PO Payable">
+                <span className="text-amber-400 font-medium">Uncovered Fulfillment</span>
+                <span className="text-amber-400">{formatRupee(uncoveredFulfillment)}</span>
+              </div>
+            </>
+          )}
+
           <span className="text-zinc-500 font-bold">-</span>
           <div className="flex items-center gap-2 bg-rose-500/10 px-2 py-1 rounded border border-rose-500/20">
             <span className="text-rose-400 font-medium">Pending Out</span>

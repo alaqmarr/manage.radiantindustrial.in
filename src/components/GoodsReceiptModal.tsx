@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import { Loader2, X, Package } from "lucide-react"
 import { createGoodsReceipt, updateGoodsReceipt } from "@/app/actions/goodsReceipt"
@@ -36,6 +37,9 @@ export function GoodsReceiptModal({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+
   // Reset and pre-fill form when modal opens or items change
   useEffect(() => {
     if (isOpen) {
@@ -70,7 +74,7 @@ export function GoodsReceiptModal({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, onClose])
 
-  if (!isOpen) return null
+  if (!isOpen || !mounted) return null
 
   const handleQuantityChange = (productId: string, value: string, maxQty: number) => {
     const parsed = value === "" ? 0 : parseFloat(value)
@@ -132,7 +136,7 @@ export function GoodsReceiptModal({
     }
   }
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div role="dialog" aria-modal="true" className="glass-panel w-full max-w-2xl p-6 rounded-md border border-premium-border max-h-[90vh] overflow-y-auto">
         {/* Header */}
@@ -292,7 +296,8 @@ export function GoodsReceiptModal({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 export default GoodsReceiptModal

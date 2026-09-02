@@ -15,6 +15,7 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos, 
   
   const [searchQuery, setSearchQuery] = useState("")
   const [typeFilter, setTypeFilter] = useState("ALL")
+  const [activeTab, setActiveTab] = useState("OVERVIEW")
 
   const filteredEntries = initialEntries.filter((entry: any) => {
     if (typeFilter !== 'ALL' && entry.type !== typeFilter) return false;
@@ -90,6 +91,36 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos, 
     }
   }
 
+  // P&L Calculations
+  const completedQuotations = (quotations || []).filter((q: any) => q.status === 'COMPLETED');
+  const pnlData = completedQuotations.map((q: any) => {
+    const revenue = q.items.reduce((acc: number, item: any) => acc + (item.spSnapshot * item.quantity), 0);
+    const cogs = q.items.reduce((acc: number, item: any) => {
+      const cp = item.cpSnapshot || item.commissionCpSnapshot || 0;
+      return acc + (cp * item.quantity);
+    }, 0);
+    const expenses = q.items.reduce((acc: number, item: any) => acc + (item.additionalCost || 0), 0);
+    const profit = revenue - cogs - expenses;
+    return { ...q, revenue, cogs, expenses, profit };
+  });
+  const totalRevenue = pnlData.reduce((acc: number, q: any) => acc + q.revenue, 0);
+  const totalCogs = pnlData.reduce((acc: number, q: any) => acc + q.cogs, 0);
+  const totalExpenses = pnlData.reduce((acc: number, q: any) => acc + q.expenses, 0);
+  const totalProfit = totalRevenue - totalCogs - totalExpenses;
+  const margin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+
+  // Loan Calculations
+  const loanEntries = (initialEntries || []).filter((e: any) => e.category === 'LOAN');
+  const totalLent = loanEntries.reduce((acc: number, entry: any) => {
+    if (entry.status === 'CLEARED' && entry.type === 'OUT') return acc + entry.amount;
+    return acc;
+  }, 0);
+  const totalBorrowed = loanEntries.reduce((acc: number, entry: any) => {
+    if (entry.status === 'CLEARED' && entry.type === 'IN') return acc + entry.amount;
+    return acc;
+  }, 0);
+  const netLoan = totalBorrowed - totalLent;
+
   return (
     <div className="space-y-6">
       
@@ -145,6 +176,30 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos, 
         </div>
       </div>
 
+      <div className="flex items-center gap-2 border-b border-premium-border/50 pb-2">
+        <button 
+          onClick={() => setActiveTab("OVERVIEW")}
+          className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'OVERVIEW' ? 'bg-brand-orange text-black' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}
+        >
+          Overview & Ledger
+        </button>
+        <button 
+          onClick={() => setActiveTab("PNL")}
+          className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'PNL' ? 'bg-brand-orange text-black' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}
+        >
+          Profit & Loss
+        </button>
+        <button 
+          onClick={() => setActiveTab("LOANS")}
+          className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'LOANS' ? 'bg-brand-orange text-black' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}
+        >
+          Loans & Transfers
+        </button>
+      </div>
+
+      {activeTab === "OVERVIEW" && (
+        <>
+
       <div className="glass-panel p-6 rounded-xl space-y-4">
         <h2 className="text-lg font-medium text-white">Working Capital Overview</h2>
         <p className="text-sm text-zinc-400">
@@ -175,6 +230,41 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos, 
               {workingCapital < 0 ? "Additional funds needed" : "Surplus funds available"}
             </p>
           </div>
+        </div>
+        <div className="mt-4 pt-4 border-t border-premium-border/30 bg-black/20 rounded-md p-4 text-xs font-mono flex flex-wrap items-center gap-x-3 gap-y-2">
+          <span className="text-zinc-400 font-sans font-medium uppercase tracking-wider text-[10px]">Formula:</span>
+          
+          <div className="flex items-center gap-2 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20">
+            <span className="text-emerald-400 font-medium">Balance</span>
+            <span className="text-emerald-400">{formatRupee(balance)}</span>
+          </div>
+          <span className="text-zinc-500 font-bold">+</span>
+          <div className="flex items-center gap-2 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20">
+            <span className="text-emerald-400 font-medium">Receivables</span>
+            <span className="text-emerald-400">{formatRupee(accountsReceivable)}</span>
+          </div>
+          
+          <span className="text-zinc-500 font-bold ml-2">-</span>
+          
+          <div className="flex items-center gap-2 bg-rose-500/10 px-2 py-1 rounded border border-rose-500/20 ml-2">
+            <span className="text-rose-400 font-medium">Payables</span>
+            <span className="text-rose-400">{formatRupee(accountsPayable)}</span>
+          </div>
+          <span className="text-zinc-500 font-bold">-</span>
+          <div className="flex items-center gap-2 bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20">
+            <span className="text-amber-400 font-medium">Est. Fulfillment</span>
+            <span className="text-amber-400">{formatRupee(pendingFulfillmentCost)}</span>
+          </div>
+          <span className="text-zinc-500 font-bold">-</span>
+          <div className="flex items-center gap-2 bg-rose-500/10 px-2 py-1 rounded border border-rose-500/20">
+            <span className="text-rose-400 font-medium">Pending Out</span>
+            <span className="text-rose-400">{formatRupee(pendingOut)}</span>
+          </div>
+          
+          <span className="text-zinc-400 font-bold ml-2">=</span>
+          <span className={`text-base ml-1 font-bold ${workingCapital < 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
+            {formatRupee(workingCapital)}
+          </span>
         </div>
       </div>
 
@@ -322,6 +412,142 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos, 
           </table>
         </div>
       </div>
+      </>
+      )}
+
+      {activeTab === "PNL" && (
+        <div className="space-y-6 animate-in fade-in">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="glass-panel p-6 rounded-xl">
+              <p className="text-sm font-medium text-zinc-400 mb-2">Total Revenue</p>
+              <h3 className="text-2xl font-bold tracking-tight text-white">{formatRupee(totalRevenue)}</h3>
+            </div>
+            <div className="glass-panel p-6 rounded-xl">
+              <p className="text-sm font-medium text-zinc-400 mb-2">Cost of Goods Sold (COGS)</p>
+              <h3 className="text-2xl font-bold tracking-tight text-amber-400">-{formatRupee(totalCogs)}</h3>
+            </div>
+            <div className="glass-panel p-6 rounded-xl">
+              <p className="text-sm font-medium text-zinc-400 mb-2">Total Expenses (Freight, etc.)</p>
+              <h3 className="text-2xl font-bold tracking-tight text-amber-400">-{formatRupee(totalExpenses)}</h3>
+            </div>
+            <div className="glass-panel p-6 rounded-xl border border-brand-orange/30 relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-10">
+                <span className="text-2xl font-bold">%</span>
+              </div>
+              <p className="text-sm font-medium text-zinc-400 mb-2">Net Profit</p>
+              <h3 className={`text-2xl font-bold tracking-tight ${totalProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                {formatRupee(totalProfit)}
+              </h3>
+              <p className="text-xs text-brand-orange mt-1">Margin: {margin.toFixed(2)}%</p>
+            </div>
+          </div>
+          <div className="glass-panel rounded-xl overflow-hidden">
+             <div className="p-4 border-b border-premium-border">
+               <h2 className="text-lg font-medium text-white">Completed Quotations P&L</h2>
+               <p className="text-xs text-zinc-400 mt-1">Calculates Revenue, COGS, and additional expenses for fulfilled orders.</p>
+             </div>
+             <div className="overflow-x-auto">
+               <table className="w-full text-sm text-left">
+                 <thead className="text-xs text-zinc-400 uppercase bg-black/20 border-b border-premium-border">
+                    <tr>
+                      <th className="px-6 py-4 font-medium">Quotation</th>
+                      <th className="px-6 py-4 font-medium text-right">Revenue</th>
+                      <th className="px-6 py-4 font-medium text-right">COGS</th>
+                      <th className="px-6 py-4 font-medium text-right">Expenses</th>
+                      <th className="px-6 py-4 font-medium text-right">Profit</th>
+                    </tr>
+                 </thead>
+                 <tbody className="divide-y divide-premium-border/50">
+                    {pnlData.length === 0 ? (
+                      <tr><td colSpan={5} className="px-6 py-8 text-center text-zinc-500">No completed quotations to analyze.</td></tr>
+                    ) : pnlData.map((q: any) => (
+                      <tr key={q.id} className="hover:bg-white/5 transition-colors">
+                        <td className="px-6 py-4 text-zinc-300">
+                           <div className="font-medium text-white">{q.id}</div>
+                           <div className="text-xs text-zinc-500 mt-1">{q.client?.name}</div>
+                        </td>
+                        <td className="px-6 py-4 text-right text-white">{formatRupee(q.revenue)}</td>
+                        <td className="px-6 py-4 text-right text-amber-400">-{formatRupee(q.cogs)}</td>
+                        <td className="px-6 py-4 text-right text-amber-400">-{formatRupee(q.expenses)}</td>
+                        <td className={`px-6 py-4 text-right font-bold ${q.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                          {formatRupee(q.profit)}
+                        </td>
+                      </tr>
+                    ))}
+                 </tbody>
+               </table>
+             </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === "LOANS" && (
+        <div className="space-y-6 animate-in fade-in">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="glass-panel p-6 rounded-xl relative overflow-hidden group">
+              <p className="text-sm font-medium text-zinc-400 mb-2">Total Lent (Asset)</p>
+              <h3 className="text-3xl font-bold tracking-tight text-emerald-400">{formatRupee(totalLent)}</h3>
+            </div>
+            <div className="glass-panel p-6 rounded-xl relative overflow-hidden group">
+              <p className="text-sm font-medium text-zinc-400 mb-2">Total Borrowed (Liability)</p>
+              <h3 className="text-3xl font-bold tracking-tight text-rose-400">{formatRupee(totalBorrowed)}</h3>
+            </div>
+            <div className="glass-panel p-6 rounded-xl relative overflow-hidden group">
+              <p className="text-sm font-medium text-zinc-400 mb-2">Net Position</p>
+              <h3 className={`text-3xl font-bold tracking-tight ${netLoan >= 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                {netLoan > 0 ? "You owe: " : "You are owed: "}{formatRupee(Math.abs(netLoan))}
+              </h3>
+            </div>
+          </div>
+          <div className="glass-panel rounded-xl overflow-hidden">
+             <div className="p-4 border-b border-premium-border flex justify-between items-center">
+               <div>
+                 <h2 className="text-lg font-medium text-white">Loan & Transfer Ledger</h2>
+                 <p className="text-xs text-zinc-400 mt-1">All transactions marked as LOAN.</p>
+               </div>
+               <button 
+                onClick={() => setIsModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-brand-slate hover:bg-slate-500 text-white font-medium rounded-md transition-colors shadow-lg shadow-brand-slate/20 text-sm"
+               >
+                 <Plus className="w-4 h-4" /> Add
+               </button>
+             </div>
+             <div className="overflow-x-auto">
+               <table className="w-full text-sm text-left">
+                 <thead className="text-xs text-zinc-400 uppercase bg-black/20 border-b border-premium-border">
+                    <tr>
+                      <th className="px-6 py-4 font-medium">Date</th>
+                      <th className="px-6 py-4 font-medium">Entity / Note</th>
+                      <th className="px-6 py-4 font-medium">Type</th>
+                      <th className="px-6 py-4 font-medium text-right">Amount</th>
+                    </tr>
+                 </thead>
+                 <tbody className="divide-y divide-premium-border/50">
+                    {loanEntries.length === 0 ? (
+                      <tr><td colSpan={4} className="px-6 py-8 text-center text-zinc-500">No loan transactions found.</td></tr>
+                    ) : loanEntries.map((e: any) => (
+                      <tr key={e.id} className="hover:bg-white/5 transition-colors">
+                        <td className="px-6 py-4 text-zinc-300">{new Date(e.date).toLocaleDateString()}</td>
+                        <td className="px-6 py-4">
+                           <div className="text-white font-medium">{e.entityName || "Unknown"}</div>
+                           <div className="text-xs text-zinc-500 mt-1">{e.notes}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                           {e.type === 'IN' ? (
+                             <span className="text-emerald-400 text-xs bg-emerald-400/10 px-2 py-1 rounded border border-emerald-400/20">Money IN (Borrowed)</span>
+                           ) : (
+                             <span className="text-amber-400 text-xs bg-amber-400/10 px-2 py-1 rounded border border-amber-400/20">Money OUT (Lent)</span>
+                           )}
+                        </td>
+                        <td className="px-6 py-4 text-right font-medium text-white">{formatRupee(e.amount)}</td>
+                      </tr>
+                    ))}
+                 </tbody>
+               </table>
+             </div>
+          </div>
+        </div>
+      )}
 
       {isModalOpen && (
         <TransactionModal 

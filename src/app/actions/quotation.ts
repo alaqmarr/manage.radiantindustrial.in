@@ -11,6 +11,7 @@ type QuotationItemData = {
     materialDescription: string
     unit: string
     gstRate: number
+    specification?: string | null
   }
   quantity: number
   spSnapshot: number // paise
@@ -77,7 +78,8 @@ export async function createQuotation(data: {
         update: {
           materialDescription: item.product.materialDescription,
           unit: item.product.unit,
-          gstRate: item.product.gstRate
+          gstRate: item.product.gstRate,
+          specification: item.product.specification
         },
         create: {
           id: generateSlug(`${item.product.materialCode} ${item.product.materialDescription}`, true),
@@ -85,6 +87,7 @@ export async function createQuotation(data: {
           materialDescription: item.product.materialDescription,
           unit: item.product.unit,
           gstRate: item.product.gstRate,
+          specification: item.product.specification,
           costPrice: 0,
           sellingPrice: 0
         }
@@ -177,7 +180,8 @@ export async function upsertDraftQuotation(data: {
         update: {
           materialDescription: item.product.materialDescription,
           unit: item.product.unit,
-          gstRate: item.product.gstRate
+          gstRate: item.product.gstRate,
+          specification: item.product.specification
         },
         create: {
           id: generateSlug(`${item.product.materialCode} ${item.product.materialDescription}`, true),
@@ -185,6 +189,7 @@ export async function upsertDraftQuotation(data: {
           materialDescription: item.product.materialDescription,
           unit: item.product.unit,
           gstRate: item.product.gstRate,
+          specification: item.product.specification,
           costPrice: 0,
           sellingPrice: 0
         }

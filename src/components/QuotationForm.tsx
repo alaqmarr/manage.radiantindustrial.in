@@ -317,7 +317,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
     ))
   }
 
-  const handleProductChange = (productId: string, field: 'materialCode' | 'materialDescription' | 'unit' | 'gstRate', value: any) => {
+  const handleProductChange = (productId: string, field: 'materialCode' | 'materialDescription' | 'unit' | 'gstRate' | 'specification', value: any) => {
     setItems(items.map(i => i.product.id === productId ? { 
       ...i, 
       product: { ...i.product, [field]: value } 
@@ -799,22 +799,24 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                               value={item.product.materialCode}
                               onChange={e => handleProductChange(item.product.id, 'materialCode', e.target.value)}
                               placeholder="Code"
-                              className="w-32 bg-zinc-950/50 border border-transparent hover:border-premium-border focus:border-brand-slate px-2 py-1 font-mono text-sm text-white focus:outline-none transition-colors rounded"
+                              className="w-40 bg-zinc-950/80 border border-premium-border/50 focus:border-brand-slate px-3 py-1.5 font-mono text-sm text-white focus:outline-none transition-colors rounded-md"
                             />
                             <input 
                               type="text"
                               value={item.product.materialDescription}
                               onChange={e => handleProductChange(item.product.id, 'materialDescription', e.target.value)}
                               placeholder="Description"
-                              className="flex-1 bg-zinc-950/50 border border-transparent hover:border-premium-border focus:border-brand-slate px-2 py-1 text-sm font-medium text-white focus:outline-none transition-colors rounded"
+                              className="flex-1 bg-zinc-950/80 border border-premium-border/50 focus:border-brand-slate px-3 py-1.5 text-sm font-medium text-white focus:outline-none transition-colors rounded-md"
                             />
                           </div>
                           
-                          {item.product.specification && (
-                            <div className="text-xs text-zinc-500 px-2 line-clamp-2">
-                              {item.product.specification}
-                            </div>
-                          )}
+                          <textarea
+                            value={item.product.specification || ""}
+                            onChange={e => handleProductChange(item.product.id, 'specification', e.target.value)}
+                            placeholder="Add specification details..."
+                            rows={2}
+                            className="w-full bg-zinc-950/80 border border-premium-border/50 focus:border-brand-slate px-3 py-2 text-xs text-zinc-400 focus:text-zinc-300 focus:outline-none transition-colors rounded-md resize-y min-h-[40px]"
+                          />
                           
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
                             <div>

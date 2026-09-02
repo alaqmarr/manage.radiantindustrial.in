@@ -8,10 +8,7 @@ export const dynamic = "force-dynamic"
 export default async function QuotationDuesPage() {
   const dues = await prisma.quotation.findMany({
     where: {
-      status: 'ACCEPTED',
-      paymentStatus: {
-        not: 'PAID'
-      }
+      status: 'ACCEPTED'
     },
     orderBy: { createdAt: 'desc' },
     include: {
@@ -98,14 +95,15 @@ export default async function QuotationDuesPage() {
                         <span className="text-sm font-medium text-emerald-400">{formatRupee(quote.amountPaid)}</span>
                       </td>
                       <td className="py-4 px-6 text-right">
-                        <span className="text-sm font-bold text-rose-500">{formatRupee(balance)}</span>
+                        <span className={`text-sm font-bold ${balance > 0 ? 'text-rose-500' : 'text-zinc-500'}`}>{formatRupee(balance)}</span>
                       </td>
                       <td className="py-4 px-6 text-center">
                         <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                          quote.paymentStatus === 'PAID' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' :
                           quote.paymentStatus === 'PARTIALLY_PAID' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' : 
                           'bg-rose-500/10 text-rose-500 border border-rose-500/20'
                         }`}>
-                          {quote.paymentStatus === 'PARTIALLY_PAID' ? 'Partial' : 'Unpaid'}
+                          {quote.paymentStatus === 'PAID' ? 'Paid' : quote.paymentStatus === 'PARTIALLY_PAID' ? 'Partial' : 'Unpaid'}
                         </span>
                       </td>
                       <td className="py-4 px-6 text-right">
@@ -113,7 +111,7 @@ export default async function QuotationDuesPage() {
                           href={`/quotations/${quote.id}`}
                           className="text-xs px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white rounded transition-colors"
                         >
-                          Receive Payment
+                          {quote.paymentStatus === 'PAID' ? 'View Quote' : 'Receive Payment'}
                         </Link>
                       </td>
                     </tr>

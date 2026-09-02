@@ -143,7 +143,7 @@ model Product {
   sellingPrice        Int                // stored in paise
   gstRate             Float              // e.g., 18.0
   supplierId          String?
-  supplier            Supplier?          @relation(fields: [supplierId], references: [id])
+  supplier            Supplier?          @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   productSuppliers    ProductSupplier[]
   quotationItems      QuotationItem[]
   purchaseItems       PurchaseItem[]
@@ -154,6 +154,8 @@ model Product {
   cocItems            CocItem[]
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
+
+  @@index([supplierId])
 }
 
 model Quotation {
@@ -174,6 +176,9 @@ model Quotation {
   purchases        Purchase[]
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
+
+  @@index([clientId])
+  @@index([status])
 }
 
 model QuotationItem {
@@ -189,10 +194,13 @@ model QuotationItem {
   commissionCpSnapshot Int? // Faked cost price for commission at time of quotation (paise)
   gstSnapshot  Float
   supplierId   String?
-  supplier     Supplier? @relation(fields: [supplierId], references: [id])
+  supplier     Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   comment      String?   // User comment for this item in the quotation
   leadTime     String?   // Lead time for delivery
   additionalCost Int?    @default(0) // paise. Internal cost (e.g. freight) borne by us, reduces profit.
+
+  @@index([quotationId])
+  @@index([productId])
 }
 
 model ProductSupplier {
@@ -217,10 +225,13 @@ model Purchase {
   paymentStatus String         @default("UNPAID") // UNPAID, PARTIALLY_PAID, PAID
   amountPaid    Int            @default(0) // paise
   quotationId   String?
-  quotation     Quotation?     @relation(fields: [quotationId], references: [id])
+  quotation     Quotation?     @relation(fields: [quotationId], references: [id], onDelete: SetNull)
   items         PurchaseItem[]
   payments      Payment[]
   date          DateTime       @default(now())
+
+  @@index([supplierId])
+  @@index([quotationId])
 }
 
 model PurchaseItem {
@@ -231,6 +242,9 @@ model PurchaseItem {
   product     Product  @relation(fields: [productId], references: [id])
   quantity    Float
   cpSnapshot  Int      // Cost price at the time of purchase (paise)
+
+  @@index([purchaseId])
+  @@index([productId])
 }
 
 model Rfq {
@@ -238,11 +252,12 @@ model Rfq {
   supplierId  String
   supplier    Supplier  @relation(fields: [supplierId], references: [id])
   status      String    @default("DRAFT") // DRAFT, ISSUED, COMPLETED
-  totalAmount Int?      // deprecated
-  totalGst    Int?      // deprecated
   items       RfqItem[]
+  purchaseOrders PurchaseOrder[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
+  @@index([supplierId])
 }
 
 model RfqItem {
@@ -252,9 +267,10 @@ model RfqItem {
   productId   String
   product     Product  @relation(fields: [productId], references: [id])
   quantity    Float
-  cpSnapshot  Int?      // deprecated
-  gstSnapshot Float?    // deprecated
   comment     String?
+
+  @@index([rfqId])
+  @@index([productId])
 }
 
 model PurchaseOrder {
@@ -263,6 +279,7 @@ model PurchaseOrder {
   supplierId           String
   supplier             Supplier            @relation(fields: [supplierId], references: [id])
   rfqId                String?             // Optional link to Rfq
+  rfq                  Rfq?                @relation(fields: [rfqId], references: [id])
   status               String              @default("DRAFT") // DRAFT, ISSUED, ACKNOWLEDGED, COMPLETED, CANCELLED
   paymentStatus        String              @default("UNPAID") // UNPAID, PARTIALLY_PAID, PAID
   paymentDueDate       DateTime?
@@ -278,6 +295,8 @@ model PurchaseOrder {
   deliveries           GoodsReceipt[]
   createdAt            DateTime            @default(now())
   updatedAt            DateTime            @updatedAt
+
+  @@index([supplierId])
 }
 
 model PurchaseOrderItem {
@@ -290,6 +309,9 @@ model PurchaseOrderItem {
   unitPrice   Int           // paise (vendor quoted price)
   gstRate     Float
   comment     String?
+
+  @@index([poId])
+  @@index([productId])
 }
 
 model Payment {
@@ -300,6 +322,10 @@ model Payment {
   method         String?        // BANK_TRANSFER, CASH, CHEQUE, UPI
   reference      String?        // Cheque no / UTR / transaction ref
   notes          String?
+  category       String         @default("BUSINESS") // "BUSINESS", "LOAN", "TRANSFER", "MANUAL"
+  entityName     String?        // Name of person/account for loans/transfers
+  isReturnable   Boolean        @default(false)
+  isSettled      Boolean        @default(false)
   date           DateTime       @default(now())
   quotationId    String?
   quotation      Quotation?     @relation(fields: [quotationId], references: [id], onDelete: Cascade)
@@ -308,6 +334,10 @@ model Payment {
   purchaseId     String?
   purchase       Purchase?      @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
   createdAt      DateTime       @default(now())
+
+  @@index([quotationId])
+  @@index([poId])
+  @@index([purchaseId])
 }
 
 model GoodsReceipt {
@@ -319,6 +349,8 @@ model GoodsReceipt {
   notes          String?
   items          GoodsReceiptItem[]
   createdAt      DateTime            @default(now())
+
+  @@index([poId])
 }
 
 model GoodsReceiptItem {
@@ -328,6 +360,9 @@ model GoodsReceiptItem {
   productId        String
   product          Product       @relation(fields: [productId], references: [id])
   quantityReceived Float
+
+  @@index([goodsReceiptId])
+  @@index([productId])
 }
 
 model PriceHistory {
@@ -337,6 +372,8 @@ model PriceHistory {
   costPrice    Int      // paise
   sellingPrice Int      // paise
   changedAt    DateTime @default(now())
+
+  @@index([productId])
 }
 
 model CertificateOfConformance {
@@ -347,13 +384,16 @@ model CertificateOfConformance {
   clientId         String
   client           Client          @relation(fields: [clientId], references: [id])
   quotationId      String?
-  quotation        Quotation?      @relation(fields: [quotationId], references: [id])
+  quotation        Quotation?      @relation(fields: [quotationId], references: [id], onDelete: SetNull)
   clientPoRef      String?
   standardText     String?
   remarks          String?
   items            CocItem[]
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
+
+  @@index([clientId])
+  @@index([quotationId])
 }
 
 model CocItem {
@@ -366,6 +406,9 @@ model CocItem {
   batchNo          String?
   remarks          String?
   attributes       String? // JSON string for key-value pairs
+
+  @@index([cocId])
+  @@index([productId])
 }
 
 model ObligationPayment {

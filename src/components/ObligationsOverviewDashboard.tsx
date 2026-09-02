@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { formatRupee } from "@/lib/utils"
 import { FileText, IndianRupee, Wallet, AlertCircle, Plus, Layers, HeartHandshake } from "lucide-react"
 import { recordCombinedObligationPayment, recordCombinedObligationAda } from "@/app/actions/obligations"
@@ -23,6 +24,7 @@ export function ObligationsOverviewDashboard({
   khumusSummary,
   zakaatSummary,
 }: ObligationsOverviewDashboardProps) {
+  const router = useRouter()
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
   const [isAdaModalOpen, setIsAdaModalOpen] = useState(false)
   const [amountStr, setAmountStr] = useState("")
@@ -48,6 +50,7 @@ export function ObligationsOverviewDashboard({
         setIsPaymentModalOpen(false)
         setAmountStr("")
         setNotes("")
+        router.refresh()
       } else {
         alert(result.error)
       }
@@ -77,6 +80,7 @@ export function ObligationsOverviewDashboard({
         setIsAdaModalOpen(false)
         setAmountStr("")
         setNotes("")
+        router.refresh()
       } else {
         alert(result.error)
       }

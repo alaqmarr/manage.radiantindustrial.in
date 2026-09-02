@@ -321,7 +321,7 @@ export function PurchaseModal({
                           type="number" 
                           min="1"
                           value={item.quantity}
-                          onChange={e => handleQuantityChange(item.product.id, parseInt(e.target.value) || 1)}
+                          onChange={e => handleQuantityChange(item.product.id, parseFloat(e.target.value) || 1)}
                           className="w-full bg-zinc-950 border border-premium-border rounded px-2 py-1 text-white text-center focus:outline-none focus:ring-1 focus:ring-brand-slate"
                         />
                       </td>

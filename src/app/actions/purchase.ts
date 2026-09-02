@@ -173,21 +173,23 @@ export async function updatePurchase(id: string, payload: {
     })
 
     // Delete existing items
-    await prisma.purchaseItem.deleteMany({
-      where: { purchaseId: id }
-    })
+    const purchase = await prisma.$transaction(async (tx) => {
+      await tx.purchaseItem.deleteMany({
+        where: { purchaseId: id }
+      })
 
-    const purchase = await prisma.purchase.update({
-      where: { id },
-      data: {
-        supplierId: payload.supplierId,
-        quotationId: payload.quotationId || null,
-        totalAmount,
-        totalGst,
-        items: {
-          create: itemsToCreate
+      return await tx.purchase.update({
+        where: { id },
+        data: {
+          supplierId: payload.supplierId,
+          quotationId: payload.quotationId || null,
+          totalAmount,
+          totalGst,
+          items: {
+            create: itemsToCreate
+          }
         }
-      }
+      })
     })
 
     // Also upsert ProductSupplier entries

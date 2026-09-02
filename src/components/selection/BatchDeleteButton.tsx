@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
+import { useRouter } from "next/navigation"
 import { useSelection } from "./SelectionContext"
 import { Trash2, Loader2 } from "lucide-react"
 
@@ -11,6 +12,7 @@ export function BatchDeleteButton({
   deleteAction: (ids: string[]) => Promise<{ success: boolean; error?: string }>,
   entityName?: string
 }) {
+  const router = useRouter()
   const { selectedIds, clearSelection } = useSelection()
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -26,6 +28,7 @@ export function BatchDeleteButton({
       const result = await deleteAction(Array.from(selectedIds))
       if (result.success) {
         clearSelection()
+        router.refresh()
       } else {
         alert(result.error || "Failed to delete selected items")
       }

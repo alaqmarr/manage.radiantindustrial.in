@@ -16,7 +16,7 @@ export async function createClient(data: { name: string; contact?: string; email
       return { error: "Client name is required" }
     }
 
-    const id = generateSlug(data.name)
+    const id = generateSlug(data.name, true)
 
     const client = await prisma.client.create({
       data: {

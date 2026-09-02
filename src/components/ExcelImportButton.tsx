@@ -1,9 +1,12 @@
 "use client"
 import { useRef, useState } from "react"
 import { FileUp, Loader2 } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { importExcelAction } from "@/app/actions/import"
+import { toast } from "sonner"
 
 export function ExcelImportButton() {
+  const router = useRouter()
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -24,9 +27,10 @@ export function ExcelImportButton() {
     }
 
     if (result.error) {
-      alert("Error: " + result.error)
+      toast.error("Error: " + result.error)
     } else {
-      alert(`Successfully imported ${result.count} products!`)
+      toast.success(`Successfully imported ${result.count} products!`)
+      router.refresh()
     }
   }
 

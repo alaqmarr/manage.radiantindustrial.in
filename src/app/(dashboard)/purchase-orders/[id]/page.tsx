@@ -81,55 +81,65 @@ export default async function PurchaseOrderViewPage(props: { params: Promise<{ i
                 {po.expectedDeliveryDate ? new Date(po.expectedDeliveryDate).toLocaleDateString() : "N/A"}
               </span>
             </div>
+            {po.rfqId && (
+              <div className="flex justify-between items-center mt-2 pt-2 border-t border-premium-border/50">
+                <span className="text-zinc-400">Linked RFQ:</span>
+                <Link href={`/rfq/${po.rfqId}`} className="text-brand-orange hover:underline font-medium">
+                  View RFQ
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       <div className="glass-panel rounded-lg border border-premium-border overflow-hidden print:hidden">
-        <table className="w-full text-sm text-left">
-          <thead className="text-xs text-zinc-400 uppercase bg-black/40 border-b border-premium-border">
-            <tr>
-              <th className="px-6 py-4 font-medium">Item</th>
-              <th className="px-6 py-4 font-medium">Quantity</th>
-              <th className="px-6 py-4 font-medium">Price</th>
-              <th className="px-6 py-4 font-medium">GST Rate</th>
-              <th className="px-6 py-4 font-medium text-right">Total</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-premium-border">
-            {po.items.map((item) => (
-              <tr key={item.id} className="hover:bg-white/[0.02]">
-                <td className="px-6 py-4">
-                  <div className="font-medium text-white">{item.product.materialCode}</div>
-                  <div className="text-xs text-zinc-400">{item.product.materialDescription}</div>
-                  {item.comment && <div className="text-xs text-brand-slate mt-1">{item.comment}</div>}
-                </td>
-                <td className="px-6 py-4 text-white">
-                  {item.quantity} <span className="text-xs text-zinc-500">{item.product.unit}</span>
-                </td>
-                <td className="px-6 py-4 text-white">{formatRupee(item.unitPrice)}</td>
-                <td className="px-6 py-4 text-white">{item.gstRate}%</td>
-                <td className="px-6 py-4 text-right font-medium text-white">
-                  {formatRupee(item.quantity * item.unitPrice)}
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left">
+            <thead className="text-xs text-zinc-400 uppercase bg-black/40 border-b border-premium-border">
+              <tr>
+                <th className="px-6 py-4 font-medium">Item</th>
+                <th className="px-6 py-4 font-medium">Quantity</th>
+                <th className="px-6 py-4 font-medium">Price</th>
+                <th className="px-6 py-4 font-medium">GST Rate</th>
+                <th className="px-6 py-4 font-medium text-right">Total</th>
               </tr>
-            ))}
-          </tbody>
-          <tfoot className="bg-black/20 border-t border-premium-border">
-            <tr>
-              <td colSpan={4} className="px-6 py-4 text-right text-zinc-400">Subtotal</td>
-              <td className="px-6 py-4 text-right text-white font-medium">{formatRupee(po.totalAmount)}</td>
-            </tr>
-            <tr>
-              <td colSpan={4} className="px-6 py-4 text-right text-zinc-400">Total GST</td>
-              <td className="px-6 py-4 text-right text-white font-medium">{formatRupee(po.totalGst)}</td>
-            </tr>
-            <tr>
-              <td colSpan={4} className="px-6 py-4 text-right text-white font-bold">Grand Total</td>
-              <td className="px-6 py-4 text-right text-brand-orange font-bold text-lg">{formatRupee(po.totalAmount + po.totalGst)}</td>
-            </tr>
-          </tfoot>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-premium-border">
+              {po.items.map((item) => (
+                <tr key={item.id} className="hover:bg-white/[0.02]">
+                  <td className="px-6 py-4">
+                    <div className="font-medium text-white">{item.product.materialCode}</div>
+                    <div className="text-xs text-zinc-400">{item.product.materialDescription}</div>
+                    {item.comment && <div className="text-xs text-brand-slate mt-1">{item.comment}</div>}
+                  </td>
+                  <td className="px-6 py-4 text-white">
+                    {item.quantity} <span className="text-xs text-zinc-500">{item.product.unit}</span>
+                  </td>
+                  <td className="px-6 py-4 text-white">{formatRupee(item.unitPrice)}</td>
+                  <td className="px-6 py-4 text-white">{item.gstRate}%</td>
+                  <td className="px-6 py-4 text-right font-medium text-white">
+                    {formatRupee(item.quantity * item.unitPrice)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot className="bg-black/20 border-t border-premium-border">
+              <tr>
+                <td colSpan={4} className="px-6 py-4 text-right text-zinc-400">Subtotal</td>
+                <td className="px-6 py-4 text-right text-white font-medium">{formatRupee(po.totalAmount)}</td>
+              </tr>
+              <tr>
+                <td colSpan={4} className="px-6 py-4 text-right text-zinc-400">Total GST</td>
+                <td className="px-6 py-4 text-right text-white font-medium">{formatRupee(po.totalGst)}</td>
+              </tr>
+              <tr>
+                <td colSpan={4} className="px-6 py-4 text-right text-white font-bold">Grand Total</td>
+                <td className="px-6 py-4 text-right text-brand-orange font-bold text-lg">{formatRupee(po.totalAmount + po.totalGst)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
       </div>
       
       {po.notes && (

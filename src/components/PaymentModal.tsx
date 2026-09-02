@@ -61,6 +61,15 @@ export function PaymentModal({
     }
   }, [isOpen, totalAmount, totalGst, amountPaid])
 
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose])
+
   if (!isOpen) return null
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -109,7 +118,7 @@ export function PaymentModal({
       />
 
       {/* Modal Card */}
-      <div className="relative bg-zinc-900 border border-premium-border rounded-lg shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col z-10">
+      <div role="dialog" aria-modal="true" className="relative bg-zinc-900 border border-premium-border rounded-lg shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col z-10">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-premium-border bg-white/[0.02]">
           <div className="flex items-center gap-2.5">

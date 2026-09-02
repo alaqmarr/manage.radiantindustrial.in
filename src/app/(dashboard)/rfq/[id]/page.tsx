@@ -32,7 +32,7 @@ export default async function RfqViewPage({ params }: { params: Promise<{ id: st
   })
 
   if (!rfq) {
-    redirect("/rfqs")
+    redirect("/rfq")
   }
 
   const settings = await prisma.companySettings.findUnique({
@@ -84,7 +84,7 @@ export default async function RfqViewPage({ params }: { params: Promise<{ id: st
         )}
 
         {/* Items Table */}
-        <div className="mb-12 relative z-10">
+        <div className="mb-12 relative z-10 overflow-x-auto">
           <table className="w-full text-sm text-left border-collapse">
             <thead className="text-xs uppercase bg-white/5 text-zinc-400 border-y border-premium-border">
               <tr>

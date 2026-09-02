@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { formatRupee } from "@/lib/utils"
 import { recordObligationPayment, recordObligationAda, ObligationQuotationDetail, ObligationType } from "@/app/actions/obligations"
 import { Plus, Wallet, FileText, IndianRupee, HandCoins, AlertCircle, HeartHandshake } from "lucide-react"
@@ -35,6 +36,7 @@ export function ObligationDashboard({
   payments,
   adas
 }: ObligationDashboardProps) {
+  const router = useRouter()
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
   const [isAdaModalOpen, setIsAdaModalOpen] = useState(false)
   const [amountStr, setAmountStr] = useState("")
@@ -58,6 +60,7 @@ export function ObligationDashboard({
       setIsPaymentModalOpen(false)
       setAmountStr("")
       setNotes("")
+      router.refresh()
     } else {
       alert("Failed to record payment: " + res.error)
     }
@@ -80,6 +83,7 @@ export function ObligationDashboard({
       setIsAdaModalOpen(false)
       setAmountStr("")
       setNotes("")
+      router.refresh()
     } else {
       alert("Failed to record Ada: " + res.error)
     }

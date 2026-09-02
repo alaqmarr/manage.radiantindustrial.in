@@ -14,6 +14,7 @@ export function TransactionModal({ onClose, quotations, pos, purchases }: any) {
   const [category, setCategory] = useState("manual") // manual, quotation, po
   const [type, setType] = useState<"IN" | "OUT">("IN")
   const [entityId, setEntityId] = useState("")
+  const [entityName, setEntityName] = useState("")
   
   const [amount, setAmount] = useState("")
   const [method, setMethod] = useState("BANK_TRANSFER")
@@ -56,9 +57,11 @@ export function TransactionModal({ onClose, quotations, pos, purchases }: any) {
     setIsSubmitting(true)
     
     try {
-      if (category === "manual") {
+      if (category === "manual" || category === "LOAN" || category === "TRANSFER") {
         await recordManualPayment({
           type,
+          category: category === "manual" ? "MANUAL" : category,
+          entityName,
           amount: Number(amount),
           method,
           reference,
@@ -113,6 +116,8 @@ export function TransactionModal({ onClose, quotations, pos, purchases }: any) {
                   className="w-full bg-black/50 border border-premium-border rounded-md px-3 py-2 text-white focus:outline-none focus:border-brand-slate"
                 >
                   <option value="manual">Manual Entry</option>
+                  <option value="LOAN">Loan (Borrow / Lend)</option>
+                  <option value="TRANSFER">Internal Transfer</option>
                   <option value="quotation">Against Quotation / Sale</option>
                   <option value="po">Against Purchase Order</option>
                   <option value="purchase">Against Direct Purchase</option>
@@ -124,14 +129,27 @@ export function TransactionModal({ onClose, quotations, pos, purchases }: any) {
                 <select 
                   value={type} 
                   onChange={(e) => setType(e.target.value as "IN" | "OUT")}
-                  disabled={category !== "manual"}
+                  disabled={!["manual", "LOAN", "TRANSFER"].includes(category)}
                   className="w-full bg-black/50 border border-premium-border rounded-md px-3 py-2 text-white focus:outline-none focus:border-brand-slate disabled:opacity-50"
                 >
-                  <option value="IN">Money IN (+)</option>
-                  <option value="OUT">Money OUT (-)</option>
+                  <option value="IN">{category === "LOAN" ? "Borrowed from someone (+)" : category === "TRANSFER" ? "Transferred IN (+)" : "Money IN (+)"}</option>
+                  <option value="OUT">{category === "LOAN" ? "Lent to someone (-)" : category === "TRANSFER" ? "Transferred OUT (-)" : "Money OUT (-)"}</option>
                 </select>
               </div>
             </div>
+
+            {(category === "LOAN" || category === "TRANSFER") && (
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">Name of person / account</label>
+                <input 
+                  type="text" 
+                  value={entityName} 
+                  onChange={e => setEntityName(e.target.value)} 
+                  required 
+                  className="w-full bg-black/50 border border-premium-border rounded-md px-3 py-2 text-white focus:outline-none focus:border-brand-slate"
+                />
+              </div>
+            )}
 
             {category === "quotation" && (
               <div>

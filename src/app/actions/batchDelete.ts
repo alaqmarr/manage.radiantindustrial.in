@@ -92,3 +92,16 @@ export async function deleteRfqs(ids: string[]) {
     return { success: false, error: e.message }
   }
 }
+
+export async function deletePurchaseOrders(ids: string[]) {
+  const session = await auth()
+  if (!session?.user) return { success: false, error: 'Unauthorized' }
+
+  try {
+    await prisma.purchaseOrder.deleteMany({ where: { id: { in: ids } } })
+    revalidatePath('/purchase-orders')
+    return { success: true }
+  } catch (e: any) {
+    return { success: false, error: e.message }
+  }
+}

@@ -4,6 +4,7 @@ import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { deleteQuotation } from "@/app/actions/quotation"
 import { formatRupee, numberToWordsRupees } from "@/lib/utils"
+import { toast } from "sonner"
 
 export function QuotationActions({ 
   quotation, 
@@ -68,7 +69,7 @@ export function QuotationActions({
         setTimeout(() => setCopied(false), 2000)
       } catch (fallbackErr) {
         console.error("Fallback copy also failed", fallbackErr)
-        alert("Failed to copy. Your browser might not support this feature.")
+        toast.error("Failed to copy. Your browser might not support this feature.")
       }
     }
   }
@@ -82,10 +83,10 @@ export function QuotationActions({
         router.push("/quotations")
         router.refresh()
       } else {
-        alert(res.error)
+        toast.error(res.error)
       }
     } catch (e: any) {
-      alert("Failed to delete quotation")
+      toast.error("Failed to delete quotation")
     } finally {
       setIsDeleting(false)
     }
@@ -100,9 +101,9 @@ export function QuotationActions({
     
     try {
       await navigator.clipboard.writeText(lines)
-      alert("Lead times copied to clipboard!")
+      toast.success("Lead times copied to clipboard!")
     } catch (err) {
-      alert("Failed to copy lead times")
+      toast.error("Failed to copy lead times")
     }
   }
 
@@ -179,7 +180,7 @@ export function QuotationActions({
       XLSX.writeFile(workbook, `Quotation_${quotation.id.slice(-6)}.xlsx`);
     } catch (err) {
       console.error("Failed to export to Excel", err);
-      alert("Failed to export to Excel.");
+      toast.error("Failed to export to Excel.");
     }
   }
 
@@ -198,6 +199,13 @@ export function QuotationActions({
         >
           <Edit className="w-4 h-4" />
           <span className="text-sm">Edit</span>
+        </button>
+        <button 
+          onClick={() => router.push(`/quotations/new?duplicateFrom=${quotation.id}`)}
+          className="flex items-center gap-2 px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 font-medium rounded-md transition-colors border border-indigo-500/20 active:scale-95"
+        >
+          <Copy className="w-4 h-4" />
+          <span className="text-sm">Duplicate</span>
         </button>
         <button 
           onClick={handleDelete}

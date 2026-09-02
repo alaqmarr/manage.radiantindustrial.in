@@ -2,6 +2,7 @@
 import { useState } from "react"
 import { createQuickProduct } from "@/app/actions/product"
 import { Loader2, X } from "lucide-react"
+import { toast } from "sonner"
 
 export function ProductModal({
   forceOpen,
@@ -21,7 +22,7 @@ export function ProductModal({
   if (!forceOpen) return null
 
   const handleCreateProduct = async () => {
-    if (!newProdDesc.trim()) return alert("Description is required")
+    if (!newProdDesc.trim()) return toast.error("Description is required")
     setIsCreatingProduct(true)
     try {
       const res = await createQuickProduct({
@@ -38,10 +39,10 @@ export function ProductModal({
         if (onSuccess) onSuccess(res.product)
         onForceClose()
       } else {
-        alert(res.error)
+        toast.error(res.error)
       }
     } catch (e) {
-      alert("Failed to create product")
+      toast.error("Failed to create product")
     } finally {
       setIsCreatingProduct(false)
     }

@@ -729,11 +729,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
 
         {items.length > 0 && (
           <div className="space-y-4 mt-4">
-            {[...items].sort((a, b) => {
-              const aPending = (!a.cpSnapshot || !a.spSnapshot) ? 1 : 0
-              const bPending = (!b.cpSnapshot || !b.spSnapshot) ? 1 : 0
-              return bPending - aPending
-            }).map((item) => {
+            {items.map((item) => {
               const sp = item.spSnapshot ?? 0
               const cp = item.cpSnapshot
               const isPending = !cp || !sp
@@ -907,7 +903,7 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                               </div>
                               {item.commissionCpSnapshot && item.quantity > 0 ? (
                                 <span className="text-[11px] text-brand-orange/80 font-mono font-bold pl-1">
-                                  Σ {formatRupee((item.commissionCpSnapshot * item.quantity) / 100)}
+                                  Σ {formatRupee(item.commissionCpSnapshot * item.quantity)}
                                 </span>
                               ) : null}
                             </div>
@@ -976,22 +972,19 @@ export function QuotationForm({ clients: initialClients, products, initialData, 
                                 type="number"
                                 min="0" step="any"
                                 value={item.additionalCost !== undefined ? item.additionalCost / 100 : ''}
-                                onChange={e => setItems(items.map(i => i.product.id === item.product.id ? { ...i, additionalCost: Math.round(parseFloat(e.target.value) * 100) || 0 } : i))}
+                                onChange={e => setItems(prev => prev.map(i => i.product.id === item.product.id ? { ...i, additionalCost: Math.round(parseFloat(e.target.value) * 100) || 0 } : i))}
                                 placeholder="Cost"
                                 className="w-full bg-zinc-950 border border-premium-border rounded pl-5 pr-2 py-1 text-xs font-medium text-rose-400 focus:outline-none focus:border-rose-500/50 transition-colors"
                               />
                             </div>
                           </div>
                           <div>
-                            <label className="block text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-1">GST Rate</label>
-                            <div className="flex items-center">
-                              <input 
-                                type="number"
-                                value={item.product.gstRate}
-                                onChange={e => handleProductChange(item.product.id, 'gstRate', parseFloat(e.target.value) || 0)}
-                                className="w-14 bg-zinc-950/50 border border-transparent hover:border-premium-border focus:border-brand-slate px-2 py-1 text-xs text-white focus:outline-none transition-colors rounded"
-                              />
-                              <span className="text-zinc-500 text-xs ml-2">%</span>
+                            <label className="block text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-1">GST Amount</label>
+                            <div className="flex flex-col gap-1">
+                              <span className="text-sm font-medium text-brand-slate">
+                                {formatRupee(Math.round(((item.spSnapshot || 0) * item.quantity) * (item.product.gstRate / 100)))}
+                              </span>
+                              <span className="text-[10px] text-zinc-500">GST is calculated automatically at {item.product.gstRate}%</span>
                             </div>
                           </div>
                         </div>

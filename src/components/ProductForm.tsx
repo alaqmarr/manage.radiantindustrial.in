@@ -117,6 +117,11 @@ export function ProductForm({ suppliers, initialData }: { suppliers: any[], init
           <input required name="materialDescription" type="text" defaultValue={initialData?.materialDescription} className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
         </div>
 
+        <div className="col-span-2">
+          <label className="block text-sm font-medium text-zinc-400 mb-1">Technical Specification</label>
+          <textarea name="specification" defaultValue={initialData?.specification || ""} rows={3} className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+        </div>
+
         <div>
           <label className="block text-sm font-medium text-zinc-400 mb-1">Supplier</label>
           <input 
@@ -134,7 +139,7 @@ export function ProductForm({ suppliers, initialData }: { suppliers: any[], init
           </datalist>
         </div>
 
-        <div className="grid grid-cols-3 gap-4 col-span-2">
+        <div className="grid grid-cols-4 gap-4 col-span-2">
           <div>
             <label className="block text-sm font-medium text-zinc-400 mb-1">Make</label>
             <input name="make" type="text" defaultValue={initialData?.make || ""} className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
@@ -146,6 +151,10 @@ export function ProductForm({ suppliers, initialData }: { suppliers: any[], init
           <div>
             <label className="block text-sm font-medium text-zinc-400 mb-1">Unit</label>
             <input name="unit" type="text" defaultValue={initialData?.unit || "NUM"} className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-zinc-400 mb-1">GST Rate %</label>
+            <input name="gstRate" type="number" step="any" defaultValue={initialData?.gstRate || 18} className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
           </div>
         </div>
 
@@ -171,7 +180,7 @@ export function ProductForm({ suppliers, initialData }: { suppliers: any[], init
               <div>
                 <div className="text-xs text-zinc-500 uppercase font-bold tracking-widest mb-1">Actual Profit</div>
                 <div className={`text-xl font-bold ${profit >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                  {formatRupee(profit)}
+                  {formatRupee(profit * 100)}
                 </div>
               </div>
               <div className="text-right">
@@ -187,7 +196,7 @@ export function ProductForm({ suppliers, initialData }: { suppliers: any[], init
                 <div>
                   <div className="text-xs text-brand-orange/80 uppercase font-bold tracking-widest mb-1">Commission Profit</div>
                   <div className={`text-xl font-bold ${commProfit >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                    {formatRupee(commProfit)}
+                    {formatRupee(commProfit * 100)}
                   </div>
                 </div>
                 <div className="text-right">

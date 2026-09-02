@@ -29,13 +29,8 @@ export default async function RfqsPage(props: { searchParams: Promise<{ search?:
   if (search) {
     where.OR = [
       { id: { contains: search } },
-      { rfqNo: { contains: search } },
       { supplier: { name: { contains: search } } },
     ]
-  }
-
-  if (statusFilter) {
-    where.status = statusFilter
   }
 
   const rfqs = await prisma.rfq.findMany({
@@ -46,6 +41,18 @@ export default async function RfqsPage(props: { searchParams: Promise<{ search?:
       items: true
     }
   })
+
+  const drafts = rfqs.filter(r => r.status === 'DRAFT')
+  const issued = rfqs.filter(r => r.status === 'ISSUED')
+  const completed = rfqs.filter(r => r.status === 'COMPLETED')
+
+  const statusGroups = [
+    { key: 'DRAFT', label: 'Draft', items: drafts },
+    { key: 'ISSUED', label: 'Issued', items: issued },
+    { key: 'COMPLETED', label: 'Completed', items: completed },
+  ]
+
+  const displayedRfqs = statusFilter ? rfqs.filter(r => r.status === statusFilter) : rfqs;
 
   return (
     <SelectionProvider>
@@ -65,12 +72,30 @@ export default async function RfqsPage(props: { searchParams: Promise<{ search?:
         </div>
       </div>
 
+      <div className="flex items-center gap-2 flex-wrap">
+        <Link 
+          href="/rfq" 
+          className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${!statusFilter ? 'bg-white/10 border-white/20 text-white' : 'border-premium-border text-zinc-400 hover:text-white hover:border-zinc-600'}`}
+        >
+          All ({rfqs.length})
+        </Link>
+        {statusGroups.map(g => (
+          <Link
+            key={g.key}
+            href={`/rfq?status=${g.key}`}
+            className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${statusFilter === g.key ? 'bg-white/10 border-white/20 text-white' : 'border-premium-border text-zinc-400 hover:text-white hover:border-zinc-600'}`}
+          >
+            {g.label} ({g.items.length})
+          </Link>
+        ))}
+      </div>
+
       <div className="glass-panel rounded-md overflow-hidden">
         <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
             <thead className="text-xs text-zinc-400 uppercase bg-premium-surface/50 border-b border-premium-border">
               <tr>
-                <th className="px-6 py-5 w-12"><SelectAllCheckbox allIds={rfqs.map(q => q.id)} /></th>
+                <th className="px-6 py-5 w-12"><SelectAllCheckbox allIds={displayedRfqs.map(q => q.id)} /></th>
                 <th className="px-6 py-5 font-medium tracking-wider">ID</th>
                 <th className="px-6 py-5 font-medium tracking-wider">Supplier</th>
                 
@@ -80,14 +105,14 @@ export default async function RfqsPage(props: { searchParams: Promise<{ search?:
               </tr>
             </thead>
             <tbody className="divide-y divide-premium-border">
-              {rfqs.length === 0 ? (
+              {displayedRfqs.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-8 text-center text-zinc-500">
                     No rfqs found.
                   </td>
                 </tr>
               ) : (
-                rfqs.map((quote) => (
+                displayedRfqs.map((quote) => (
                   <ClickableRow 
                     key={quote.id} 
                     href={`/rfq/${quote.id}`}

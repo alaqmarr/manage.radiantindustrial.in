@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Copy, Check, Mail, Sparkles, Send, PartyPopper, Landmark, X, Loader2, CheckCircle2, AlertCircle, XCircle } from "lucide-react"
 import { sendEmailAction } from "@/app/actions/email"
 
@@ -8,9 +8,10 @@ type TemplateType = 'custom' | 'intro' | 'followup' | 'festive' | 'bank'
 
 interface EmailTemplateBuilderProps {
   settings: any
+  data?: any
 }
 
-export function EmailTemplateBuilder({ settings }: EmailTemplateBuilderProps) {
+export function EmailTemplateBuilder({ settings, data }: EmailTemplateBuilderProps) {
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateType>('custom')
   const [copied, setCopied] = useState(false)
   const emailContainerRef = useRef<HTMLDivElement>(null)
@@ -28,6 +29,15 @@ export function EmailTemplateBuilder({ settings }: EmailTemplateBuilderProps) {
   const [emailInput, setEmailInput] = useState("")
   const [isSending, setIsSending] = useState(false)
   const [sendResults, setSendResults] = useState<{email: string, status: 'success'|'failed', error?: string}[] | null>(null)
+
+  useEffect(() => {
+    if (data) {
+      const defaultEmail = data.client?.email || data.supplier?.email || "";
+      if (defaultEmail) {
+        setValidEmails([defaultEmail]);
+      }
+    }
+  }, [data]);
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

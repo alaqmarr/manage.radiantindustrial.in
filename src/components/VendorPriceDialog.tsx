@@ -274,7 +274,7 @@ export function VendorPriceDialog({
                       {formatRupee(Number(spInput) * 100 - Number(selectedCp))}
                     </div>
                     {' '}
-                    ({(((Number(spInput) * 100 - Number(selectedCp)) / Number(selectedCp)) * 100).toFixed(1)}%)
+                    ({(((Number(spInput) * 100 - Number(selectedCp)) / (Number(spInput) * 100)) * 100).toFixed(1)}%)
                   </span>
                 </p>
               )}

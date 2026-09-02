@@ -173,6 +173,8 @@ export async function updatePaymentStatus(paymentId: string, status: string) {
       await recalculateParentPayment("quotation", payment.quotationId)
     } else if (payment.poId) {
       await recalculateParentPayment("po", payment.poId)
+    } else if (payment.purchaseId) {
+      await recalculateParentPayment("purchase", payment.purchaseId)
     }
     
     revalidatePath("/accounts")
@@ -191,6 +193,8 @@ export async function recordManualPayment(data: {
   notes?: string
   date?: string
   status?: string
+  category?: string
+  entityName?: string
 }) {
   try {
     const session = await auth()
@@ -216,6 +220,8 @@ export async function recordManualPayment(data: {
         reference: data.reference?.trim() || null,
         notes: data.notes?.trim() || null,
         date: paymentDate,
+        category: data.category || "MANUAL",
+        entityName: data.entityName?.trim() || null,
       }
     })
 

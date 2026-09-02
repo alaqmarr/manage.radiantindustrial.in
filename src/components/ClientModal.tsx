@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { createClient, updateClient } from "@/app/actions/client"
 import { Loader2, X, Search } from "lucide-react"
 import { verifyGSTAction } from "@/app/actions/gst"
+import { toast } from "sonner"
 
 export function ClientModal({ clients }: { clients: any[] }) {
   const router = useRouter()
@@ -20,22 +21,22 @@ export function ClientModal({ clients }: { clients: any[] }) {
 
   const handleVerifyGST = async () => {
     if (!gstInput.trim() || gstInput.length < 15) {
-      alert("Please enter a valid 15-character GST Number.");
+      toast.error("Please enter a valid 15-character GST Number.");
       return;
     }
     setIsVerifyingGST(true);
     try {
       const res = await verifyGSTAction(gstInput.trim());
       if (res.error) {
-        alert(res.error);
+        toast.error(res.error);
       } else if (res.data) {
         setName(res.data.name || name);
         setAddress(res.data.address || address);
         setLocation(res.data.location || location);
-        alert("Details fetched successfully! \n" + (res.data.legalName ? "(" + res.data.legalName + ")" : ""));
+        toast.success("Details fetched successfully! \n" + (res.data.legalName ? "(" + res.data.legalName + ")" : ""));
       }
     } catch (e) {
-      alert("Failed to verify GST.");
+      toast.error("Failed to verify GST.");
     } finally {
       setIsVerifyingGST(false);
     }
@@ -64,14 +65,23 @@ export function ClientModal({ clients }: { clients: any[] }) {
     }
   }, [isOpen, clientToEdit])
 
-  if (!isOpen) return null
-
   const close = () => {
     const params = new URLSearchParams(searchParams)
     params.delete("action")
     params.delete("id")
     router.push(`?${params.toString()}`)
   }
+
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, searchParams, router])
+
+  if (!isOpen) return null
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -88,7 +98,7 @@ export function ClientModal({ clients }: { clients: any[] }) {
       close()
       router.refresh()
     } catch (error: any) {
-      alert(error.message)
+      toast.error(error.message)
     } finally {
       setIsSubmitting(false)
     }
@@ -97,7 +107,7 @@ export function ClientModal({ clients }: { clients: any[] }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-0">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={close} />
-      <div className="relative bg-zinc-900 border border-premium-border rounded-md shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
+      <div role="dialog" aria-modal="true" className="relative bg-zinc-900 border border-premium-border rounded-md shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between p-6 border-b border-premium-border bg-white/[0.02]">
           <h2 className="text-xl font-semibold text-white">
             {isEditing ? "Edit Client" : "Add New Client"}

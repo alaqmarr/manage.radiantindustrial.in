@@ -1,10 +1,12 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { updateQuotationStatus } from "@/app/actions/quotation"
 import { Loader2, ChevronDown } from "lucide-react"
 
 export function QuotationStatusBadge({ id, currentStatus }: { id: string, currentStatus: string }) {
+  const router = useRouter()
   const [isUpdating, setIsUpdating] = useState(false)
 
   const handleStatusChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -16,6 +18,8 @@ export function QuotationStatusBadge({ id, currentStatus }: { id: string, curren
       const result = await updateQuotationStatus(id, newStatus)
       if (result.error) {
         alert(result.error)
+      } else {
+        router.refresh()
       }
     } catch (e) {
       alert("Failed to update status")

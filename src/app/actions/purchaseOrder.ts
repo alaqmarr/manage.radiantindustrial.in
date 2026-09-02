@@ -194,34 +194,36 @@ export async function updatePurchaseOrder(id: string, data: any) {
       item.product.id = p.id
     }
 
-    // Delete existing items
-    await prisma.purchaseOrderItem.deleteMany({
-      where: { poId: id }
-    })
+    const po = await prisma.$transaction(async (tx) => {
+      // Delete existing items
+      await tx.purchaseOrderItem.deleteMany({
+        where: { poId: id }
+      })
 
-    const po = await prisma.purchaseOrder.update({
-      where: { id },
-      data: {
-        supplierId: data.supplierId,
-        rfqId: data.rfqId,
-        status: data.status || 'DRAFT',
-        paymentTerms: data.paymentTerms,
-        deliveryTerms: data.deliveryTerms,
-        expectedDeliveryDate: data.expectedDeliveryDate ? new Date(data.expectedDeliveryDate) : null,
-        notes: data.notes,
-        totalAmount,
-        totalGst,
-        items: {
-          create: data.items.map((item: any, index: number) => ({
-            id: generateSlug(`POI-${id}-${index}`),
-            productId: item.product.id,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            gstRate: item.gstRate,
-            comment: item.comment || null
-          }))
+      return await tx.purchaseOrder.update({
+        where: { id },
+        data: {
+          supplierId: data.supplierId,
+          rfqId: data.rfqId,
+          status: data.status || 'DRAFT',
+          paymentTerms: data.paymentTerms,
+          deliveryTerms: data.deliveryTerms,
+          expectedDeliveryDate: data.expectedDeliveryDate ? new Date(data.expectedDeliveryDate) : null,
+          notes: data.notes,
+          totalAmount,
+          totalGst,
+          items: {
+            create: data.items.map((item: any, index: number) => ({
+              id: generateSlug(`POI-${id}-${index}`),
+              productId: item.product.id,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              gstRate: item.gstRate,
+              comment: item.comment || null
+            }))
+          }
         }
-      }
+      })
     })
 
     revalidatePath('/purchase-orders')

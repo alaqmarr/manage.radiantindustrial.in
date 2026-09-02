@@ -226,36 +226,38 @@ export async function upsertDraftQuotation(data: {
     } else {
       // Update existing draft
       // First, delete all existing items
-      await prisma.quotationItem.deleteMany({
-        where: { quotationId: quotationId }
-      })
+      await prisma.$transaction(async (tx) => {
+        await tx.quotationItem.deleteMany({
+          where: { quotationId: quotationId }
+        })
 
-      // Then update quotation and recreate items
-      await prisma.quotation.update({
-        where: { id: quotationId },
-        data: {
-          clientId: data.clientId,
-          prNo: data.prNo || null,
-          rfqNo: data.rfqNo || null,
-          status: finalStatus,
-          totalAmount,
-          totalGst,
-          items: {
-            create: data.items.map((item, index) => ({
-              id: generateSlug(`QTI-${quotationId}-${index}`),
-              productId: item.product.id,
-              quantity: item.quantity,
-              spSnapshot: item.spSnapshot,
-              cpSnapshot: item.cpSnapshot || null,
-              commissionCpSnapshot: item.commissionCpSnapshot || null,
-              gstSnapshot: item.product.gstRate,
-              supplierId: item.supplierId || null,
-              comment: item.comment || null,
-              leadTime: item.leadTime || null,
-              additionalCost: item.additionalCost || 0
-            }))
+        // Then update quotation and recreate items
+        await tx.quotation.update({
+          where: { id: quotationId },
+          data: {
+            clientId: data.clientId,
+            prNo: data.prNo || null,
+            rfqNo: data.rfqNo || null,
+            status: finalStatus,
+            totalAmount,
+            totalGst,
+            items: {
+              create: data.items.map((item, index) => ({
+                id: generateSlug(`QTI-${quotationId}-${index}`),
+                productId: item.product.id,
+                quantity: item.quantity,
+                spSnapshot: item.spSnapshot,
+                cpSnapshot: item.cpSnapshot || null,
+                commissionCpSnapshot: item.commissionCpSnapshot || null,
+                gstSnapshot: item.product.gstRate,
+                supplierId: item.supplierId || null,
+                comment: item.comment || null,
+                leadTime: item.leadTime || null,
+                additionalCost: item.additionalCost || 0
+              }))
+            }
           }
-        }
+        })
       })
     }
 

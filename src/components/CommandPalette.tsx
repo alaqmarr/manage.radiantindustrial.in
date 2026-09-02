@@ -68,7 +68,7 @@ export function CommandPalette() {
               <span>Add New Product</span>
             </Command.Item>
             <Command.Item 
-              onSelect={() => runCommand(() => router.push("?action=new-purchase"))}
+              onSelect={() => runCommand(() => router.push("/purchases?action=new-purchase"))}
               className="flex items-center gap-3 px-3 py-3 rounded-md text-sm text-zinc-200 hover:bg-brand-orange/20 hover:text-brand-orange cursor-pointer transition-colors aria-selected:bg-brand-orange/20 aria-selected:text-brand-orange"
             >
               <ShoppingCart className="w-4 h-4" />

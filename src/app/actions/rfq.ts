@@ -173,26 +173,28 @@ export async function upsertDraftRfq(data: {
         }
       })
     } else {
-      await prisma.rfqItem.deleteMany({
-        where: { rfqId: rfqId }
-      })
+      await prisma.$transaction(async (tx) => {
+        await tx.rfqItem.deleteMany({
+          where: { rfqId: rfqId }
+        })
 
-      await prisma.rfq.update({
-        where: { id: rfqId },
-        data: {
-          supplierId: data.supplierId,
-          status: finalStatus,
-          
-          items: {
-            create: data.items.map((item, index) => ({
-              id: generateSlug(`RFQI-${rfqId}-${index}`),
-              productId: item.product.id,
-              quantity: item.quantity,
-              
-              comment: item.comment || null
-            }))
+        await tx.rfq.update({
+          where: { id: rfqId },
+          data: {
+            supplierId: data.supplierId,
+            status: finalStatus,
+            
+            items: {
+              create: data.items.map((item, index) => ({
+                id: generateSlug(`RFQI-${rfqId}-${index}`),
+                productId: item.product.id,
+                quantity: item.quantity,
+                
+                comment: item.comment || null
+              }))
+            }
           }
-        }
+        })
       })
     }
 

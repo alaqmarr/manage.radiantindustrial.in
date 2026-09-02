@@ -20,6 +20,8 @@ export const metadata: Metadata = {
   description: "Internal Management Application",
 }
 
+import { Toaster } from "sonner"
+
 export default function RootLayout({
   children,
 }: {
@@ -29,6 +31,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${outfit.variable} ${montserrat.variable} font-sans bg-zinc-950 text-white min-h-screen`}>
         {children}
+        <Toaster theme="dark" position="bottom-right" />
       </body>
     </html>
   )

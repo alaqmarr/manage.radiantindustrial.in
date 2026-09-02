@@ -194,7 +194,7 @@ export function RfqActions({
         "Qty": "",
         "UOM": "",
         "Rate": "",
-        "Amount": rfq.totalGst / 100
+        "Amount": (rfq.totalGst || 0) / 100
       } as any);
       rows.push({
         "SR NO": "",
@@ -205,7 +205,7 @@ export function RfqActions({
         "Qty": "",
         "UOM": "",
         "Rate": "",
-        "Amount": (rfq.totalAmount + rfq.totalGst) / 100
+        "Amount": ((rfq.totalAmount || 0) + (rfq.totalGst || 0)) / 100
       } as any);
 
       const worksheet = XLSX.utils.json_to_sheet(rows);

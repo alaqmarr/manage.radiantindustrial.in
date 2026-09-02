@@ -31,10 +31,6 @@ export default async function QuotationsPage(props: { searchParams: Promise<{ se
     ]
   }
 
-  if (statusFilter) {
-    where.status = statusFilter
-  }
-
   const quotations = await prisma.quotation.findMany({
     where,
     orderBy: { createdAt: 'desc' },

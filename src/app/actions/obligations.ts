@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
+import { auth } from "@/auth"
 
 export type ObligationType = "KHUMUS" | "ZAKAAT"
 
@@ -28,6 +29,7 @@ export interface ObligationSummary {
 }
 
 export async function getObligationSummary(type: ObligationType): Promise<ObligationSummary> {
+  const session = await auth(); if (!session?.user) return { error: 'Unauthorized' } as any;
   // 1. Fetch all quotations that are either ACCEPTED or have received payments
   const quotations = await prisma.quotation.findMany({
     where: {
@@ -113,6 +115,7 @@ export async function getObligationSummary(type: ObligationType): Promise<Obliga
 }
 
 export async function getObligationPayments(type: ObligationType) {
+  const session = await auth(); if (!session?.user) return { error: 'Unauthorized' } as any;
   return prisma.obligationPayment.findMany({
     where: { type },
     orderBy: { date: 'desc' }
@@ -125,6 +128,7 @@ export async function recordObligationPayment(data: {
   date: Date
   notes?: string
 }) {
+  const session = await auth(); if (!session?.user) return { error: 'Unauthorized' } as any;
   try {
     const payment = await prisma.obligationPayment.create({
       data: {
@@ -146,6 +150,7 @@ export async function recordCombinedObligationPayment(data: {
   date: Date
   notes?: string
 }) {
+  const session = await auth(); if (!session?.user) return { error: 'Unauthorized' } as any;
   try {
     const khumusSummary = await getObligationSummary("KHUMUS")
     
@@ -188,6 +193,7 @@ export async function recordCombinedObligationPayment(data: {
 }
 
 export async function getObligationAdas(type: ObligationType) {
+  const session = await auth(); if (!session?.user) return { error: 'Unauthorized' } as any;
   return prisma.obligationAda.findMany({
     where: { type },
     orderBy: { date: 'desc' }
@@ -200,6 +206,7 @@ export async function recordObligationAda(data: {
   date: Date
   notes?: string
 }) {
+  const session = await auth(); if (!session?.user) return { error: 'Unauthorized' } as any;
   try {
     const ada = await prisma.obligationAda.create({
       data: {
@@ -222,6 +229,7 @@ export async function recordCombinedObligationAda(data: {
   date: Date
   notes?: string
 }) {
+  const session = await auth(); if (!session?.user) return { error: 'Unauthorized' } as any;
   try {
     const khumusSummary = await getObligationSummary("KHUMUS")
     

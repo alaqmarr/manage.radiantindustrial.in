@@ -4,6 +4,7 @@ import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import { deleteCocs, updateCocStatus } from "@/app/actions/coc"
 import { Printer, Edit, Trash2, CheckCircle2, Ban } from "lucide-react"
+import { toast } from "sonner"
 
 export function CocActions({ id, currentStatus, coc, settings }: { id: string, currentStatus: string, coc: any, settings: any }) {
   const router = useRouter()
@@ -22,11 +23,11 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
       if (res.success) {
         router.push("/cocs")
       } else {
-        alert(res.error || "Failed to delete")
+        toast.error(res.error || "Failed to delete")
         setIsDeleting(false)
       }
     } catch (e) {
-      alert("Error deleting COC")
+      toast.error("Error deleting COC")
       setIsDeleting(false)
     }
   }
@@ -36,10 +37,12 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
     try {
       const res = await updateCocStatus(id, newStatus)
       if (!res.success) {
-        alert(res.error || "Failed to update status")
+        toast.error(res.error || "Failed to update status")
+      } else {
+        router.refresh()
       }
     } catch (e) {
-      alert("Error updating status")
+      toast.error("Error updating status")
     } finally {
       setIsUpdating(false)
     }
@@ -253,7 +256,10 @@ export function CocActions({ id, currentStatus, coc, settings }: { id: string, c
                 </thead>
                 <tbody>
                   {coc.items.map((item: any, index: number) => {
-                    const attrs = item.attributes ? JSON.parse(item.attributes) : [];
+                    let attrs = [];
+                    try {
+                      attrs = item.attributes ? JSON.parse(item.attributes) : [];
+                    } catch(e) {}
                     return (
                       <tr key={item.id}>
                         <td style={{ color: "#777", fontWeight: "500" }}>{String(index + 1).padStart(2, '0')}</td>

@@ -1,4 +1,5 @@
 export function formatRupee(paise: number) {
+  if (paise == null || isNaN(paise)) return '₹0.00';
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',

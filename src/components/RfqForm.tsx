@@ -148,13 +148,15 @@ export function RfqForm({ suppliers: initialSuppliers, products, initialData, in
     if (!newSupplierName.trim()) return
     setIsCreatingSupplier(true)
     try {
-      const res = await createSupplier({ name: newSupplierName, contact: newSupplierContact })
+      const res = await createSupplier({ name: newSupplierName, contact: newSupplierContact, gstNumber: newSupplierGst, location: newSupplierLocation })
       if (res.success && res.supplier) {
         setSuppliers(prev => [...prev, res.supplier].sort((a, b) => a.name.localeCompare(b.name)))
         setSelectedSupplierId(res.supplier.id)
         setIsSupplierModalOpen(false)
         setNewSupplierName("")
         setNewSupplierContact("")
+        setNewSupplierGst("")
+        setNewSupplierLocation("")
       } else {
         alert(res.error)
       }

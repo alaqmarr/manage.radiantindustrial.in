@@ -6,15 +6,53 @@ import { Plus, ArrowDownRight, ArrowUpRight, Clock, AlertTriangle, CheckCircle2,
 import { updatePaymentStatus, deletePayment } from "@/app/actions/payment"
 import { useRouter } from "next/navigation"
 import { TransactionModal } from "./TransactionModal"
+import { toast } from "sonner"
 
 export function AccountsView({ initialMetrics, initialEntries, quotations, pos, purchases }: any) {
   const router = useRouter()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
   
-  const balance = initialMetrics?.balance || 0
-  const pendingIn = initialMetrics?.pendingIn || 0
-  const pendingOut = initialMetrics?.pendingOut || 0
+  const [searchQuery, setSearchQuery] = useState("")
+  const [typeFilter, setTypeFilter] = useState("ALL")
+
+  const filteredEntries = initialEntries.filter((entry: any) => {
+    if (typeFilter !== 'ALL' && entry.type !== typeFilter) return false;
+    
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      const ref = (entry.reference || "").toLowerCase();
+      const notes = (entry.notes || "").toLowerCase();
+      const clientName = (entry.quotation?.client?.name || "").toLowerCase();
+      const supplierName = (entry.po?.supplier?.name || entry.purchase?.supplier?.name || "").toLowerCase();
+      const method = (entry.method || "").toLowerCase();
+      const entityName = (entry.entityName || "").toLowerCase();
+      
+      if (!ref.includes(query) && !notes.includes(query) && !clientName.includes(query) && !supplierName.includes(query) && !method.includes(query) && !entityName.includes(query)) {
+        return false;
+      }
+    }
+    return true;
+  });
+
+  const isFiltered = searchQuery.trim() !== "" || typeFilter !== "ALL";
+
+  const balance = isFiltered ? filteredEntries.reduce((acc: number, entry: any) => {
+    if (entry.status === 'CLEARED') {
+      return entry.type === 'IN' ? acc + entry.amount : acc - entry.amount;
+    }
+    return acc;
+  }, 0) : (initialMetrics?.balance || 0);
+
+  const pendingIn = isFiltered ? filteredEntries.reduce((acc: number, entry: any) => {
+    if (entry.status === 'PENDING' && entry.type === 'IN') return acc + entry.amount;
+    return acc;
+  }, 0) : (initialMetrics?.pendingIn || 0);
+
+  const pendingOut = isFiltered ? filteredEntries.reduce((acc: number, entry: any) => {
+    if (entry.status === 'PENDING' && entry.type === 'OUT') return acc + entry.amount;
+    return acc;
+  }, 0) : (initialMetrics?.pendingOut || 0);
   
   const accountsReceivable = initialMetrics?.accountsReceivable || 0
   const accountsPayable = initialMetrics?.accountsPayable || 0
@@ -32,7 +70,7 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos, 
       await updatePaymentStatus(id, status)
       router.refresh()
     } catch (e) {
-      alert("Error updating status")
+      toast.error("Error updating status")
     } finally {
       setIsUpdating(false)
     }
@@ -46,7 +84,7 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos, 
       await deletePayment(id)
       router.refresh()
     } catch (e) {
-      alert("Error deleting transaction")
+      toast.error("Error deleting transaction")
     } finally {
       setIsUpdating(false)
     }
@@ -141,15 +179,41 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos, 
       </div>
 
       <div className="glass-panel rounded-xl overflow-hidden">
-        <div className="p-6 border-b border-premium-border flex items-center justify-between">
+        <div className="p-4 border-b border-premium-border flex flex-col md:flex-row gap-4 items-center justify-between">
           <h2 className="text-lg font-medium text-white">Ledger Transactions</h2>
-          <button 
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-brand-slate hover:bg-slate-500 text-white font-medium rounded-md transition-colors shadow-lg shadow-brand-slate/20"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="text-sm">Add Transaction</span>
-          </button>
+          
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+            <div className="relative w-full sm:w-64">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+              <input
+                type="text"
+                placeholder="Search transactions..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-black/20 border border-premium-border rounded-md pl-9 pr-4 py-2 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-brand-slate/50 transition-colors"
+              />
+            </div>
+            
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                className="w-full sm:w-auto bg-black/20 border border-premium-border rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-slate/50 transition-colors"
+              >
+                <option value="ALL">All Types</option>
+                <option value="IN">Money In</option>
+                <option value="OUT">Money Out</option>
+              </select>
+
+              <button 
+                onClick={() => setIsModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-brand-slate hover:bg-slate-500 text-white font-medium rounded-md transition-colors shadow-lg shadow-brand-slate/20 whitespace-nowrap"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="text-sm">Add</span>
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
@@ -166,13 +230,13 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos, 
               </tr>
             </thead>
             <tbody className="divide-y divide-premium-border/50">
-              {initialEntries.length === 0 ? (
+              {filteredEntries.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-8 text-center text-zinc-500">
                     No transactions found.
                   </td>
                 </tr>
-              ) : initialEntries.map((entry: any) => (
+              ) : filteredEntries.map((entry: any) => (
                 <tr key={entry.id} className="hover:bg-white/5 transition-colors">
                   <td className="px-6 py-4 text-zinc-300">
                     {new Date(entry.date).toLocaleDateString()}
@@ -203,6 +267,14 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos, 
                       <div>
                         <div className="text-zinc-200">Direct Purchase</div>
                         <div className="text-xs text-zinc-500">{entry.purchase?.supplier?.name}</div>
+                      </div>
+                    ) : entry.category === 'LOAN' || entry.category === 'TRANSFER' ? (
+                      <div>
+                        <div className="text-zinc-200">
+                          {entry.category === 'LOAN' ? 'Loan' : 'Internal Transfer'}
+                          <span className="text-xs text-brand-orange ml-2">({Math.floor((new Date().getTime() - new Date(entry.date).getTime()) / (1000 * 3600 * 24))} days ago)</span>
+                        </div>
+                        <div className="text-xs text-zinc-500">{entry.entityName}</div>
                       </div>
                     ) : (
                       <div className="text-zinc-200">Manual Entry</div>

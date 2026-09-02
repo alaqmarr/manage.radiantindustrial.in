@@ -29,6 +29,7 @@ export function PurchaseOrderForm({ suppliers: initialSuppliers, products, initi
   )
   const [notes, setNotes] = useState(initialData?.notes || "")
   const [rfqId, setRfqId] = useState(initialData?.rfqId || "")
+  const [poNumber, setPoNumber] = useState(initialData?.poNumber || "")
 
   const [items, setItems] = useState<{ 
     product: Product, 
@@ -220,6 +221,7 @@ export function PurchaseOrderForm({ suppliers: initialSuppliers, products, initi
         expectedDeliveryDate: expectedDeliveryDate || undefined,
         notes,
         rfqId: rfqId || undefined,
+        poNumber: poNumber || undefined,
         items: items.map(item => ({
           product: item.product,
           quantity: item.quantity,
@@ -362,6 +364,17 @@ export function PurchaseOrderForm({ suppliers: initialSuppliers, products, initi
             onChange={e => setRfqId(e.target.value)}
             className="w-full bg-zinc-950/50 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate"
             placeholder="RFQ ID"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-zinc-400 mb-1">PO Number (Optional)</label>
+          <input 
+            type="text"
+            value={poNumber}
+            onChange={e => setPoNumber(e.target.value)}
+            className="w-full bg-zinc-950/50 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate"
+            placeholder="Leave empty to auto-generate"
           />
         </div>
 
@@ -532,12 +545,10 @@ export function PurchaseOrderForm({ suppliers: initialSuppliers, products, initi
 
                   <div>
                     <label className="block text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-2">GST Rate (%)</label>
-                    <input 
-                      type="number" min="0" step="any"
-                      value={item.gstRate}
-                      onChange={e => handleItemChange(item.product.id, 'gstRate', parseFloat(e.target.value) || 0)}
-                      className="w-full bg-zinc-950 border border-premium-border rounded px-2 py-1.5 text-white font-medium focus:ring-1 focus:ring-brand-slate"
-                    />
+                    <div className="px-2 py-1.5">
+                      <span className="text-sm font-medium text-white">{item.gstRate}%</span>
+                      <p className="text-[10px] text-zinc-400 mt-1 leading-tight">GST is calculated automatically at {item.gstRate}%</p>
+                    </div>
                   </div>
                   
                   <div>

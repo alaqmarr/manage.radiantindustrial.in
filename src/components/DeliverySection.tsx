@@ -2,7 +2,7 @@
 import { useState } from "react"
 import { GoodsReceiptModal } from "./GoodsReceiptModal"
 import { formatRupee } from "@/lib/utils"
-import { Package, Truck } from "lucide-react"
+import { Package, Truck, Edit2 } from "lucide-react"
 
 export function DeliverySection({ 
   poId, 
@@ -14,6 +14,7 @@ export function DeliverySection({
   deliveries: any[]
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingReceipt, setEditingReceipt] = useState<any>(null)
 
   // Calculate delivery progress
   const itemProgress = items.map(item => {
@@ -57,7 +58,10 @@ export function DeliverySection({
           </div>
         </div>
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => {
+            setEditingReceipt(null)
+            setIsModalOpen(true)
+          }}
           disabled={allDelivered}
           className="flex items-center gap-2 px-4 py-2 bg-brand-orange hover:bg-orange-600 disabled:opacity-50 text-white font-medium rounded-md transition-colors"
         >
@@ -99,6 +103,7 @@ export function DeliverySection({
                 <th className="py-3 px-4 font-medium">GRN Number</th>
                 <th className="py-3 px-4 font-medium">Notes</th>
                 <th className="py-3 px-4 font-medium text-right">Items Received</th>
+                <th className="py-3 px-4 font-medium text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-premium-border">
@@ -110,6 +115,18 @@ export function DeliverySection({
                     <td className="py-3 px-4 text-zinc-300 font-mono text-xs">{grn.grnNumber}</td>
                     <td className="py-3 px-4 text-zinc-400">{grn.notes || '-'}</td>
                     <td className="py-3 px-4 text-right font-medium text-white">{totalItemsInGrn}</td>
+                    <td className="py-3 px-4 text-right">
+                      <button
+                        onClick={() => {
+                          setEditingReceipt(grn)
+                          setIsModalOpen(true)
+                        }}
+                        className="text-zinc-400 hover:text-white transition-colors"
+                        title="Edit GRN"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                    </td>
                   </tr>
                 )
               })}
@@ -125,9 +142,13 @@ export function DeliverySection({
       {isModalOpen && (
         <GoodsReceiptModal
           isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
+          onClose={() => {
+            setIsModalOpen(false)
+            setEditingReceipt(null)
+          }}
           poId={poId}
           items={itemProgress}
+          editReceipt={editingReceipt}
         />
       )}
     </div>

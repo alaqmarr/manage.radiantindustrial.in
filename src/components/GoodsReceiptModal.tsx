@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Loader2, X, Package } from "lucide-react"
-import { createGoodsReceipt } from "@/app/actions/goodsReceipt"
+import { createGoodsReceipt, updateGoodsReceipt } from "@/app/actions/goodsReceipt"
 
 interface GoodsReceiptItemProp {
   productId: string
@@ -18,13 +18,15 @@ interface GoodsReceiptModalProps {
   onClose: () => void
   poId: string
   items: GoodsReceiptItemProp[]
+  editReceipt?: any
 }
 
 export function GoodsReceiptModal({
   isOpen,
   onClose,
   poId,
-  items
+  items,
+  editReceipt
 }: GoodsReceiptModalProps) {
   const router = useRouter()
 
@@ -37,17 +39,36 @@ export function GoodsReceiptModal({
   // Reset and pre-fill form when modal opens or items change
   useEffect(() => {
     if (isOpen) {
-      setGrnNumber("")
-      setNotes("")
+      if (editReceipt) {
+        setGrnNumber(editReceipt.grnNumber || "")
+        setNotes(editReceipt.notes || "")
+      } else {
+        setGrnNumber("")
+        setNotes("")
+      }
       setError(null)
 
       const initialQtys: Record<string, number> = {}
       for (const item of items) {
-        initialQtys[item.productId] = Math.max(0, item.orderedQty - item.receivedQty)
+        if (editReceipt) {
+          const editItem = editReceipt.items?.find((i: any) => i.productId === item.productId)
+          initialQtys[item.productId] = editItem ? editItem.quantityReceived : 0
+        } else {
+          initialQtys[item.productId] = Math.max(0, item.orderedQty - item.receivedQty)
+        }
       }
       setReceiveQuantities(initialQtys)
     }
-  }, [isOpen, items])
+  }, [isOpen, items, editReceipt])
+
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose])
 
   if (!isOpen) return null
 
@@ -81,12 +102,21 @@ export function GoodsReceiptModal({
     setIsSubmitting(true)
 
     try {
-      const result = await createGoodsReceipt({
-        poId,
-        grnNumber: grnNumber.trim() || undefined,
-        notes: notes.trim() || undefined,
-        items: itemsToSubmit
-      })
+      let result
+      if (editReceipt) {
+        result = await updateGoodsReceipt(editReceipt.id, {
+          grnNumber: grnNumber.trim() || undefined,
+          notes: notes.trim() || undefined,
+          items: itemsToSubmit
+        })
+      } else {
+        result = await createGoodsReceipt({
+          poId,
+          grnNumber: grnNumber.trim() || undefined,
+          notes: notes.trim() || undefined,
+          items: itemsToSubmit
+        })
+      }
 
       if (result.error) {
         setError(result.error)
@@ -104,14 +134,16 @@ export function GoodsReceiptModal({
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="glass-panel w-full max-w-2xl p-6 rounded-md border border-premium-border max-h-[90vh] overflow-y-auto">
+      <div role="dialog" aria-modal="true" className="glass-panel w-full max-w-2xl p-6 rounded-md border border-premium-border max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-premium-border pb-4 mb-6">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-md bg-brand-orange/10 text-brand-orange border border-brand-orange/20">
               <Package className="w-5 h-5" />
             </div>
-            <h2 className="text-xl font-semibold text-white">Record Goods Receipt</h2>
+            <h2 className="text-xl font-semibold text-white">
+              {editReceipt ? "Update Goods Receipt" : "Record Goods Receipt"}
+            </h2>
           </div>
           <button
             type="button"
@@ -182,7 +214,8 @@ export function GoodsReceiptModal({
                   </thead>
                   <tbody className="divide-y divide-premium-border">
                     {items.map((item) => {
-                      const maxRemaining = Math.max(0, item.orderedQty - item.receivedQty)
+                      const editItemQty = editReceipt?.items?.find((i: any) => i.productId === item.productId)?.quantityReceived || 0
+                      const maxRemaining = Math.max(0, item.orderedQty - item.receivedQty + editItemQty)
                       const currentVal = receiveQuantities[item.productId] ?? 0
                       const isFullyDelivered = maxRemaining <= 0
 
@@ -198,10 +231,10 @@ export function GoodsReceiptModal({
                             {item.orderedQty}
                           </td>
                           <td className="px-4 py-3 text-center text-zinc-400">
-                            {item.receivedQty}
+                            {item.receivedQty - editItemQty}
                           </td>
                           <td className="px-4 py-3 text-right">
-                            {isFullyDelivered ? (
+                            {isFullyDelivered && !editReceipt ? (
                               <span className="inline-block px-2 py-0.5 text-xs font-medium rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                                 Completed
                               </span>
@@ -247,12 +280,12 @@ export function GoodsReceiptModal({
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Recording...</span>
+                  <span>{editReceipt ? "Updating..." : "Recording..."}</span>
                 </>
               ) : (
                 <>
                   <Package className="w-4 h-4" />
-                  <span>Record GRN</span>
+                  <span>{editReceipt ? "Update GRN" : "Record GRN"}</span>
                 </>
               )}
             </button>

@@ -3,8 +3,10 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3"
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 import { randomBytes } from "crypto"
+import { auth } from "@/auth"
 
 export async function getPresignedUrl(filename: string, contentType: string) {
+  const session = await auth(); if (!session?.user) return { error: 'Unauthorized' } as any;
   const accountId = process.env.R2_ACCOUNT_ID
   const accessKeyId = process.env.R2_ACCESS_KEY_ID
   const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY

@@ -28,13 +28,19 @@ export function CocForm({ clients, products, initialData, defaultCocMessage }: {
     batchNo: string,
     remarks?: string,
     attributes: { key: string, value: string }[]
-  }[]>(initialData?.items?.map((item: any) => ({
-    product: item.product,
-    quantity: item.quantity,
-    batchNo: item.batchNo || "",
-    remarks: item.remarks || "",
-    attributes: item.attributes ? JSON.parse(item.attributes) : []
-  })) || [])
+  }[]>(initialData?.items?.map((item: any) => {
+    let parsedAttributes = [];
+    try {
+      parsedAttributes = item.attributes ? JSON.parse(item.attributes) : [];
+    } catch(e) {}
+    return {
+      product: item.product,
+      quantity: item.quantity,
+      batchNo: item.batchNo || "",
+      remarks: item.remarks || "",
+      attributes: parsedAttributes
+    }
+  }) || [])
   
   const [searchTerm, setSearchTerm] = useState("")
   const [isProductModalOpen, setIsProductModalOpen] = useState(false)
@@ -249,6 +255,16 @@ export function CocForm({ clients, products, initialData, defaultCocMessage }: {
               onChange={(e) => setQuotationId(e.target.value)}
               placeholder="Paste ID if applicable"
               className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate"
+            />
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-zinc-400 mb-2">Certificate Remarks</label>
+            <textarea
+              value={remarks}
+              onChange={(e) => setRemarks(e.target.value)}
+              rows={2}
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate"
+              placeholder="General remarks about the COC..."
             />
           </div>
         </div>

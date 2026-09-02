@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "update": "git stash && git pull && npx prisma db push && npx prisma generate && npm i --legacy-peer-deps && npm run build && pm2 flush radiantind && pm2 restart radiantind && pm2 save && pm2 startup"
+    "update": "git stash && git pull && npm i --legacy-peer-deps && npx prisma db push && npx prisma generate && npm run build && pm2 flush radiantind && pm2 restart radiantind && pm2 save"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.3",
@@ -36,6 +36,7 @@
     "react-markdown": "^10.1.0",
     "recharts": "^3.10.1",
     "slugify": "^1.6.9",
+    "sonner": "^2.0.8",
     "tailwind-merge": "^3.6.0",
     "tailwindcss-animate": "^1.0.7",
     "xlsx": "^0.18.5",

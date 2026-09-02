@@ -59,7 +59,7 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
       </div>
 
       {/* Dashboard View Container */}
-      <div className="glass-panel p-8 rounded-lg relative overflow-hidden print:hidden">
+      <div className="glass-panel p-8 rounded-lg relative overflow-hidden print:p-0 print:border-none print:shadow-none print:bg-transparent">
         {/* Decorative corner glow */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-brand-orange/5 rounded-full blur-3xl pointer-events-none" />
         
@@ -88,7 +88,7 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
         )}
 
         {/* Items Table */}
-        <div className="mb-12 relative z-10">
+        <div className="mb-12 relative z-10 overflow-x-auto">
           <table className="w-full text-sm text-left border-collapse">
             <thead className="text-xs uppercase bg-white/5 text-zinc-400 border-y border-premium-border">
               <tr>
@@ -98,9 +98,9 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
                 <th className="py-3 px-4 font-medium text-center w-24">Qty</th>
                 <th className="py-3 px-4 font-medium text-right w-32">Rate</th>
                 <th className="py-3 px-4 font-medium text-right w-32">Amount</th>
-                <th className="py-3 px-4 font-medium text-right w-32 text-amber-500/80">P. Cost</th>
-                <th className="py-3 px-4 font-medium text-right w-32 text-amber-500/80">P. GST</th>
-                <th className="py-3 px-4 font-medium text-right w-32 text-emerald-500/80">Profit</th>
+                <th className="py-3 px-4 font-medium text-right w-32 print:hidden text-amber-500/80">P. Cost</th>
+                <th className="py-3 px-4 font-medium text-right w-32 print:hidden text-amber-500/80">P. GST</th>
+                <th className="py-3 px-4 font-medium text-right w-32 print:hidden text-emerald-500/80">Profit</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-premium-border">
@@ -121,19 +121,19 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
                   
                   <td className="py-4 px-4 text-right text-zinc-300">{formatRupee(item.spSnapshot)}</td>
                   <td className="py-4 px-4 text-right text-white font-medium">{formatRupee(Math.round(item.spSnapshot * item.quantity))}</td>
-                  <td className="py-4 px-4 text-right text-amber-500/80">
+                  <td className="py-4 px-4 text-right print:hidden text-amber-500/80">
                     {formatRupee(Math.round((item.cpSnapshot || 0) * item.quantity))}
                   </td>
-                  <td className="py-4 px-4 text-right text-amber-500/80">
+                  <td className="py-4 px-4 text-right print:hidden text-amber-500/80">
                     {formatRupee(Math.round(Math.round((item.cpSnapshot || 0) * item.quantity) * (item.gstSnapshot / 100)))}
                   </td>
-                  <td className="py-4 px-4 text-right text-emerald-500 font-medium">
+                  <td className="py-4 px-4 text-right print:hidden text-emerald-500 font-medium">
                     {formatRupee(Math.round((item.spSnapshot - (item.cpSnapshot || 0)) * item.quantity) - (item.additionalCost || 0))}
                   </td>
                 </tr>
               ))}
             </tbody>
-            <tfoot className="border-t border-premium-border text-xs bg-zinc-950/30">
+            <tfoot className="border-t border-premium-border text-xs bg-zinc-950/30 print:hidden">
               <tr>
                 <td colSpan={9} className="py-3 px-4">
                   {(() => {

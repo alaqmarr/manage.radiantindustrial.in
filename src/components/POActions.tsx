@@ -393,9 +393,36 @@ export function POActions({
             </tbody>
           </table>
 
-          
-                  
-
+          <table width="100%" border={0} cellPadding={0} cellSpacing={0}>
+            <tbody>
+              <tr>
+                <td width="50%" valign="top" style={{ paddingRight: "24px" }}>
+                  <p style={{ margin: "0 0 8px 0", color: "#4b5563", fontSize: "12px", textTransform: "uppercase", fontWeight: "600", letterSpacing: "0.5px" }}>Amount in Words</p>
+                  <p style={{ margin: "0", color: "#111827", fontSize: "13px", fontWeight: "600", textTransform: "capitalize", fontStyle: "italic", lineHeight: "1.4" }}>
+                    {numberToWordsRupees(po.totalAmount + po.totalGst)}
+                  </p>
+                </td>
+                <td width="50%" align="right">
+                  <table width="100%" border={0} cellPadding={0} cellSpacing={0} style={{ border: "1px solid #d1d5db", backgroundColor: "#f9fafb", borderCollapse: "collapse" }}>
+                    <tbody>
+                      <tr>
+                        <td style={{ padding: "12px 16px", color: "#4b5563", textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Subtotal</td>
+                        <td style={{ padding: "12px 16px", fontWeight: "600", color: "#111827", textAlign: "right", borderBottom: "1px solid #e5e7eb", fontVariantNumeric: "tabular-nums" }}>{formatRupee(po.totalAmount)}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: "12px 16px", color: "#4b5563", textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Total GST</td>
+                        <td style={{ padding: "12px 16px", fontWeight: "600", color: "#111827", textAlign: "right", borderBottom: "1px solid #e5e7eb", fontVariantNumeric: "tabular-nums" }}>{formatRupee(po.totalGst)}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: "16px", fontSize: "16px", fontWeight: "800", color: "#111827", textAlign: "left" }}>Grand Total</td>
+                        <td style={{ padding: "16px", fontSize: "16px", fontWeight: "800", color: "#f97316", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{formatRupee(po.totalAmount + po.totalGst)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </td>
+              </tr>
+            </tbody>
+          </table>
 
           {/* Terms and Notes */}
           <table width="100%" border={0} cellPadding={0} cellSpacing={0} style={{ marginTop: "32px", marginBottom: "24px", borderCollapse: "collapse", fontSize: "12px", color: "#374151" }}>
@@ -564,36 +591,6 @@ export function POActions({
             </table>
           </div>
           
-          <table width="100%" border={0} cellPadding={0} cellSpacing={0}>
-            <tbody>
-              <tr>
-                <td width="50%" valign="top" style={{ paddingRight: "24px" }}>
-                  <p style={{ margin: "0 0 8px 0", color: "#4b5563", fontSize: "12px", textTransform: "uppercase", fontWeight: "600", letterSpacing: "0.5px" }}>Amount in Words</p>
-                  <p style={{ margin: "0", color: "#111827", fontSize: "13px", fontWeight: "600", textTransform: "capitalize", fontStyle: "italic", lineHeight: "1.4" }}>
-                    {numberToWordsRupees(po.totalAmount + po.totalGst)}
-                  </p>
-                </td>
-                <td width="50%" align="right">
-                  <table width="100%" border={0} cellPadding={0} cellSpacing={0} style={{ border: "1px solid #d1d5db", backgroundColor: "#f9fafb", borderCollapse: "collapse" }}>
-                    <tbody>
-                      <tr>
-                        <td style={{ padding: "12px 16px", color: "#4b5563", textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Subtotal</td>
-                        <td style={{ padding: "12px 16px", fontWeight: "600", color: "#111827", textAlign: "right", borderBottom: "1px solid #e5e7eb", fontVariantNumeric: "tabular-nums" }}>{formatRupee(po.totalAmount)}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ padding: "12px 16px", color: "#4b5563", textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Total GST</td>
-                        <td style={{ padding: "12px 16px", fontWeight: "600", color: "#111827", textAlign: "right", borderBottom: "1px solid #e5e7eb", fontVariantNumeric: "tabular-nums" }}>{formatRupee(po.totalGst)}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ padding: "16px", fontSize: "16px", fontWeight: "800", color: "#111827", textAlign: "left" }}>Grand Total</td>
-                        <td style={{ padding: "16px", fontSize: "16px", fontWeight: "800", color: "#f97316", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{formatRupee(po.totalAmount + po.totalGst)}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </td>
-              </tr>
-            </tbody>
-          </table>
 
                     </div>
                   )}

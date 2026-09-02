@@ -320,19 +320,19 @@ export default async function DashboardPage(props: { searchParams: Promise<{ fro
             </Link>
           </div>
           <div className="grid grid-cols-4 gap-3">
-            <Link href="/purchase-orders" className="text-center p-3 rounded-md bg-zinc-800/50 hover:bg-zinc-800 border border-transparent hover:border-zinc-700 transition-all">
+            <Link href="/purchase-orders?status=DRAFT" className="text-center p-3 rounded-md bg-zinc-800/50 hover:bg-zinc-800 border border-transparent hover:border-zinc-700 transition-all">
               <p className="text-2xl font-bold text-white">{data.poCounts.draft}</p>
               <p className="text-[10px] text-zinc-500 uppercase tracking-wider mt-1">Draft</p>
             </Link>
-            <Link href="/purchase-orders" className="text-center p-3 rounded-md bg-blue-950/30 hover:bg-blue-950/50 border border-transparent hover:border-blue-900/50 transition-all">
+            <Link href="/purchase-orders?status=ISSUED" className="text-center p-3 rounded-md bg-blue-950/30 hover:bg-blue-950/50 border border-transparent hover:border-blue-900/50 transition-all">
               <p className="text-2xl font-bold text-blue-400">{data.poCounts.issued}</p>
               <p className="text-[10px] text-blue-400/60 uppercase tracking-wider mt-1">Issued</p>
             </Link>
-            <Link href="/purchase-orders" className="text-center p-3 rounded-md bg-emerald-950/30 hover:bg-emerald-950/50 border border-transparent hover:border-emerald-900/50 transition-all">
+            <Link href="/purchase-orders?status=ACKNOWLEDGED" className="text-center p-3 rounded-md bg-emerald-950/30 hover:bg-emerald-950/50 border border-transparent hover:border-emerald-900/50 transition-all">
               <p className="text-2xl font-bold text-emerald-400">{data.poCounts.acknowledged}</p>
               <p className="text-[10px] text-emerald-400/60 uppercase tracking-wider mt-1">Acknowledged</p>
             </Link>
-            <Link href="/purchase-orders" className="text-center p-3 rounded-md bg-rose-950/30 hover:bg-rose-950/50 border border-transparent hover:border-rose-900/50 transition-all">
+            <Link href="/purchase-orders?status=CANCELLED" className="text-center p-3 rounded-md bg-rose-950/30 hover:bg-rose-950/50 border border-transparent hover:border-rose-900/50 transition-all">
               <p className="text-2xl font-bold text-rose-400">{data.poCounts.cancelled}</p>
               <p className="text-[10px] text-rose-400/60 uppercase tracking-wider mt-1">Cancelled</p>
             </Link>

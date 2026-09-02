@@ -218,6 +218,17 @@ export function SettingsForm({ settings }: { settings: any }) {
           </div>
         </div>
 
+        {/* Financial Settings */}
+        <div className="pt-6 border-t border-zinc-800">
+          <h3 className="text-lg font-semibold text-white mb-4">Financial Settings</h3>
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-zinc-400 mb-1">Margin Alert Threshold (%)</label>
+              <input defaultValue={settings?.marginAlertThreshold || 10.0} name="marginAlertThreshold" type="number" step="0.1" className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+            </div>
+          </div>
+        </div>
+
         {/* Banking Details */}
         <div className="pt-6 border-t border-zinc-800">
           <h3 className="text-lg font-semibold text-white mb-4">Banking Details</h3>

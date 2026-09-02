@@ -1,8 +1,10 @@
 "use server"
 
 import { prisma } from "@/lib/prisma"
+import { auth } from "@/auth"
 
 export async function verifyGSTAction(gstNo: string) {
+  const session = await auth(); if (!session?.user) return { error: 'Unauthorized' } as any;
   try {
     // Fetch the API key from settings
     const settings = await prisma.companySettings.findUnique({

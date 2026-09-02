@@ -111,7 +111,7 @@ export default async function QuotationDuesPage() {
                       <td className="py-4 px-6 text-right">
                         <Link
                           href={`/quotations/${quote.id}`}
-                          className="text-xs px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white rounded transition-colors"
+                          className="inline-block whitespace-nowrap text-xs px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white rounded transition-colors"
                         >
                           {quote.paymentStatus === 'PAID' ? 'View Quote' : 'Receive Payment'}
                         </Link>

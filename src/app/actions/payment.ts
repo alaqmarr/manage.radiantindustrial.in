@@ -280,33 +280,54 @@ export async function getAccountMetrics() {
 
     // Calculate Accounts Receivable (Unpaid amount of ACCEPTED and COMPLETED Quotations)
     const pendingQuotations = await prisma.quotation.findMany({
-      where: { status: { in: ['ACCEPTED', 'COMPLETED'] } }
+      where: { status: { in: ['ACCEPTED', 'COMPLETED'] } },
+      include: { client: { select: { name: true } } }
     })
-    const accountsReceivable = pendingQuotations.reduce((sum, q) => sum + Math.max(0, (q.totalAmount + q.totalGst) - q.amountPaid), 0)
+    let accountsReceivable = 0
+    const receivablesBreakdown = pendingQuotations.map(q => {
+      const due = Math.max(0, (q.totalAmount + q.totalGst) - q.amountPaid)
+      accountsReceivable += due
+      return { id: q.id, name: q.client.name, total: q.totalAmount + q.totalGst, paid: q.amountPaid, due, status: q.status }
+    }).filter(q => q.due > 0)
 
     // Calculate Accounts Payable (Unpaid amount of all POs except CANCELLED and DRAFT + Unpaid Purchases)
     const pendingPOs = await prisma.purchaseOrder.findMany({
-      where: { status: { notIn: ['CANCELLED', 'DRAFT'] } }
+      where: { status: { notIn: ['CANCELLED', 'DRAFT'] } },
+      include: { supplier: { select: { name: true } } }
     })
-    const pendingPurchases = await prisma.purchase.findMany()
+    const pendingPurchases = await prisma.purchase.findMany({
+      include: { supplier: { select: { name: true } } }
+    })
     
-    let accountsPayable = pendingPOs.reduce((sum, po) => sum + Math.max(0, (po.totalAmount + po.totalGst) - po.amountPaid), 0)
-    accountsPayable += pendingPurchases.reduce((sum, p) => sum + Math.max(0, (p.totalAmount + p.totalGst) - p.amountPaid), 0)
+    let accountsPayable = 0
+    const poBreakdown = pendingPOs.map(po => {
+      const due = Math.max(0, (po.totalAmount + po.totalGst) - po.amountPaid)
+      accountsPayable += due
+      return { id: po.id, name: po.supplier.name, total: po.totalAmount + po.totalGst, paid: po.amountPaid, due, type: 'PO' }
+    }).filter(p => p.due > 0)
+
+    const purchaseBreakdown = pendingPurchases.map(p => {
+      const due = Math.max(0, (p.totalAmount + p.totalGst) - p.amountPaid)
+      accountsPayable += due
+      return { id: p.id, name: p.supplier.name, total: p.totalAmount + p.totalGst, paid: p.amountPaid, due, type: 'Direct Purchase' }
+    }).filter(p => p.due > 0)
+
+    const payablesBreakdown = [...poBreakdown, ...purchaseBreakdown]
 
     // Calculate Pending Fulfillment Cost (Expected cost to fulfill ACCEPTED quotations)
-    // We only sum this for ACCEPTED. Once COMPLETED, we assume goods were purchased and PO handles the cost.
     const acceptedQuotations = await prisma.quotation.findMany({
       where: { status: 'ACCEPTED' },
-      include: { items: true, purchases: true, purchaseOrders: true }
+      include: { items: true, purchases: true, purchaseOrders: true, client: { select: { name: true } } }
     })
     let pendingFulfillmentCost = 0
+    const fulfillmentsBreakdown = []
+    
     for (const q of acceptedQuotations) {
       let estCost = 0
       for (const item of q.items) {
         estCost += ((item.cpSnapshot || 0) * item.quantity) + (item.additionalCost || 0)
       }
       
-      // Deduct already incurred cost from tagged purchases and POs so we don't double count
       let alreadyPurchasedCost = 0
       for (const p of q.purchases) {
         alreadyPurchasedCost += p.totalAmount + p.totalGst
@@ -315,7 +336,18 @@ export async function getAccountMetrics() {
         alreadyPurchasedCost += po.totalAmount + po.totalGst
       }
       
-      pendingFulfillmentCost += Math.max(0, estCost - alreadyPurchasedCost)
+      const uncovered = Math.max(0, estCost - alreadyPurchasedCost)
+      pendingFulfillmentCost += uncovered
+      
+      if (uncovered > 0) {
+        fulfillmentsBreakdown.push({
+          id: q.id,
+          name: q.client.name,
+          estCost,
+          alreadyPurchasedCost,
+          uncovered
+        })
+      }
     }
 
     const totalIn = allClearedIn._sum.amount || 0
@@ -329,7 +361,10 @@ export async function getAccountMetrics() {
       pendingOut: allPendingOut._sum.amount || 0,
       accountsReceivable,
       accountsPayable,
-      pendingFulfillmentCost
+      pendingFulfillmentCost,
+      receivablesBreakdown,
+      payablesBreakdown,
+      fulfillmentsBreakdown
     }
   } catch (error: any) {
     console.error("Error fetching metrics:", error)

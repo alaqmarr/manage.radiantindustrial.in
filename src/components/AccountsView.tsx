@@ -13,6 +13,8 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos, 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
   
+  const [breakdownModal, setBreakdownModal] = useState<{ title: string, type: 'RECEIVABLES' | 'PAYABLES' | 'FULFILLMENTS' } | null>(null)
+  
   const [searchQuery, setSearchQuery] = useState("")
   const [typeFilter, setTypeFilter] = useState("ALL")
   const [activeTab, setActiveTab] = useState("OVERVIEW")
@@ -208,18 +210,27 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos, 
           This shows the estimated cash flow considering unfulfilled obligations (Accepted Quotations and Unpaid POs). Mark quotations as COMPLETED when they are fulfilled to drop their estimated cost (since you would have already raised POs for them).
         </p>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 pt-4 border-t border-premium-border/50">
-          <div>
-            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Accounts Receivable</p>
+          <div 
+            onClick={() => setBreakdownModal({ title: 'Accounts Receivable', type: 'RECEIVABLES' })}
+            className="cursor-pointer hover:bg-white/5 p-2 -m-2 rounded-lg transition-colors group"
+          >
+            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1 group-hover:text-zinc-300 transition-colors flex items-center gap-1">Accounts Receivable <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /></p>
             <p className="text-lg font-bold text-emerald-400">+{formatRupee(accountsReceivable)}</p>
             <p className="text-[10px] text-zinc-500 mt-1">Unpaid on Accepted/Completed Quotes</p>
           </div>
-          <div>
-            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Accounts Payable</p>
+          <div 
+            onClick={() => setBreakdownModal({ title: 'Accounts Payable', type: 'PAYABLES' })}
+            className="cursor-pointer hover:bg-white/5 p-2 -m-2 rounded-lg transition-colors group"
+          >
+            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1 group-hover:text-zinc-300 transition-colors flex items-center gap-1">Accounts Payable <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /></p>
             <p className="text-lg font-bold text-rose-400">-{formatRupee(accountsPayable)}</p>
             <p className="text-[10px] text-zinc-500 mt-1">Unpaid on Purchase Orders & Purchases</p>
           </div>
-          <div>
-            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Pending Fulfillments</p>
+          <div 
+            onClick={() => setBreakdownModal({ title: 'Pending Fulfillments', type: 'FULFILLMENTS' })}
+            className="cursor-pointer hover:bg-white/5 p-2 -m-2 rounded-lg transition-colors group"
+          >
+            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1 group-hover:text-zinc-300 transition-colors flex items-center gap-1">Pending Fulfillments <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /></p>
             <p className="text-lg font-bold text-amber-400">-{formatRupee(pendingFulfillmentCost)}</p>
             <p className="text-[10px] text-zinc-500 mt-1">Est. cost for Quotes (minus tagged POs)</p>
           </div>
@@ -569,6 +580,102 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos, 
           pos={pos}
           purchases={purchases}
         />
+      )}
+
+      {breakdownModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="glass-panel w-full max-w-3xl rounded-xl border border-premium-border overflow-hidden flex flex-col max-h-[85vh]">
+            <div className="flex items-center justify-between p-6 border-b border-premium-border/50">
+              <div>
+                <h3 className="text-xl font-bold text-white">{breakdownModal.title}</h3>
+                <p className="text-sm text-zinc-400 mt-1">
+                  {breakdownModal.type === 'RECEIVABLES' && "Unpaid amounts on Accepted or Completed Quotations."}
+                  {breakdownModal.type === 'PAYABLES' && "Unpaid amounts on Purchase Orders and Direct Purchases."}
+                  {breakdownModal.type === 'FULFILLMENTS' && "Estimated material costs minus tagged Purchases and POs."}
+                </p>
+              </div>
+              <button onClick={() => setBreakdownModal(null)} className="text-zinc-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 p-2 rounded-md">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="overflow-y-auto p-6 flex-1">
+              {breakdownModal.type === 'RECEIVABLES' && (
+                <div className="space-y-3">
+                  {initialMetrics?.receivablesBreakdown?.map((b: any) => (
+                    <div key={b.id} className="flex items-center justify-between p-4 bg-zinc-950/50 rounded-lg border border-zinc-800/50 hover:border-zinc-700/50 transition-colors">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-white font-medium">{b.id}</span>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-sm border font-semibold ${b.status === 'COMPLETED' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>{b.status}</span>
+                        </div>
+                        <p className="text-sm text-zinc-400">{b.name}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-emerald-400 font-bold">{formatRupee(b.due)}</p>
+                        <p className="text-[10px] text-zinc-500 mt-1">{formatRupee(b.paid)} paid of {formatRupee(b.total)}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {(!initialMetrics?.receivablesBreakdown || initialMetrics.receivablesBreakdown.length === 0) && (
+                    <p className="text-center text-zinc-500 py-8">No receivables found.</p>
+                  )}
+                </div>
+              )}
+
+              {breakdownModal.type === 'PAYABLES' && (
+                <div className="space-y-3">
+                  {initialMetrics?.payablesBreakdown?.map((b: any) => (
+                    <div key={b.id} className="flex items-center justify-between p-4 bg-zinc-950/50 rounded-lg border border-zinc-800/50 hover:border-zinc-700/50 transition-colors">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-white font-medium">{b.id}</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-sm border border-zinc-700 bg-zinc-800/50 text-zinc-300 font-semibold">{b.type}</span>
+                        </div>
+                        <p className="text-sm text-zinc-400">{b.name}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-rose-400 font-bold">{formatRupee(b.due)}</p>
+                        <p className="text-[10px] text-zinc-500 mt-1">{formatRupee(b.paid)} paid of {formatRupee(b.total)}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {(!initialMetrics?.payablesBreakdown || initialMetrics.payablesBreakdown.length === 0) && (
+                    <p className="text-center text-zinc-500 py-8">No payables found.</p>
+                  )}
+                </div>
+              )}
+
+              {breakdownModal.type === 'FULFILLMENTS' && (
+                <div className="space-y-3">
+                  {initialMetrics?.fulfillmentsBreakdown?.map((b: any) => (
+                    <div key={b.id} className="flex items-center justify-between p-4 bg-zinc-950/50 rounded-lg border border-zinc-800/50 hover:border-zinc-700/50 transition-colors">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-white font-medium">{b.id}</span>
+                        </div>
+                        <p className="text-sm text-zinc-400">{b.name}</p>
+                        <p className="text-xs text-zinc-500 mt-1">Est. Cost: {formatRupee(b.estCost)}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-amber-400 font-bold">{formatRupee(b.uncovered)}</p>
+                        <p className="text-[10px] text-zinc-500 mt-1">{formatRupee(b.alreadyPurchasedCost)} covered by POs/Purchases</p>
+                      </div>
+                    </div>
+                  ))}
+                  {(!initialMetrics?.fulfillmentsBreakdown || initialMetrics.fulfillmentsBreakdown.length === 0) && (
+                    <p className="text-center text-zinc-500 py-8">No pending fulfillments found.</p>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="p-6 border-t border-premium-border/50 bg-black/20 flex justify-end">
+              <button onClick={() => setBreakdownModal(null)} className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-md transition-colors text-sm font-medium">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

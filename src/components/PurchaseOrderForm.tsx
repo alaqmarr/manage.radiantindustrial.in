@@ -12,7 +12,7 @@ import { verifyGSTAction } from "@/app/actions/gst"
 type Supplier = { id: string, name: string }
 type Product = { id: string, materialCode: string, materialDescription: string, sellingPrice: number, costPrice: number, gstRate: number, unit: string, specification?: string | null }
 
-export function PurchaseOrderForm({ suppliers: initialSuppliers, products, initialData }: { suppliers: Supplier[], products: Product[], initialData?: any }) {
+export function PurchaseOrderForm({ suppliers: initialSuppliers, products, initialData, quotations = [] }: { suppliers: Supplier[], products: Product[], initialData?: any, quotations?: any[] }) {
   const router = useRouter()
   
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -30,6 +30,7 @@ export function PurchaseOrderForm({ suppliers: initialSuppliers, products, initi
   const [notes, setNotes] = useState(initialData?.notes || "")
   const [rfqId, setRfqId] = useState(initialData?.rfqId || "")
   const [poNumber, setPoNumber] = useState(initialData?.poNumber || "")
+  const [quotationId, setQuotationId] = useState(initialData?.quotationId || "")
 
   const [items, setItems] = useState<{ 
     product: Product, 
@@ -221,6 +222,7 @@ export function PurchaseOrderForm({ suppliers: initialSuppliers, products, initi
         expectedDeliveryDate: expectedDeliveryDate || undefined,
         notes,
         rfqId: rfqId || undefined,
+        quotationId: quotationId || undefined,
         poNumber: poNumber || undefined,
         items: items.map(item => ({
           product: item.product,
@@ -365,6 +367,18 @@ export function PurchaseOrderForm({ suppliers: initialSuppliers, products, initi
             className="w-full bg-zinc-950/50 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate"
             placeholder="RFQ ID"
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-zinc-400 mb-1">Fulfilling Quotation (Optional)</label>
+          <select 
+            value={quotationId} 
+            onChange={e => setQuotationId(e.target.value)}
+            className="w-full bg-zinc-950/50 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate"
+          >
+            <option value="">Not linked to a Quotation</option>
+            {quotations.map(q => <option key={q.id} value={q.id}>{q.id} - {q.client?.name}</option>)}
+          </select>
         </div>
 
         <div>

@@ -21,6 +21,7 @@ type POItemData = {
 export async function createPurchaseOrder(data: {
   supplierId: string
   rfqId?: string
+  quotationId?: string
   status: string
   paymentTerms?: string
   deliveryTerms?: string
@@ -91,6 +92,7 @@ export async function createPurchaseOrder(data: {
         poNumber,
         supplierId: data.supplierId,
         rfqId: data.rfqId,
+        quotationId: data.quotationId,
         status: data.status || "DRAFT",
         paymentTerms: data.paymentTerms,
         deliveryTerms: data.deliveryTerms,
@@ -205,6 +207,7 @@ export async function updatePurchaseOrder(id: string, data: any) {
         data: {
           supplierId: data.supplierId,
           rfqId: data.rfqId,
+          quotationId: data.quotationId,
           status: data.status || 'DRAFT',
           paymentTerms: data.paymentTerms,
           deliveryTerms: data.deliveryTerms,

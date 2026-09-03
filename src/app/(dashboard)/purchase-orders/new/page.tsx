@@ -23,10 +23,16 @@ export default async function NewPurchaseOrderPage() {
     orderBy: { materialCode: "asc" }
   })
 
+  const quotations = await prisma.quotation.findMany({
+    where: { status: { in: ['ACCEPTED', 'COMPLETED'] } },
+    select: { id: true, client: { select: { name: true } } },
+    orderBy: { createdAt: 'desc' }
+  })
+
   return (
     <div className="p-6 md:p-8 ">
       <h1 className="text-2xl font-semibold text-white mb-8">Create Purchase Order</h1>
-      <PurchaseOrderForm suppliers={suppliers} products={products} />
+      <PurchaseOrderForm suppliers={suppliers} products={products} quotations={quotations} />
     </div>
   )
 }

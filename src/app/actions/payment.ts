@@ -297,7 +297,7 @@ export async function getAccountMetrics() {
     // We only sum this for ACCEPTED. Once COMPLETED, we assume goods were purchased and PO handles the cost.
     const acceptedQuotations = await prisma.quotation.findMany({
       where: { status: 'ACCEPTED' },
-      include: { items: true, purchases: true }
+      include: { items: true, purchases: true, purchaseOrders: true }
     })
     let pendingFulfillmentCost = 0
     for (const q of acceptedQuotations) {
@@ -306,10 +306,13 @@ export async function getAccountMetrics() {
         estCost += ((item.cpSnapshot || 0) * item.quantity) + (item.additionalCost || 0)
       }
       
-      // Deduct already incurred cost from tagged purchases so we don't double count with Accounts Payable
+      // Deduct already incurred cost from tagged purchases and POs so we don't double count
       let alreadyPurchasedCost = 0
       for (const p of q.purchases) {
         alreadyPurchasedCost += p.totalAmount + p.totalGst
+      }
+      for (const po of q.purchaseOrders) {
+        alreadyPurchasedCost += po.totalAmount + po.totalGst
       }
       
       pendingFulfillmentCost += Math.max(0, estCost - alreadyPurchasedCost)

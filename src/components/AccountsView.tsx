@@ -232,7 +232,7 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos, 
           >
             <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1 group-hover:text-zinc-300 transition-colors flex items-center gap-1">Pending Fulfillments <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /></p>
             <p className="text-lg font-bold text-amber-400">-{formatRupee(pendingFulfillmentCost)}</p>
-            <p className="text-[10px] text-zinc-500 mt-1">Est. cost for Quotes (minus tagged POs)</p>
+            <p className="text-[10px] text-zinc-500 mt-1">Est. cost for Quotes (minus tagged POs & Purchases)</p>
           </div>
           <div className="pl-4 border-l border-premium-border/50">
             <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Working Capital</p>

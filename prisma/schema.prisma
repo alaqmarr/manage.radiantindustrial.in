@@ -111,6 +111,7 @@ model Supplier {
   purchases        Purchase[]
   purchaseOrders   PurchaseOrder[]
   rfqs             Rfq[]
+  rfqVendorResponses RfqVendorResponse[]
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   payments         Payment[]
@@ -253,15 +254,19 @@ model PurchaseItem {
 
 model Rfq {
   id             String          @id
-  supplierId     String
-  supplier       Supplier        @relation(fields: [supplierId], references: [id])
+  supplierId     String?
+  supplier       Supplier?       @relation(fields: [supplierId], references: [id])
+  isPublic       Boolean         @default(false)
+  publicToken    String?         @unique
   status         String          @default("DRAFT") // DRAFT, ISSUED, COMPLETED
   items          RfqItem[]
+  responses      RfqVendorResponse[]
   purchaseOrders PurchaseOrder[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
   @@index([supplierId])
+  @@index([publicToken])
 }
 
 model RfqItem {
@@ -272,9 +277,41 @@ model RfqItem {
   product   Product @relation(fields: [productId], references: [id])
   quantity  Float
   comment   String?
+  vendorResponses RfqVendorResponseItem[]
 
   @@index([rfqId])
   @@index([productId])
+}
+
+model RfqVendorResponse {
+  id          String   @id @default(cuid())
+  rfqId       String
+  rfq         Rfq      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  supplierId  String?
+  supplier    Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  vendorName  String
+  vendorEmail String?
+  vendorPhone String?
+  items       RfqVendorResponseItem[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([rfqId])
+  @@index([supplierId])
+}
+
+model RfqVendorResponseItem {
+  id              String   @id @default(cuid())
+  responseId      String
+  response        RfqVendorResponse @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  rfqItemId       String
+  rfqItem         RfqItem @relation(fields: [rfqItemId], references: [id], onDelete: Cascade)
+  unitPrice       Int // paise
+  leadTime        String?
+  remarks         String?
+
+  @@index([responseId])
+  @@index([rfqItemId])
 }
 
 model PurchaseOrder {

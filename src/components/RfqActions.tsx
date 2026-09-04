@@ -314,8 +314,8 @@ export function RfqActions({
               <tr>
                 <td valign="top" width="50%" style={{ paddingRight: "16px" }}>
                   <h3 style={{ margin: "0 0 6px 0", fontSize: "10px", textTransform: "uppercase", color: "#9ca3af", letterSpacing: "0.5px" }}>Vendor</h3>
-                  <p style={{ margin: "0 0 2px 0", fontSize: "14px", fontWeight: "600", color: "#111827" }}>{rfq.supplier.name}</p>
-                  {rfq.supplier.email && <p style={{ margin: "0 0 2px 0", color: "#4b5563" }}>{rfq.supplier.email}</p>}
+                  <p style={{ margin: "0 0 2px 0", fontSize: "14px", fontWeight: "600", color: "#111827" }}>{rfq.supplier?.name || "Multiple Vendors (Public)"}</p>
+                  {rfq.supplier?.email && <p style={{ margin: "0 0 2px 0", color: "#4b5563" }}>{rfq.supplier.email}</p>}
                 </td>
                 <td valign="top" width="50%" style={{ paddingLeft: "16px", borderLeft: "1px solid #f3f4f6" }}>
                   <h3 style={{ margin: "0 0 6px 0", fontSize: "10px", textTransform: "uppercase", color: "#9ca3af", letterSpacing: "0.5px" }}>Ship To</h3>

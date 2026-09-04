@@ -24,6 +24,7 @@ export function RfqForm({ suppliers: initialSuppliers, products, initialData, in
   
   const [suppliers, setSuppliers] = useState(initialSuppliers)
   const [selectedSupplierId, setSelectedSupplierId] = useState(initialData?.supplierId || "")
+  const [isPublic, setIsPublic] = useState(initialData?.isPublic || false)
   const [items, setItems] = useState<{ 
     product: Product, 
     quantity: number,
@@ -310,7 +311,7 @@ export function RfqForm({ suppliers: initialSuppliers, products, initialData, in
   }
 
   const handleSubmit = async (status: string) => {
-    if (!selectedSupplierId) return alert("Please select a supplier")
+    if (!isPublic && !selectedSupplierId) return alert("Please select a supplier or make it public")
     if (items.length === 0) return alert("Please add at least one item")
 
     setIsSubmitting(true)
@@ -319,6 +320,7 @@ export function RfqForm({ suppliers: initialSuppliers, products, initialData, in
       const payload = {
         id: rfqId || undefined,
         supplierId: selectedSupplierId,
+        isPublic,
         status,
         expectedUpdatedAt: expectedUpdatedAt.current,
         items: items.map(item => ({
@@ -682,26 +684,46 @@ export function RfqForm({ suppliers: initialSuppliers, products, initialData, in
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 mt-2">
-        <div>
-          <label className="block text-sm font-medium text-zinc-400 mb-1">Supplier *</label>
-          <div className="flex gap-2">
-            <select 
-              value={selectedSupplierId} 
-              onChange={e => setSelectedSupplierId(e.target.value)}
-              className="flex-1 bg-zinc-950/50 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate"
-            >
-              <option value="">Select a Supplier</option>
-              {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
-            <button 
-              type="button"
-              onClick={() => setIsSupplierModalOpen(true)}
-              className="px-3 bg-white/5 hover:bg-white/10 text-white rounded-md border border-premium-border transition-colors active:scale-95"
-              title="Add New Supplier"
-            >
-              <Plus className="w-5 h-5" />
-            </button>
-          </div>
+        <div className="space-y-4">
+          <label className="flex items-center gap-3 cursor-pointer p-3 rounded-md border border-brand-slate/30 bg-brand-slate/5 hover:bg-brand-slate/10 transition-colors">
+            <input 
+              type="checkbox"
+              checked={isPublic}
+              onChange={(e) => {
+                setIsPublic(e.target.checked)
+                if (e.target.checked) setSelectedSupplierId("")
+              }}
+              className="w-5 h-5 rounded border-zinc-700 text-brand-slate focus:ring-brand-slate bg-zinc-900"
+            />
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-white">Public RFQ (Multiple Vendors)</span>
+              <span className="text-xs text-zinc-400">Share a link with multiple vendors to compare prices</span>
+            </div>
+          </label>
+
+          {!isPublic && (
+            <div className="animate-in fade-in slide-in-from-top-2">
+              <label className="block text-sm font-medium text-zinc-400 mb-1">Supplier *</label>
+              <div className="flex gap-2">
+                <select 
+                  value={selectedSupplierId} 
+                  onChange={e => setSelectedSupplierId(e.target.value)}
+                  className="flex-1 bg-zinc-950/50 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate"
+                >
+                  <option value="">Select a Supplier</option>
+                  {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+                <button 
+                  type="button"
+                  onClick={() => setIsSupplierModalOpen(true)}
+                  className="px-3 bg-white/5 hover:bg-white/10 text-white rounded-md border border-premium-border transition-colors active:scale-95"
+                  title="Add New Supplier"
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

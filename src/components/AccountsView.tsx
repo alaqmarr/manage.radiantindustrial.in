@@ -85,9 +85,18 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos, 
   const accountsPayable = initialMetrics?.accountsPayable || 0
   const pendingFulfillmentCost = initialMetrics?.pendingFulfillmentCost || 0
   
-  const totalExpectedCash = balance + accountsReceivable
-  const totalExpectedLiabilities = accountsPayable + pendingFulfillmentCost + pendingOut
-  const workingCapital = totalExpectedCash - totalExpectedLiabilities
+  // Loans from server-side metrics
+  const totalLent = initialMetrics?.totalLent || 0
+  const totalBorrowed = initialMetrics?.totalBorrowed || 0
+  const netLoanPosition = initialMetrics?.netLoanPosition || 0
+
+  // Client credits
+  const totalClientCredit = initialMetrics?.totalClientCredit || 0
+
+  const totalExpectedCash = balance + accountsReceivable + pendingIn + totalLent
+  const totalExpectedLiabilities = accountsPayable + pendingFulfillmentCost + pendingOut + totalBorrowed + totalClientCredit
+  const workingCapital = (balance + accountsReceivable) - (accountsPayable + pendingFulfillmentCost + pendingOut) // legacy
+  const businessBalance = totalExpectedCash - totalExpectedLiabilities
   
   // Cash After Obligations: what's left if you pay everything you owe right now
   const cashAfterObligations = balance - accountsPayable - pendingFulfillmentCost - pendingOut
@@ -101,14 +110,6 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos, 
   const profitMargin = initialMetrics?.profitMargin || 0
   const pnlBreakdown = initialMetrics?.pnlBreakdown || []
   const pnlQuotationCount = initialMetrics?.pnlQuotationCount || 0
-
-  // Loans from server-side metrics
-  const totalLent = initialMetrics?.totalLent || 0
-  const totalBorrowed = initialMetrics?.totalBorrowed || 0
-  const netLoanPosition = initialMetrics?.netLoanPosition || 0
-
-  // Client credits
-  const totalClientCredit = initialMetrics?.totalClientCredit || 0
 
   const isLowBalance = balance < pendingOut
 
@@ -180,7 +181,7 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos, 
       
       {/* ── Always-visible P/L Banner ── */}
       <div className="glass-panel rounded-xl p-5 border border-premium-border/50">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="flex items-center gap-4">
             <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl font-black ${netProfit >= 0 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>
               {netProfit >= 0 ? '↑' : '↓'}
@@ -195,6 +196,7 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos, 
               </p>
             </div>
           </div>
+          
           <div className="flex items-center gap-4 md:border-l md:border-premium-border/50 md:pl-6">
             <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl font-black ${cashAfterObligations >= 0 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>
               ₹
@@ -206,6 +208,21 @@ export function AccountsView({ initialMetrics, initialEntries, quotations, pos, 
               </p>
               <p className="text-xs text-zinc-500 mt-0.5">
                 {cashAfterObligations >= 0 ? 'Surplus — you can cover all dues' : 'Shortfall — need more funds to cover dues'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 md:border-l md:border-premium-border/50 md:pl-6">
+            <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl font-black ${businessBalance >= 0 ? 'bg-brand-orange/10 text-brand-orange border border-brand-orange/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>
+              ±
+            </div>
+            <div>
+              <p className="text-xs text-brand-slate uppercase tracking-wider font-medium">True Business Balance</p>
+              <p className={`text-2xl font-bold tracking-tight ${businessBalance >= 0 ? 'text-brand-orange' : 'text-rose-400'}`}>
+                {formatRupee(businessBalance)}
+              </p>
+              <p className="text-xs text-zinc-500 mt-0.5">
+                Net equity (All assets minus all liabilities)
               </p>
             </div>
           </div>

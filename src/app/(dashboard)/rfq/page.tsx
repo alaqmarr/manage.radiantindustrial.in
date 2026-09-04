@@ -120,7 +120,7 @@ export default async function RfqsPage(props: { searchParams: Promise<{ search?:
                   >
                     <td className="px-6 py-4"><RowCheckbox id={quote.id} /></td>
                     <td className="px-6 py-4 font-medium text-white font-mono text-xs">{quote.id.slice(-6).toUpperCase()}</td>
-                    <td className="px-6 py-4 text-zinc-300 font-medium group-hover:text-brand-orange transition-colors">{quote.supplier.name}</td>
+                    <td className="px-6 py-4 text-zinc-300 font-medium group-hover:text-brand-orange transition-colors">{quote.supplier?.name || "Multiple Vendors (Public)"}</td>
                     
                     <td className="px-6 py-4">
                       <RfqStatusBadge id={quote.id} currentStatus={quote.status} />

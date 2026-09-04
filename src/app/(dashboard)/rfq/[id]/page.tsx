@@ -5,6 +5,7 @@ import { RfqActions } from "@/components/RfqActions"
 import { RfqStatusBadge } from "@/components/RfqStatusBadge"
 import { Metadata } from "next"
 import { formatRupee, numberToWordsRupees } from "@/lib/utils"
+import { VendorResponsesTable } from "@/components/VendorResponsesTable"
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
@@ -27,6 +28,9 @@ export default async function RfqViewPage({ params }: { params: Promise<{ id: st
       supplier: true,
       items: {
         include: { product: true }
+      },
+      responses: {
+        include: { items: true }
       }
     }
   })
@@ -64,9 +68,11 @@ export default async function RfqViewPage({ params }: { params: Promise<{ id: st
           <div>
             <img src={settings?.logoUrl || "/logo-long.png"} alt="Logo" className="h-16 object-contain mb-4" />
             <div className="text-zinc-400 text-sm mt-4 space-y-1">
-              <p><strong>To:</strong> {rfq.supplier.name}</p>
-              
-              
+              {rfq.supplier ? (
+                <p><strong>To:</strong> {rfq.supplier.name}</p>
+              ) : (
+                <p><strong>To:</strong> Multiple Vendors (Public RFQ)</p>
+              )}
             </div>
           </div>
           <div className="text-right text-zinc-400 text-sm space-y-1">
@@ -92,37 +98,28 @@ export default async function RfqViewPage({ params }: { params: Promise<{ id: st
                 <th className="py-3 px-4 font-medium min-w-[300px] w-auto">Description</th>
                 <th className="py-3 px-4 font-medium text-center w-20">UOM</th>
                 <th className="py-3 px-4 font-medium text-center w-24">Qty</th>
-                
-                
               </tr>
             </thead>
             <tbody className="divide-y divide-premium-border">
               {rfq.items.map((item) => (
-                <tr key={item.id} className="hover:bg-white/5 even:bg-white/[0.02] transition-colors">
-                  <td className="py-4 px-4 text-white font-mono text-xs">{item.product.materialCode}</td>
-                  <td className="py-4 px-4">
-                    <div className="text-zinc-300">{item.product.materialDescription}</div>
-                    {item.product.specification && (
-                      <div className="text-xs text-zinc-500 mt-1 whitespace-pre-wrap">{item.product.specification}</div>
-                    )}
+                <tr key={item.id} className="hover:bg-white/5 transition-colors">
+                  <td className="py-3 px-4 font-mono text-zinc-300">{item.product.materialCode}</td>
+                  <td className="py-3 px-4">
+                    <div className="font-medium text-white">{item.product.materialDescription}</div>
                     {item.comment && (
-                      <div className="text-xs text-brand-orange/80 mt-1 italic whitespace-pre-wrap break-words">{item.comment}</div>
+                      <div className="text-xs text-brand-orange mt-1">Note: {item.comment}</div>
                     )}
                   </td>
-                  <td className="py-4 px-4 text-center text-zinc-400 text-xs font-mono">{item.product.unit}</td>
-                  <td className="py-4 px-4 text-center text-zinc-300">{item.quantity}</td>
-                  
-                  
-                  
+                  <td className="py-3 px-4 text-center text-zinc-400">{item.product.unit}</td>
+                  <td className="py-3 px-4 text-center font-medium text-white">{item.quantity}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
 
-
-
-        
+        {/* Render Vendor Responses for Public RFQs */}
+        {rfq.isPublic && <VendorResponsesTable rfq={rfq} />}
 
         {/* Bottom Details */}
         {settings?.bottomDetails && (

@@ -185,28 +185,7 @@ export function RfqActions({
       }));
 
 
-      rows.push({
-        "SR NO": "",
-        "Code": "",
-        "Description": "Total GST",
-        "Specification": "",
-        "Comment": "",
-        "Qty": "",
-        "UOM": "",
-        "Rate": "",
-        "Amount": (rfq.totalGst || 0) / 100
-      } as any);
-      rows.push({
-        "SR NO": "",
-        "Code": "",
-        "Description": "Grand Total",
-        "Specification": "",
-        "Comment": "",
-        "Qty": "",
-        "UOM": "",
-        "Rate": "",
-        "Amount": ((rfq.totalAmount || 0) + (rfq.totalGst || 0)) / 100
-      } as any);
+      // Removed total rows because RFQs don't have prices or amounts
 
       const worksheet = XLSX.utils.json_to_sheet(rows);
 
@@ -237,6 +216,12 @@ export function RfqActions({
   return (
     <>
       <div className="flex gap-3 print:hidden">
+        <button
+          onClick={() => router.push(`/purchase-orders/new?rfqId=${rfq.id}`)}
+          className="flex items-center gap-2 px-4 py-2 bg-brand-orange/10 hover:bg-brand-orange/20 text-brand-orange font-medium rounded-md transition-colors border border-brand-orange/20 active:scale-95"
+        >
+          <span className="text-sm">Create PO</span>
+        </button>
         <button
           onClick={handleExportExcel}
           className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 font-medium rounded-md transition-colors border border-emerald-500/20 active:scale-95"

@@ -38,7 +38,13 @@ export default async function EditPurchaseOrderPage(props: { params: Promise<{ i
 
   const quotations = await prisma.quotation.findMany({
     where: { status: { in: ['ACCEPTED', 'COMPLETED'] } },
-    select: { id: true, client: { select: { name: true } } },
+    select: { 
+      id: true, 
+      client: { select: { name: true } },
+      items: {
+        include: { product: true }
+      }
+    },
     orderBy: { createdAt: 'desc' }
   })
 

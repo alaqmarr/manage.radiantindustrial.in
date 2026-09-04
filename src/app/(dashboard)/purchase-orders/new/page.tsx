@@ -3,7 +3,16 @@ import { PurchaseOrderForm } from "@/components/PurchaseOrderForm"
 
 export const dynamic = "force-dynamic"
 
-export default async function NewPurchaseOrderPage() {
+export default async function NewPurchaseOrderPage(props: { searchParams: Promise<{ rfqId?: string }> }) {
+  const { rfqId } = await props.searchParams
+  let initialRfq = null
+  if (rfqId) {
+    initialRfq = await prisma.rfq.findUnique({
+      where: { id: rfqId },
+      include: { items: { include: { product: true } } }
+    })
+  }
+
   const suppliers = await prisma.supplier.findMany({
     select: { id: true, name: true },
     orderBy: { name: "asc" }
@@ -25,14 +34,20 @@ export default async function NewPurchaseOrderPage() {
 
   const quotations = await prisma.quotation.findMany({
     where: { status: { in: ['ACCEPTED', 'COMPLETED'] } },
-    select: { id: true, client: { select: { name: true } } },
+    select: { 
+      id: true, 
+      client: { select: { name: true } },
+      items: {
+        include: { product: true }
+      }
+    },
     orderBy: { createdAt: 'desc' }
   })
 
   return (
     <div className="p-6 md:p-8 ">
       <h1 className="text-2xl font-semibold text-white mb-8">Create Purchase Order</h1>
-      <PurchaseOrderForm suppliers={suppliers} products={products} quotations={quotations} />
+      <PurchaseOrderForm suppliers={suppliers} products={products} quotations={quotations} initialRfq={initialRfq} />
     </div>
   )
 }

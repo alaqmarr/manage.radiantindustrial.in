@@ -6,39 +6,41 @@ import { ExternalLink, FileText, AlertCircle, Calendar } from "lucide-react"
 export const dynamic = "force-dynamic"
 
 export default async function QuotationDuesPage() {
-  const dues = await prisma.quotation.findMany({
+  const duesRaw = await prisma.quotation.findMany({
     where: {
       status: {
         in: ['ACCEPTED', 'COMPLETED']
       }
     },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { createdAt: 'asc' },
     include: {
       client: true
     }
   })
 
-  // Calculate totals
+  // Calculate totals and filter out fully paid
+  const dues = duesRaw.filter(q => (q.totalAmount + q.totalGst - q.amountPaid) > 0)
+  
   const totalReceivable = dues.reduce((sum, q) => sum + (q.totalAmount + q.totalGst), 0)
   const totalCollected = dues.reduce((sum, q) => sum + q.amountPaid, 0)
   const totalOutstanding = totalReceivable - totalCollected
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-white flex items-center gap-2">
           <FileText className="w-6 h-6 text-brand-orange" />
-          Quotation Dues
+          Quotation Dues (Outstanding)
         </h1>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="glass-panel border border-premium-border p-6 rounded-lg">
-          <div className="text-zinc-400 text-sm font-medium mb-1">Total Receivable (Accepted / Fulfilled)</div>
+          <div className="text-zinc-400 text-sm font-medium mb-1">Total Receivable (from list)</div>
           <div className="text-2xl font-bold text-white">{formatRupee(totalReceivable)}</div>
         </div>
         <div className="glass-panel border border-premium-border p-6 rounded-lg">
-          <div className="text-zinc-400 text-sm font-medium mb-1">Total Collected</div>
+          <div className="text-zinc-400 text-sm font-medium mb-1">Total Collected (from list)</div>
           <div className="text-2xl font-bold text-emerald-400">{formatRupee(totalCollected)}</div>
         </div>
         <div className="glass-panel border border-rose-500/30 p-6 rounded-lg bg-rose-500/5">
@@ -54,6 +56,7 @@ export default async function QuotationDuesPage() {
               <tr className="border-b border-premium-border/50 bg-black/40">
                 <th className="py-4 px-6 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Quotation ID</th>
                 <th className="py-4 px-6 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Client</th>
+                <th className="py-4 px-6 text-xs font-semibold text-zinc-400 uppercase tracking-wider text-right">Age (Days)</th>
                 <th className="py-4 px-6 text-xs font-semibold text-zinc-400 uppercase tracking-wider text-right">Total Amount</th>
                 <th className="py-4 px-6 text-xs font-semibold text-zinc-400 uppercase tracking-wider text-right">Paid</th>
                 <th className="py-4 px-6 text-xs font-semibold text-zinc-400 uppercase tracking-wider text-right">Balance Due</th>
@@ -64,10 +67,10 @@ export default async function QuotationDuesPage() {
             <tbody className="divide-y divide-premium-border/30">
               {dues.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-zinc-500">
+                  <td colSpan={8} className="py-12 text-center text-zinc-500">
                     <div className="flex flex-col items-center justify-center">
                       <AlertCircle className="w-8 h-8 mb-2 opacity-50" />
-                      <p>No dues found for accepted or fulfilled quotations.</p>
+                      <p>No outstanding dues found.</p>
                     </div>
                   </td>
                 </tr>
@@ -75,6 +78,19 @@ export default async function QuotationDuesPage() {
                 dues.map(quote => {
                   const grandTotal = quote.totalAmount + quote.totalGst
                   const balance = grandTotal - quote.amountPaid
+                  const daysSinceInvoiced = Math.floor((new Date().getTime() - new Date(quote.createdAt).getTime()) / (1000 * 60 * 60 * 24))
+                  
+                  let ageColor = 'text-emerald-400'
+                  let ageBg = 'bg-emerald-500/10 border-emerald-500/20'
+                  if (daysSinceInvoiced > 45) {
+                    ageColor = 'text-rose-400'
+                    ageBg = 'bg-rose-500/10 border-rose-500/20'
+                  } else if (daysSinceInvoiced > 21) {
+                    ageColor = 'text-amber-400'
+                    ageBg = 'bg-amber-500/10 border-amber-500/20'
+                  }
+
+                  const whatsappMessage = encodeURIComponent(`Hello ${quote.client.name}, this is a gentle reminder regarding quotation ${quote.id}. An amount of ${formatRupee(balance)} is currently outstanding. We kindly request you to process the payment at your earliest convenience. Thank you!`)
 
                   return (
                     <tr key={quote.id} className="hover:bg-white/5 transition-colors">
@@ -91,6 +107,11 @@ export default async function QuotationDuesPage() {
                         <span className="text-sm font-medium text-white">{quote.client.name}</span>
                       </td>
                       <td className="py-4 px-6 text-right">
+                        <span className={`text-xs font-bold px-2 py-1 rounded border ${ageBg} ${ageColor}`}>
+                          {daysSinceInvoiced} days
+                        </span>
+                      </td>
+                      <td className="py-4 px-6 text-right">
                         <span className="text-sm font-medium text-zinc-300">{formatRupee(grandTotal)}</span>
                       </td>
                       <td className="py-4 px-6 text-right">
@@ -101,20 +122,21 @@ export default async function QuotationDuesPage() {
                       </td>
                       <td className="py-4 px-6 text-center">
                         <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-                          quote.paymentStatus === 'PAID' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' :
                           quote.paymentStatus === 'PARTIALLY_PAID' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' : 
                           'bg-rose-500/10 text-rose-500 border border-rose-500/20'
                         }`}>
-                          {quote.paymentStatus === 'PAID' ? 'Paid' : quote.paymentStatus === 'PARTIALLY_PAID' ? 'Partial' : 'Unpaid'}
+                          {quote.paymentStatus === 'PARTIALLY_PAID' ? 'Partial' : 'Unpaid'}
                         </span>
                       </td>
                       <td className="py-4 px-6 text-right">
-                        <Link
-                          href={`/quotations/${quote.id}`}
-                          className="inline-block whitespace-nowrap text-xs px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white rounded transition-colors"
+                        <a 
+                          href={`https://wa.me/?text=${whatsappMessage}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/30 text-[#25D366] rounded-md text-xs font-medium transition-colors"
                         >
-                          {quote.paymentStatus === 'PAID' ? 'View Quote' : 'Receive Payment'}
-                        </Link>
+                          WhatsApp
+                        </a>
                       </td>
                     </tr>
                   )

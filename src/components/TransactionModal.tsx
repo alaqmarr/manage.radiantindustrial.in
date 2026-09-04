@@ -2,12 +2,12 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { recordManualPayment, recordPayment } from "@/app/actions/payment"
+import { recordManualPayment, recordPayment, recordBulkPayment } from "@/app/actions/payment"
 import { X } from "lucide-react"
 
 import { formatRupee } from "@/lib/utils"
 
-export function TransactionModal({ onClose, quotations, pos, purchases }: any) {
+export function TransactionModal({ onClose, quotations, pos, purchases, clients }: any) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   
@@ -57,11 +57,33 @@ export function TransactionModal({ onClose, quotations, pos, purchases }: any) {
     setIsSubmitting(true)
     
     try {
-      if (category === "manual" || category === "LOAN" || category === "TRANSFER") {
+      if (selectedEntity) {
+        const remainingPaise = (selectedEntity.totalAmount || 0) + (selectedEntity.totalGst || 0) - (selectedEntity.amountPaid || 0);
+        const amountPaise = Number(amount) * 100;
+        if (amountPaise > remainingPaise) {
+          alert(`You cannot overpay. Maximum amount allowed is ${formatRupee(remainingPaise)}`);
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      if (category === "manual" || category === "LOAN" || category === "TRANSFER" || category === "UNTAGGED") {
         await recordManualPayment({
           type,
           category: category === "manual" ? "MANUAL" : category,
           entityName,
+          amount: Number(amount),
+          method,
+          reference,
+          notes,
+          date,
+          status,
+          untagged: category === "UNTAGGED",
+          clientId: category === "UNTAGGED" && entityId ? entityId : undefined,
+        })
+      } else if (category === "bulk_payment") {
+        await recordBulkPayment({
+          clientId: entityId,
           amount: Number(amount),
           method,
           reference,
@@ -110,7 +132,7 @@ export function TransactionModal({ onClose, quotations, pos, purchases }: any) {
                   onChange={(e) => {
                     setCategory(e.target.value)
                     handleEntityChange("")
-                    if (e.target.value === "quotation") setType("IN")
+                    if (e.target.value === "quotation" || e.target.value === "bulk_payment") setType("IN")
                     if (e.target.value === "po" || e.target.value === "purchase") setType("OUT")
                   }}
                   className="w-full bg-black/50 border border-premium-border rounded-md px-3 py-2 text-white focus:outline-none focus:border-brand-slate"
@@ -118,7 +140,9 @@ export function TransactionModal({ onClose, quotations, pos, purchases }: any) {
                   <option value="manual">Manual Entry</option>
                   <option value="LOAN">Loan (Borrow / Lend)</option>
                   <option value="TRANSFER">Internal Transfer</option>
+                  <option value="UNTAGGED">Untagged Payment</option>
                   <option value="quotation">Against Quotation / Sale</option>
+                  <option value="bulk_payment">Bulk Payment (Client)</option>
                   <option value="po">Against Purchase Order</option>
                   <option value="purchase">Against Direct Purchase</option>
                 </select>
@@ -129,7 +153,7 @@ export function TransactionModal({ onClose, quotations, pos, purchases }: any) {
                 <select 
                   value={type} 
                   onChange={(e) => setType(e.target.value as "IN" | "OUT")}
-                  disabled={!["manual", "LOAN", "TRANSFER"].includes(category)}
+                  disabled={!["manual", "LOAN", "TRANSFER", "UNTAGGED"].includes(category)}
                   className="w-full bg-black/50 border border-premium-border rounded-md px-3 py-2 text-white focus:outline-none focus:border-brand-slate disabled:opacity-50"
                 >
                   <option value="IN">{category === "LOAN" ? "Borrowed from someone (+)" : category === "TRANSFER" ? "Transferred IN (+)" : "Money IN (+)"}</option>
@@ -148,6 +172,41 @@ export function TransactionModal({ onClose, quotations, pos, purchases }: any) {
                   required 
                   className="w-full bg-black/50 border border-premium-border rounded-md px-3 py-2 text-white focus:outline-none focus:border-brand-slate"
                 />
+              </div>
+            )}
+
+            {category === "UNTAGGED" && (
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">Select Client (Optional)</label>
+                <select 
+                  value={entityId} 
+                  onChange={(e) => handleEntityChange(e.target.value)}
+                  className="w-full bg-black/50 border border-premium-border rounded-md px-3 py-2 text-white focus:outline-none focus:border-brand-slate"
+                >
+                  <option value="">-- No specific client --</option>
+                  {clients?.map((c: any) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-zinc-500 mt-1">This payment can be resolved and linked to a quotation later.</p>
+              </div>
+            )}
+
+            {category === "bulk_payment" && (
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">Select Client</label>
+                <select 
+                  required
+                  value={entityId} 
+                  onChange={(e) => handleEntityChange(e.target.value)}
+                  className="w-full bg-black/50 border border-premium-border rounded-md px-3 py-2 text-white focus:outline-none focus:border-brand-slate"
+                >
+                  <option value="">-- Select --</option>
+                  {clients?.map((c: any) => (
+                    <option key={c.id} value={c.id}>{c.name} {c.creditBalance > 0 ? `(Cr: ${formatRupee(c.creditBalance)})` : ''}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-zinc-500 mt-1">Payment will be auto-allocated to oldest unpaid invoices first. Any excess will be added to credit balance.</p>
               </div>
             )}
 

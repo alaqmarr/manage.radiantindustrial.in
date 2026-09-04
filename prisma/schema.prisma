@@ -19,7 +19,7 @@ model User {
   role          String    @default("ADMIN")
   accounts      Account[]
   sessions      Session[]
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -62,7 +62,7 @@ model VerificationToken {
 // Business Models
 
 model CompanySettings {
-  id               String   @id @default("default")
+  id               String  @id @default("default")
   logoUrl          String?
   signatureUrl     String?
   companyName      String
@@ -75,130 +75,133 @@ model CompanySettings {
   rfqMessage       String?
   cocMessage       String?
   bottomDetails    String?
-  
+
   // Email / SMTP Settings
-  smtpEmail        String?
-  smtpPassword     String?
+  smtpEmail    String?
+  smtpPassword String?
 
   // Banking Details
-  bankName         String?
-  accountName      String?
-  accountNumber    String?
-  ifscCode         String?
+  bankName      String?
+  accountName   String?
+  accountNumber String?
+  ifscCode      String?
 
   // Integrations
-  gstNumber        String?
-  gstApiKey        String?
-  swiftCode        String?
-  bankAddress      String?
+  gstNumber   String?
+  gstApiKey   String?
+  swiftCode   String?
+  bankAddress String?
 
   // Alerts
-  marginAlertThreshold Float  @default(10.0) // percentage
+  marginAlertThreshold Float @default(10.0) // percentage
 
-  updatedAt        DateTime @updatedAt
+  updatedAt DateTime @updatedAt
 }
 
 model Supplier {
-  id        String     @id
-  name      String
-  contact   String?
-  email     String?
-  gstNumber String?
-  location  String?
-  products          Product[]
-  productSuppliers  ProductSupplier[]
-  quotationItems    QuotationItem[]
-  purchases         Purchase[]
+  id               String            @id
+  name             String
+  contact          String?
+  email            String?
+  gstNumber        String?
+  location         String?
+  products         Product[]
+  productSuppliers ProductSupplier[]
+  quotationItems   QuotationItem[]
+  purchases        Purchase[]
   purchaseOrders   PurchaseOrder[]
-  rfqs              Rfq[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  rfqs             Rfq[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  payments         Payment[]
 }
 
 model Client {
-  id         String      @id
-  name       String
-  contact    String?
-  email      String?
-  gstNumber  String?
-  location   String?
-  address    String?
-  quotations Quotation[]
-  cocs       CertificateOfConformance[]
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  id            String                     @id
+  name          String
+  contact       String?
+  email         String?
+  gstNumber     String?
+  location      String?
+  address       String?
+  creditBalance Int                        @default(0) // paise
+  quotations    Quotation[]
+  cocs          CertificateOfConformance[]
+  createdAt     DateTime                   @default(now())
+  updatedAt     DateTime                   @updatedAt
+  payments      Payment[]
 }
 
 model Product {
-  id                  String             @id
+  id                  String              @id
   imageUrl            String?
-  materialCode        String             @unique
+  materialCode        String              @unique
   materialDescription String
   specification       String?
   make                String?
   modelNo             String?
-  unit                String             // e.g., NUM, KG
-  costPrice           Int                // stored in paise
-  commissionCostPrice Int?               // faked cost price for commission calculations (paise)
-  sellingPrice        Int                // stored in paise
-  gstRate             Float              // e.g., 18.0
+  unit                String // e.g., NUM, KG
+  costPrice           Int // stored in paise
+  commissionCostPrice Int? // faked cost price for commission calculations (paise)
+  sellingPrice        Int // stored in paise
+  gstRate             Float // e.g., 18.0
   supplierId          String?
-  supplier            Supplier?          @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  supplier            Supplier?           @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   productSuppliers    ProductSupplier[]
   quotationItems      QuotationItem[]
   purchaseItems       PurchaseItem[]
-  purchaseOrderItems PurchaseOrderItem[]
+  purchaseOrderItems  PurchaseOrderItem[]
   rfqItems            RfqItem[]
   goodsReceiptItems   GoodsReceiptItem[]
   priceHistory        PriceHistory[]
   cocItems            CocItem[]
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
 
   @@index([supplierId])
 }
 
 model Quotation {
-  id               String          @id
-  prNo             String?
-  rfqNo            String?
-  status           String          @default("DRAFT") // DRAFT, PENDING, ACCEPTED, REJECTED
-  paymentStatus    String          @default("UNPAID") // UNPAID, PARTIALLY_PAID, PAID
-  paymentDueDate   DateTime?
-  amountPaid       Int             @default(0) // paise
-  totalAmount      Int       // paise (excluding GST)
-  totalGst         Int       // paise
-  clientId         String
-  client           Client          @relation(fields: [clientId], references: [id])
-  items            QuotationItem[]
-  payments         Payment[]
-  cocs             CertificateOfConformance[]
-  purchases        Purchase[]
-  purchaseOrders   PurchaseOrder[]
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
+  id             String                     @id
+  prNo           String?
+  rfqNo          String?
+  status         String                     @default("DRAFT") // DRAFT, PENDING, ACCEPTED, REJECTED
+  paymentStatus  String                     @default("UNPAID") // UNPAID, PARTIALLY_PAID, PAID
+  paymentDueDate DateTime?
+  amountPaid     Int                        @default(0) // paise
+  totalAmount    Int // paise (excluding GST)
+  totalGst       Int // paise
+  clientId       String
+  client         Client                     @relation(fields: [clientId], references: [id])
+  items          QuotationItem[]
+  payments       Payment[]
+  cocs           CertificateOfConformance[]
+  purchases      Purchase[]
+  purchaseOrders PurchaseOrder[]
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
 
   @@index([clientId])
   @@index([status])
 }
 
 model QuotationItem {
-  id           String    @id
-  quotationId  String
-  quotation    Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
-  productId    String
-  product      Product   @relation(fields: [productId], references: [id])
-  quantity     Float
-  itemsNo      String?   // Items No from excel
-  spSnapshot   Int       // Selling price at the time of quotation (paise)
-  cpSnapshot   Int?      // Cost price at the time of quotation (paise)
+  id                   String    @id
+  quotationId          String
+  quotation            Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  productId            String
+  product              Product   @relation(fields: [productId], references: [id])
+  quantity             Float
+  itemsNo              String? // Items No from excel
+  spSnapshot           Int // Selling price at the time of quotation (paise)
+  cpSnapshot           Int? // Cost price at the time of quotation (paise)
   commissionCpSnapshot Int? // Faked cost price for commission at time of quotation (paise)
-  gstSnapshot  Float
-  supplierId   String?
-  supplier     Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
-  comment      String?   // User comment for this item in the quotation
-  leadTime     String?   // Lead time for delivery
-  additionalCost Int?    @default(0) // paise. Internal cost (e.g. freight) borne by us, reduces profit.
+  gstSnapshot          Float
+  supplierId           String?
+  supplier             Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  comment              String? // User comment for this item in the quotation
+  leadTime             String? // Lead time for delivery
+  additionalCost       Int?      @default(0) // paise. Internal cost (e.g. freight) borne by us, reduces profit.
 
   @@index([quotationId])
   @@index([productId])
@@ -210,10 +213,10 @@ model ProductSupplier {
   product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   supplierId String
   supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-  costPrice  Int      // paise
+  costPrice  Int // paise
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-  
+
   @@unique([productId, supplierId])
 }
 
@@ -221,8 +224,8 @@ model Purchase {
   id            String         @id
   supplierId    String
   supplier      Supplier       @relation(fields: [supplierId], references: [id])
-  totalAmount   Int            // paise (excluding GST)
-  totalGst      Int            // paise
+  totalAmount   Int // paise (excluding GST)
+  totalGst      Int // paise
   paymentStatus String         @default("UNPAID") // UNPAID, PARTIALLY_PAID, PAID
   amountPaid    Int            @default(0) // paise
   quotationId   String?
@@ -236,39 +239,39 @@ model Purchase {
 }
 
 model PurchaseItem {
-  id          String   @id
-  purchaseId  String
-  purchase    Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
-  productId   String
-  product     Product  @relation(fields: [productId], references: [id])
-  quantity    Float
-  cpSnapshot  Int      // Cost price at the time of purchase (paise)
+  id         String   @id
+  purchaseId String
+  purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+  quantity   Float
+  cpSnapshot Int // Cost price at the time of purchase (paise)
 
   @@index([purchaseId])
   @@index([productId])
 }
 
 model Rfq {
-  id          String    @id
-  supplierId  String
-  supplier    Supplier  @relation(fields: [supplierId], references: [id])
-  status      String    @default("DRAFT") // DRAFT, ISSUED, COMPLETED
-  items       RfqItem[]
+  id             String          @id
+  supplierId     String
+  supplier       Supplier        @relation(fields: [supplierId], references: [id])
+  status         String          @default("DRAFT") // DRAFT, ISSUED, COMPLETED
+  items          RfqItem[]
   purchaseOrders PurchaseOrder[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
   @@index([supplierId])
 }
 
 model RfqItem {
-  id          String   @id
-  rfqId       String
-  rfq         Rfq      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
-  productId   String
-  product     Product  @relation(fields: [productId], references: [id])
-  quantity    Float
-  comment     String?
+  id        String  @id
+  rfqId     String
+  rfq       Rfq     @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Float
+  comment   String?
 
   @@index([rfqId])
   @@index([productId])
@@ -281,7 +284,7 @@ model PurchaseOrder {
   supplier             Supplier            @relation(fields: [supplierId], references: [id])
   quotationId          String?
   quotation            Quotation?          @relation(fields: [quotationId], references: [id], onDelete: SetNull)
-  rfqId                String?             // Optional link to Rfq
+  rfqId                String? // Optional link to Rfq
   rfq                  Rfq?                @relation(fields: [rfqId], references: [id])
   status               String              @default("DRAFT") // DRAFT, ISSUED, ACKNOWLEDGED, COMPLETED, CANCELLED
   paymentStatus        String              @default("UNPAID") // UNPAID, PARTIALLY_PAID, PAID
@@ -291,8 +294,8 @@ model PurchaseOrder {
   deliveryTerms        String?
   expectedDeliveryDate DateTime?
   notes                String?
-  totalAmount          Int                 // paise (excluding GST)
-  totalGst             Int                 // paise
+  totalAmount          Int // paise (excluding GST)
+  totalGst             Int // paise
   items                PurchaseOrderItem[]
   payments             Payment[]
   deliveries           GoodsReceipt[]
@@ -304,65 +307,72 @@ model PurchaseOrder {
 }
 
 model PurchaseOrderItem {
-  id          String        @id
-  poId        String
-  po          PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
-  productId   String
-  product     Product       @relation(fields: [productId], references: [id])
-  quantity    Float
-  unitPrice   Int           // paise (vendor quoted price)
-  gstRate     Float
-  comment     String?
+  id        String        @id
+  poId      String
+  po        PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product       @relation(fields: [productId], references: [id])
+  quantity  Float
+  unitPrice Int // paise (vendor quoted price)
+  gstRate   Float
+  comment   String?
 
   @@index([poId])
   @@index([productId])
 }
 
 model Payment {
-  id             String         @id @default(cuid())
-  type           String         @default("IN") // "IN" or "OUT"
-  status         String         @default("CLEARED") // "PENDING", "CLEARED", "BOUNCED", "CANCELLED"
-  amount         Int            // paise
-  method         String?        // BANK_TRANSFER, CASH, CHEQUE, UPI
-  reference      String?        // Cheque no / UTR / transaction ref
-  notes          String?
-  category       String         @default("BUSINESS") // "BUSINESS", "LOAN", "TRANSFER", "MANUAL"
-  entityName     String?        // Name of person/account for loans/transfers
-  isReturnable   Boolean        @default(false)
-  isSettled      Boolean        @default(false)
-  date           DateTime       @default(now())
-  quotationId    String?
-  quotation      Quotation?     @relation(fields: [quotationId], references: [id], onDelete: Cascade)
-  poId           String?
-  po             PurchaseOrder? @relation(fields: [poId], references: [id], onDelete: Cascade)
-  purchaseId     String?
-  purchase       Purchase?      @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
-  createdAt      DateTime       @default(now())
+  id           String         @id @default(cuid())
+  type         String         @default("IN") // "IN" or "OUT"
+  status       String         @default("CLEARED") // "PENDING", "CLEARED", "BOUNCED", "CANCELLED"
+  amount       Int // paise
+  method       String? // BANK_TRANSFER, CASH, CHEQUE, UPI
+  reference    String? // Cheque no / UTR / transaction ref
+  notes        String?
+  category     String         @default("BUSINESS") // "BUSINESS", "LOAN", "TRANSFER", "MANUAL"
+  entityName   String? // Name of person/account for loans/transfers
+  isReturnable Boolean        @default(false)
+  isSettled    Boolean        @default(false)
+  date         DateTime       @default(now())
+  quotationId  String?
+  quotation    Quotation?     @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  poId         String?
+  po           PurchaseOrder? @relation(fields: [poId], references: [id], onDelete: Cascade)
+  purchaseId   String?
+  purchase     Purchase?      @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  untagged     Boolean        @default(false)
+  clientId     String?
+  client       Client?        @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  supplierId   String?
+  supplier     Supplier?      @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  createdAt    DateTime       @default(now())
 
   @@index([quotationId])
   @@index([poId])
   @@index([purchaseId])
+  @@index([clientId])
+  @@index([supplierId])
 }
 
 model GoodsReceipt {
-  id             String              @id @default(cuid())
-  poId           String
-  po             PurchaseOrder       @relation(fields: [poId], references: [id], onDelete: Cascade)
-  receivedDate   DateTime            @default(now())
-  grnNumber      String?
-  notes          String?
-  items          GoodsReceiptItem[]
-  createdAt      DateTime            @default(now())
+  id           String             @id @default(cuid())
+  poId         String
+  po           PurchaseOrder      @relation(fields: [poId], references: [id], onDelete: Cascade)
+  receivedDate DateTime           @default(now())
+  grnNumber    String?
+  notes        String?
+  items        GoodsReceiptItem[]
+  createdAt    DateTime           @default(now())
 
   @@index([poId])
 }
 
 model GoodsReceiptItem {
-  id               String        @id @default(cuid())
+  id               String       @id @default(cuid())
   goodsReceiptId   String
-  goodsReceipt     GoodsReceipt  @relation(fields: [goodsReceiptId], references: [id], onDelete: Cascade)
+  goodsReceipt     GoodsReceipt @relation(fields: [goodsReceiptId], references: [id], onDelete: Cascade)
   productId        String
-  product          Product       @relation(fields: [productId], references: [id])
+  product          Product      @relation(fields: [productId], references: [id])
   quantityReceived Float
 
   @@index([goodsReceiptId])
@@ -373,43 +383,43 @@ model PriceHistory {
   id           String   @id @default(cuid())
   productId    String
   product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  costPrice    Int      // paise
-  sellingPrice Int      // paise
+  costPrice    Int // paise
+  sellingPrice Int // paise
   changedAt    DateTime @default(now())
 
   @@index([productId])
 }
 
 model CertificateOfConformance {
-  id               String          @id
-  cocNumber        String?         @unique
-  status           String          @default("DRAFT") // DRAFT, ISSUED, CANCELLED
-  date             DateTime        @default(now())
-  clientId         String
-  client           Client          @relation(fields: [clientId], references: [id])
-  quotationId      String?
-  quotation        Quotation?      @relation(fields: [quotationId], references: [id], onDelete: SetNull)
-  clientPoRef      String?
-  standardText     String?
-  remarks          String?
-  items            CocItem[]
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
+  id           String     @id
+  cocNumber    String?    @unique
+  status       String     @default("DRAFT") // DRAFT, ISSUED, CANCELLED
+  date         DateTime   @default(now())
+  clientId     String
+  client       Client     @relation(fields: [clientId], references: [id])
+  quotationId  String?
+  quotation    Quotation? @relation(fields: [quotationId], references: [id], onDelete: SetNull)
+  clientPoRef  String?
+  standardText String?
+  remarks      String?
+  items        CocItem[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
   @@index([clientId])
   @@index([quotationId])
 }
 
 model CocItem {
-  id               String                   @id @default(cuid())
-  cocId            String
-  coc              CertificateOfConformance @relation(fields: [cocId], references: [id], onDelete: Cascade)
-  productId        String
-  product          Product                  @relation(fields: [productId], references: [id])
-  quantity         Float
-  batchNo          String?
-  remarks          String?
-  attributes       String? // JSON string for key-value pairs
+  id         String                   @id @default(cuid())
+  cocId      String
+  coc        CertificateOfConformance @relation(fields: [cocId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product                  @relation(fields: [productId], references: [id])
+  quantity   Float
+  batchNo    String?
+  remarks    String?
+  attributes String? // JSON string for key-value pairs
 
   @@index([cocId])
   @@index([productId])
@@ -417,8 +427,8 @@ model CocItem {
 
 model ObligationPayment {
   id        String   @id @default(cuid())
-  type      String   // "KHUMUS" or "ZAKAAT"
-  amount    Int      // in paise
+  type      String // "KHUMUS" or "ZAKAAT"
+  amount    Int // in paise
   date      DateTime @default(now())
   notes     String?
   createdAt DateTime @default(now())
@@ -426,8 +436,8 @@ model ObligationPayment {
 
 model ObligationAda {
   id        String   @id @default(cuid())
-  type      String   // KHUMUS or ZAKAAT
-  amount    Int      // in paise
+  type      String // KHUMUS or ZAKAAT
+  amount    Int // in paise
   date      DateTime @default(now())
   notes     String?
   createdAt DateTime @default(now())

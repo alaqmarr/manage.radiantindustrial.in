@@ -12,7 +12,7 @@ import { verifyGSTAction } from "@/app/actions/gst"
 type Supplier = { id: string, name: string }
 type Product = { id: string, materialCode: string, materialDescription: string, sellingPrice: number, costPrice: number, gstRate: number, unit: string, specification?: string | null }
 
-export function PurchaseOrderForm({ suppliers: initialSuppliers, products, initialData, quotations = [] }: { suppliers: Supplier[], products: Product[], initialData?: any, quotations?: any[] }) {
+export function PurchaseOrderForm({ suppliers: initialSuppliers, products, initialData, quotations = [], initialRfq }: { suppliers: Supplier[], products: Product[], initialData?: any, quotations?: any[], initialRfq?: any }) {
   const router = useRouter()
   
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -20,7 +20,7 @@ export function PurchaseOrderForm({ suppliers: initialSuppliers, products, initi
   const [saveStatus, setSaveStatus] = useState<"IDLE" | "SAVING" | "SAVED" | "ERROR">("IDLE")
   
   const [suppliers, setSuppliers] = useState(initialSuppliers)
-  const [selectedSupplierId, setSelectedSupplierId] = useState(initialData?.supplierId || "")
+  const [selectedSupplierId, setSelectedSupplierId] = useState(initialData?.supplierId || initialRfq?.supplierId || "")
   
   const [paymentTerms, setPaymentTerms] = useState(initialData?.paymentTerms || "")
   const [deliveryTerms, setDeliveryTerms] = useState(initialData?.deliveryTerms || "")
@@ -28,9 +28,23 @@ export function PurchaseOrderForm({ suppliers: initialSuppliers, products, initi
     initialData?.expectedDeliveryDate ? new Date(initialData.expectedDeliveryDate).toISOString().split('T')[0] : ""
   )
   const [notes, setNotes] = useState(initialData?.notes || "")
-  const [rfqId, setRfqId] = useState(initialData?.rfqId || "")
+  const [rfqId, setRfqId] = useState(initialData?.rfqId || initialRfq?.id || "")
   const [poNumber, setPoNumber] = useState(initialData?.poNumber || "")
   const [quotationId, setQuotationId] = useState(initialData?.quotationId || "")
+
+  const initialItems = initialData?.items?.map((item: any) => ({
+    product: item.product,
+    quantity: item.quantity,
+    unitPrice: item.unitPrice / 100,
+    gstRate: item.gstRate,
+    comment: item.comment || undefined
+  })) || initialRfq?.items?.map((item: any) => ({
+    product: item.product,
+    quantity: item.quantity,
+    unitPrice: item.product.costPrice ? item.product.costPrice / 100 : 0, // Fallback to product cost price if we don't have supplier specific yet
+    gstRate: item.product.gstRate,
+    comment: item.comment || undefined
+  })) || [];
 
   const [items, setItems] = useState<{ 
     product: Product, 
@@ -38,13 +52,7 @@ export function PurchaseOrderForm({ suppliers: initialSuppliers, products, initi
     unitPrice: number,
     gstRate: number,
     comment?: string
-  }[]>(initialData?.items?.map((item: any) => ({
-    product: item.product,
-    quantity: item.quantity,
-    unitPrice: item.unitPrice / 100,
-    gstRate: item.gstRate,
-    comment: item.comment || undefined
-  })) || [])
+  }[]>(initialItems)
   
   const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false)
   const [newSupplierName, setNewSupplierName] = useState("")
@@ -205,6 +213,31 @@ export function PurchaseOrderForm({ suppliers: initialSuppliers, products, initi
       ...i, 
       product: { ...i.product, [field]: value } 
     } : i))
+  }
+
+  const handleQuotationChange = (qId: string) => {
+    setQuotationId(qId)
+    if (!qId) return
+
+    const selectedQ = quotations.find((q: any) => q.id === qId)
+    if (selectedQ && selectedQ.items) {
+      if (items.length > 0) {
+        if (!confirm("This will add the items from the quotation to your current PO. Continue?")) return
+      }
+      
+      const newItems = [...items]
+      selectedQ.items.forEach((qi: any) => {
+        if (!newItems.find(i => i.product.id === qi.product.id)) {
+          newItems.push({
+            product: qi.product,
+            quantity: qi.quantity,
+            unitPrice: (qi.cpSnapshot || qi.product.costPrice || 0) / 100,
+            gstRate: qi.product.gstRate,
+          })
+        }
+      })
+      setItems(newItems)
+    }
   }
 
   const handleSubmit = async (status: string) => {
@@ -373,11 +406,11 @@ export function PurchaseOrderForm({ suppliers: initialSuppliers, products, initi
           <label className="block text-sm font-medium text-zinc-400 mb-1">Fulfilling Quotation (Optional)</label>
           <select 
             value={quotationId} 
-            onChange={e => setQuotationId(e.target.value)}
+            onChange={e => handleQuotationChange(e.target.value)}
             className="w-full bg-zinc-950/50 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate"
           >
             <option value="">Not linked to a Quotation</option>
-            {quotations.map(q => <option key={q.id} value={q.id}>{q.id} - {q.client?.name}</option>)}
+            {quotations.map(q => <option key={q.id} value={q.id}>{q.prNo || q.id.slice(0,8)} - {q.client?.name}</option>)}
           </select>
         </div>
 

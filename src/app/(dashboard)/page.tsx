@@ -77,7 +77,7 @@ async function getDashboardData(fromStr?: string, toStr?: string) {
     orderBy: { date: 'desc' }
   })
   
-  const acceptedQuotations = allQuotations.filter(q => q.status === 'ACCEPTED')
+  const acceptedQuotations = allQuotations.filter(q => q.status === 'ACCEPTED' || q.status === 'COMPLETED')
   const validPOs = allPOs.filter(po => po.status !== 'DRAFT' && po.status !== 'CANCELLED')
   
   // Basic totals (All Time)
@@ -213,7 +213,8 @@ async function getDashboardData(fromStr?: string, toStr?: string) {
     quotationCounts: {
       draft: allQuotations.filter(q => q.status === 'DRAFT').length,
       pending: allQuotations.filter(q => q.status === 'PENDING').length,
-      accepted: acceptedQuotations.length,
+      accepted: allQuotations.filter(q => q.status === 'ACCEPTED').length,
+      completed: allQuotations.filter(q => q.status === 'COMPLETED').length,
       rejected: allQuotations.filter(q => q.status === 'REJECTED').length,
     },
     poCounts: {

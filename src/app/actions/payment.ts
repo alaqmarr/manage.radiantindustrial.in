@@ -159,6 +159,79 @@ export async function getPayments(type: "quotation" | "po", entityId: string) {
   }
 }
 
+export async function recordBulkPayment(data: { clientId: string, amount: number, method: string, reference: string, notes: string, date: string, status: string }) {
+  try {
+    const session = await auth()
+    if (!session?.user) return { error: "Unauthorized" }
+
+    const amountPaise = Math.round(data.amount * 100)
+    let remainingAmount = amountPaise
+
+    const quotations = await prisma.quotation.findMany({
+      where: {
+        clientId: data.clientId,
+        status: { in: ['ACCEPTED', 'COMPLETED'] }
+      },
+      orderBy: { createdAt: 'asc' }
+    })
+
+    const unpaidQuotations = quotations.filter(q => (q.totalAmount + q.totalGst - q.amountPaid) > 0)
+
+    for (const q of unpaidQuotations) {
+      if (remainingAmount <= 0) break
+
+      const due = (q.totalAmount + q.totalGst) - q.amountPaid
+      const applyAmount = Math.min(due, remainingAmount)
+
+      await prisma.payment.create({
+        data: {
+          type: "IN",
+          category: "quotation",
+          amount: applyAmount,
+          method: data.method,
+          reference: data.reference ? `${data.reference} (Bulk)` : "Bulk Payment",
+          notes: data.notes,
+          date: new Date(data.date),
+          status: data.status,
+          quotationId: q.id
+        }
+      })
+
+      remainingAmount -= applyAmount
+      await recalculateParentPayment("quotation", q.id)
+    }
+
+    if (remainingAmount > 0) {
+      await prisma.client.update({
+        where: { id: data.clientId },
+        data: { creditBalance: { increment: remainingAmount } }
+      })
+      const client = await prisma.client.findUnique({ where: { id: data.clientId } })
+      await prisma.payment.create({
+        data: {
+          type: "IN",
+          category: "ADVANCE",
+          entityName: client?.name || "Client",
+          amount: remainingAmount,
+          method: data.method,
+          reference: data.reference ? `${data.reference} (Advance)` : "Client Advance",
+          notes: data.notes,
+          date: new Date(data.date),
+          status: data.status
+        }
+      })
+    }
+
+    revalidatePath("/accounts")
+    revalidatePath("/quotation-dues")
+    revalidatePath(`/clients/${data.clientId}`)
+    return { success: true }
+  } catch (error: any) {
+    console.error("Error processing bulk payment:", error)
+    return { error: error.message || "Failed to process bulk payment" }
+  }
+}
+
 export async function updatePaymentStatus(paymentId: string, status: string) {
   try {
     const session = await auth()
@@ -195,6 +268,9 @@ export async function recordManualPayment(data: {
   status?: string
   category?: string
   entityName?: string
+  untagged?: boolean
+  clientId?: string
+  supplierId?: string
 }) {
   try {
     const session = await auth()
@@ -222,6 +298,9 @@ export async function recordManualPayment(data: {
         date: paymentDate,
         category: data.category || "MANUAL",
         entityName: data.entityName?.trim() || null,
+        untagged: data.untagged || false,
+        clientId: data.clientId || null,
+        supplierId: data.supplierId || null,
       }
     })
 
@@ -230,6 +309,36 @@ export async function recordManualPayment(data: {
   } catch (error: any) {
     console.error("Error recording manual payment:", error)
     return { error: error.message || "Failed to record manual payment" }
+  }
+}
+
+export async function resolveUntaggedPayment(paymentId: string, quotationId: string) {
+  try {
+    const session = await auth()
+    if (!session?.user) return { error: "Unauthorized" }
+    
+    const payment = await prisma.payment.findUnique({ where: { id: paymentId } })
+    if (!payment || !payment.untagged) return { error: "Untagged payment not found" }
+    
+    const quotation = await prisma.quotation.findUnique({ where: { id: quotationId } })
+    if (!quotation) return { error: "Quotation not found" }
+    
+    await prisma.payment.update({
+      where: { id: paymentId },
+      data: {
+        untagged: false,
+        category: "quotation",
+        quotationId: quotationId,
+        clientId: null, // Clear this since we now link directly to quotation
+      }
+    })
+    
+    await recalculateParentPayment("quotation", quotationId)
+    revalidatePath("/accounts")
+    return { success: true }
+  } catch (error: any) {
+    console.error("Error resolving untagged payment:", error)
+    return { error: error.message || "Failed to resolve payment" }
   }
 }
 
@@ -243,7 +352,9 @@ export async function getLedgerEntries() {
       include: {
         quotation: { select: { id: true, client: { select: { name: true } } } },
         po: { select: { poNumber: true, id: true, supplier: { select: { name: true } } } },
-        purchase: { select: { id: true, supplier: { select: { name: true } } } }
+        purchase: { select: { id: true, supplier: { select: { name: true } } } },
+        client: { select: { name: true } },
+        supplier: { select: { name: true } }
       }
     })
     return { success: true, entries }
@@ -330,10 +441,12 @@ export async function getAccountMetrics() {
       
       let alreadyPurchasedCost = 0
       for (const p of q.purchases) {
-        alreadyPurchasedCost += p.totalAmount + p.totalGst
+        alreadyPurchasedCost += p.totalAmount // Exclude GST to match estCost
       }
       for (const po of q.purchaseOrders) {
-        alreadyPurchasedCost += po.totalAmount + po.totalGst
+        if (po.status !== 'CANCELLED') {
+          alreadyPurchasedCost += po.totalAmount // Exclude GST
+        }
       }
       
       const uncovered = Math.max(0, estCost - alreadyPurchasedCost)
@@ -350,6 +463,63 @@ export async function getAccountMetrics() {
       }
     }
 
+    // ── P&L from ALL accepted/completed quotations (including fully paid ones) ──
+    const allPnlQuotations = await prisma.quotation.findMany({
+      where: { status: { in: ['ACCEPTED', 'COMPLETED'] } },
+      include: { items: true, client: { select: { name: true } } }
+    })
+
+    let totalRevenue = 0
+    let totalCogs = 0
+    let totalAdditionalExpenses = 0
+    const pnlBreakdown: Array<{ id: string; clientName: string; status: string; revenue: number; cogs: number; expenses: number; profit: number }> = []
+
+    for (const q of allPnlQuotations) {
+      let revenue = 0
+      let cogs = 0
+      let expenses = 0
+      for (const item of q.items) {
+        revenue += (item.spSnapshot || 0) * item.quantity
+        cogs += (item.cpSnapshot || 0) * item.quantity
+        expenses += item.additionalCost || 0
+      }
+      totalRevenue += revenue
+      totalCogs += cogs
+      totalAdditionalExpenses += expenses
+      pnlBreakdown.push({
+        id: q.id,
+        clientName: q.client.name,
+        status: q.status,
+        revenue,
+        cogs,
+        expenses,
+        profit: revenue - cogs - expenses
+      })
+    }
+
+    const grossProfit = totalRevenue - totalCogs
+    const netProfit = grossProfit - totalAdditionalExpenses
+    const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0
+
+    // ── Loan calculations ──
+    const loanIn = await prisma.payment.aggregate({
+      where: { category: 'LOAN', type: 'IN', status: 'CLEARED' },
+      _sum: { amount: true }
+    })
+    const loanOut = await prisma.payment.aggregate({
+      where: { category: 'LOAN', type: 'OUT', status: 'CLEARED' },
+      _sum: { amount: true }
+    })
+    const totalBorrowed = loanIn._sum.amount || 0
+    const totalLent = loanOut._sum.amount || 0
+    const netLoanPosition = totalBorrowed - totalLent // positive = you owe, negative = others owe you
+
+    // ── Client credit balances ──
+    const clientCredits = await prisma.client.aggregate({
+      _sum: { creditBalance: true }
+    })
+    const totalClientCredit = clientCredits._sum.creditBalance || 0
+
     const totalIn = allClearedIn._sum.amount || 0
     const totalOut = allClearedOut._sum.amount || 0
     const balance = totalIn - totalOut
@@ -364,7 +534,22 @@ export async function getAccountMetrics() {
       pendingFulfillmentCost,
       receivablesBreakdown,
       payablesBreakdown,
-      fulfillmentsBreakdown
+      fulfillmentsBreakdown,
+      // P&L
+      totalRevenue,
+      totalCogs,
+      totalAdditionalExpenses,
+      grossProfit,
+      netProfit,
+      profitMargin,
+      pnlBreakdown,
+      pnlQuotationCount: allPnlQuotations.length,
+      // Loans
+      totalBorrowed,
+      totalLent,
+      netLoanPosition,
+      // Client credits
+      totalClientCredit
     }
   } catch (error: any) {
     console.error("Error fetching metrics:", error)

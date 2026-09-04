@@ -21,7 +21,7 @@ export default async function ClientLedgerPage(props: { params: Promise<{ id: st
 
   // Calculate totals
   const allQuotations = client.quotations
-  const acceptedQuotations = allQuotations.filter(q => q.status === 'ACCEPTED')
+  const acceptedQuotations = allQuotations.filter(q => q.status === 'ACCEPTED' || q.status === 'COMPLETED')
   
   const totalInvoiced = acceptedQuotations.reduce((sum, q) => sum + q.totalAmount + q.totalGst, 0)
   const totalPaid = acceptedQuotations.reduce((sum, q) => sum + q.amountPaid, 0)
@@ -73,7 +73,7 @@ export default async function ClientLedgerPage(props: { params: Promise<{ id: st
             </thead>
             <tbody className="divide-y divide-premium-border">
               {allQuotations.map(q => {
-                const invoiced = q.status === 'ACCEPTED' ? (q.totalAmount + q.totalGst) : 0
+                const invoiced = (q.status === 'ACCEPTED' || q.status === 'COMPLETED') ? (q.totalAmount + q.totalGst) : 0
                 const balance = invoiced - q.amountPaid
                 
                 return (
@@ -86,6 +86,7 @@ export default async function ClientLedgerPage(props: { params: Promise<{ id: st
                     </td>
                     <td className="py-3 px-4">
                       <span className={`px-2 py-1 rounded text-[10px] font-bold tracking-wider ${
+                        q.status === 'COMPLETED' ? 'bg-purple-500/10 text-purple-400' :
                         q.status === 'ACCEPTED' ? 'bg-emerald-500/10 text-emerald-500' :
                         q.status === 'PENDING' ? 'bg-amber-500/10 text-amber-500' :
                         'bg-zinc-500/10 text-zinc-400'

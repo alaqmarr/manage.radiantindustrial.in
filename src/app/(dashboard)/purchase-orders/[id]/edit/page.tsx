@@ -70,6 +70,14 @@ export default async function EditPurchaseOrderPage(props: { params: Promise<{ i
           items: { select: { productId: true, quantity: true } },
         },
       },
+      purchases: {
+        select: {
+          id: true,
+          supplierId: true,
+          supplier: { select: { name: true } },
+          items: { select: { productId: true, quantity: true } },
+        },
+      },
     },
     orderBy: { createdAt: "desc" },
   })

@@ -247,6 +247,11 @@ export function QuotationActions({
       `${totalPosCount} linked Purchase Order(s) will be unlinked from this quotation`
     )
   }
+  if (quotation.purchases?.length > 0) {
+    deleteImpactItems.push(
+      `${quotation.purchases.length} linked Direct Purchase bill(s) will be unlinked from this quotation`
+    )
+  }
   if (quotation.cocs?.length > 0) {
     deleteImpactItems.push(
       `${quotation.cocs.length} linked Quality Certificate(s) (COC) will be unlinked`
@@ -275,6 +280,7 @@ export function QuotationActions({
         quotation={quotation}
         suppliers={suppliers}
         existingPos={quotation.purchaseOrders}
+        existingPurchases={quotation.purchases}
       />
 
       <ConfirmDeleteModal

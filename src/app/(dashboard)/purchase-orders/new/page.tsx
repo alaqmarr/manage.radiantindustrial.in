@@ -69,6 +69,14 @@ export default async function NewPurchaseOrderPage(props: {
           items: { select: { productId: true, quantity: true } },
         },
       },
+      purchases: {
+        select: {
+          id: true,
+          supplierId: true,
+          supplier: { select: { name: true } },
+          items: { select: { productId: true, quantity: true } },
+        },
+      },
     },
     orderBy: { createdAt: "desc" },
   })

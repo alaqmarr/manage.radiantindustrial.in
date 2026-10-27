@@ -55,12 +55,14 @@ export function SmartMultiPoModal({
   quotation,
   suppliers = [],
   existingPos,
+  existingPurchases,
 }: {
   isOpen: boolean
   onClose: () => void
   quotation: any
   suppliers: SupplierOption[]
   existingPos?: any[]
+  existingPurchases?: any[]
 }) {
   const router = useRouter()
   const [rows, setRows] = useState<SmartSplitRow[]>([])
@@ -77,11 +79,20 @@ export function SmartMultiPoModal({
 
     const posList = existingPos ?? quotation.purchaseOrders ?? []
     const activePos = posList.filter((po: any) => po.status !== "CANCELLED")
+    const purchasesList = existingPurchases ?? quotation.purchases ?? []
 
-    // Sum already-ordered quantities per productId
+    // Sum already-ordered quantities per productId across BOTH POs and Direct Purchases
     const orderedByProduct = new Map<string, number>()
     for (const po of activePos) {
       for (const pi of po.items || []) {
+        orderedByProduct.set(
+          pi.productId,
+          (orderedByProduct.get(pi.productId) || 0) + (Number(pi.quantity) || 0)
+        )
+      }
+    }
+    for (const pur of purchasesList) {
+      for (const pi of pur.items || []) {
         orderedByProduct.set(
           pi.productId,
           (orderedByProduct.get(pi.productId) || 0) + (Number(pi.quantity) || 0)
@@ -182,7 +193,7 @@ export function SmartMultiPoModal({
     setPaymentTerms("")
     setDeliveryTerms("")
     setNotes("")
-  }, [isOpen, quotation, existingPos, suppliers])
+  }, [isOpen, quotation, existingPos, existingPurchases, suppliers])
 
   const supplierNameMap = useMemo(() => {
     const map = new Map<string, string>()

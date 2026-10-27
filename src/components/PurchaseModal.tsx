@@ -33,6 +33,7 @@ export function PurchaseModal({
   const pathname = usePathname()
   const action = searchParams.get("action")
   const editId = searchParams.get("id")
+  const urlQuotationId = searchParams.get("quotationId")
 
   const isEditing = action === "edit-purchase"
   const purchaseToEdit =
@@ -61,31 +62,131 @@ export function PurchaseModal({
     const newParams = new URLSearchParams(searchParams.toString())
     newParams.delete("action")
     newParams.delete("id")
+    newParams.delete("quotationId")
     router.replace(`${pathname}?${newParams.toString()}`, { scroll: false })
   }
 
-  const handleQuotationChange = (qId: string) => {
+  const getQuotationFulfillment = (q: any) => {
+    const activePos = q?.purchaseOrders || []
+    const activePurchases = (q?.purchases || []).filter((p: any) => p.id !== editId)
+    const orderedByProduct = new Map<string, number>()
+
+    for (const po of activePos) {
+      for (const pi of po.items || []) {
+        orderedByProduct.set(
+          pi.productId,
+          (orderedByProduct.get(pi.productId) || 0) + (Number(pi.quantity) || 0)
+        )
+      }
+    }
+    for (const pur of activePurchases) {
+      for (const pi of pur.items || []) {
+        orderedByProduct.set(
+          pi.productId,
+          (orderedByProduct.get(pi.productId) || 0) + (Number(pi.quantity) || 0)
+        )
+      }
+    }
+
+    const confirmedItems = (q?.items || []).filter((qi: any) => qi.isConfirmed !== false)
+    const requiredByProduct = new Map<string, number>()
+    for (const qi of confirmedItems) {
+      const pid = qi.product?.id || qi.productId
+      requiredByProduct.set(pid, (requiredByProduct.get(pid) || 0) + (Number(qi.quantity) || 0))
+    }
+
+    const isFullyOrdered =
+      confirmedItems.length > 0 &&
+      Array.from(requiredByProduct.entries()).every(
+        ([pid, reqQty]) => (orderedByProduct.get(pid) || 0) >= reqQty
+      )
+
+    const isPartiallyOrdered =
+      !isFullyOrdered &&
+      confirmedItems.some((qi: any) => (orderedByProduct.get(qi.product?.id || qi.productId) || 0) > 0)
+
+    return {
+      activePos,
+      activePurchases,
+      orderedByProduct,
+      isFullyOrdered,
+      isPartiallyOrdered,
+    }
+  }
+
+  const handleQuotationChange = (qId: string, isInitialLoad = false) => {
     setSelectedQuotationId(qId)
     if (!qId) return
     const q = quotations?.find((x) => x.id === qId)
     if (q && q.items) {
-      const newItems = q.items
-        .filter((qi: any) => qi.isConfirmed !== false)
-        .map((qi: any) => ({
-          product: qi.product,
-          quantity: qi.quantity,
-          cpSnapshot: qi.cpSnapshot || qi.product.costPrice || 0,
-        }))
-      setItems(newItems)
+      const { activePos, activePurchases, orderedByProduct, isFullyOrdered } = getQuotationFulfillment(q)
+      if (isFullyOrdered) {
+        const sourceLabels = [
+          ...activePos.map((p: any) => `PO #${p.poNumber || formatShortId(p.id)}`),
+          ...activePurchases.map((pur: any) => `Bill #${formatShortId(pur.id)}`),
+        ].join(", ")
+        sileo.warning({
+          title: "All Items Already Procured",
+          description: `All confirmed items in Quotation #${formatShortId(q.id)} are already ordered/purchased (${sourceLabels}).`,
+        })
+        setItems([])
+        return
+      }
+
+      const consumedMap = new Map<string, number>(orderedByProduct)
+      const remainingItems: {
+        product: Product
+        quantity: number
+        cpSnapshot: number
+      }[] = []
+      let firstSupplierId = ""
+
+      for (const qi of q.items) {
+        if (qi.isConfirmed === false) continue
+        const pid = qi.product.id
+        const alreadyOrdered = consumedMap.get(pid) || 0
+        const used = Math.min(alreadyOrdered, qi.quantity)
+        consumedMap.set(pid, Math.max(0, alreadyOrdered - used))
+        const remainingQty = Math.max(0, Number((qi.quantity - used).toFixed(4)))
+        if (remainingQty > 0) {
+          if (!firstSupplierId && qi.supplierId) {
+            firstSupplierId = qi.supplierId
+          }
+          remainingItems.push({
+            product: {
+              ...qi.product,
+              materialDescription: qi.itemDescription || qi.product.materialDescription,
+            },
+            quantity: remainingQty,
+            cpSnapshot: qi.cpSnapshot || qi.product.costPrice || 0,
+          })
+        }
+      }
+
+      if (firstSupplierId && !selectedSupplierId) {
+        setSelectedSupplierId(firstSupplierId)
+      }
+      setItems(remainingItems)
+
+      if (!isInitialLoad && remainingItems.length > 0) {
+        sileo.info({
+          title: "Remaining Quotation Items Loaded",
+          description: `Loaded ${remainingItems.length} un-procured item(s) from Quotation #${formatShortId(q.id)}.`,
+        })
+      }
     }
   }
 
   useEffect(() => {
     if (action === "new-purchase") {
       setSelectedSupplierId("")
-      setSelectedQuotationId("")
-      setItems([])
       setSearchTerm("")
+      if (urlQuotationId && quotations?.length) {
+        handleQuotationChange(urlQuotationId, true)
+      } else {
+        setSelectedQuotationId("")
+        setItems([])
+      }
     } else if (purchaseToEdit) {
       setSelectedSupplierId(purchaseToEdit.supplierId || "")
       setSelectedQuotationId(purchaseToEdit.quotationId || "")
@@ -98,7 +199,7 @@ export function PurchaseModal({
       )
       setSearchTerm("")
     }
-  }, [action, purchaseToEdit])
+  }, [action, purchaseToEdit, urlQuotationId])
 
   const [searchTerm, setSearchTerm] = useState("")
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
@@ -303,11 +404,20 @@ export function PurchaseModal({
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-900 focus:bg-white focus:outline-none focus:border-orange-500"
               >
                 <option value="">-- No Quotation Tagged --</option>
-                {quotations?.map((q: any) => (
-                  <option key={q.id} value={q.id}>
-                    #{formatShortId(q.id)} {q.prNo ? `(${q.prNo}) ` : ""}- {q.client.name}
-                  </option>
-                ))}
+                {quotations?.map((q: any) => {
+                  const f = getQuotationFulfillment(q)
+                  const badge = f.isFullyOrdered
+                    ? " [Fully Procured]"
+                    : f.isPartiallyOrdered
+                    ? ` [Partial - ${f.activePos.length} PO, ${f.activePurchases.length} Direct]`
+                    : ""
+                  return (
+                    <option key={q.id} value={q.id}>
+                      #{formatShortId(q.id)} {q.prNo ? `(${q.prNo}) ` : ""}- {q.client.name}
+                      {badge}
+                    </option>
+                  )
+                })}
               </select>
             </div>
           </div>

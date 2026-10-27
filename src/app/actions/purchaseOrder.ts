@@ -47,6 +47,12 @@ async function checkDuplicatePoForQuotation(
           supplier: { select: { name: true } },
         },
       },
+      purchases: {
+        include: {
+          items: true,
+          supplier: { select: { name: true } },
+        },
+      },
     },
   })
 
@@ -80,13 +86,23 @@ async function checkDuplicatePoForQuotation(
     const existingPosForProduct = quotation.purchaseOrders.filter((po) =>
       po.items.some((pi) => pi.productId === productId)
     )
+    const existingPurchasesForProduct = quotation.purchases.filter((pur) =>
+      pur.items.some((pi) => pi.productId === productId)
+    )
 
-    if (existingPosForProduct.length === 0) continue
+    if (existingPosForProduct.length === 0 && existingPurchasesForProduct.length === 0) continue
 
-    const alreadyOrderedQty = existingPosForProduct.reduce((sum, po) => {
+    const alreadyOrderedViaPoQty = existingPosForProduct.reduce((sum, po) => {
       const poItemsForProd = po.items.filter((pi) => pi.productId === productId)
       return sum + poItemsForProd.reduce((s, pi) => s + (pi.quantity || 0), 0)
     }, 0)
+
+    const alreadyBoughtViaDirectQty = existingPurchasesForProduct.reduce((sum, pur) => {
+      const purItemsForProd = pur.items.filter((pi) => pi.productId === productId)
+      return sum + purItemsForProd.reduce((s, pi) => s + (pi.quantity || 0), 0)
+    }, 0)
+
+    const alreadyOrderedQty = alreadyOrderedViaPoQty + alreadyBoughtViaDirectQty
 
     const matchingQItems = quotation.items.filter((qi) => qi.productId === productId)
     const confirmedQItems = matchingQItems.filter((qi) => qi.isConfirmed !== false)
@@ -97,22 +113,30 @@ async function checkDuplicatePoForQuotation(
 
     const totalConfirmedQuotedQty = confirmedQItems.reduce((s, qi) => s + qi.quantity, 0)
 
-    const poLabels = existingPosForProduct
-      .map((po) => `${po.poNumber || po.id.toUpperCase()} (${po.supplier.name})`)
-      .join(", ")
+    const sourceLabels = [
+      ...existingPosForProduct.map(
+        (po) => `PO ${po.poNumber || po.id.toUpperCase()} (${po.supplier.name})`
+      ),
+      ...existingPurchasesForProduct.map(
+        (pur) => `Direct Purchase #${pur.id.toUpperCase()} (${pur.supplier.name})`
+      ),
+    ].join(", ")
 
     if (confirmedQItems.length > 0) {
       if (alreadyOrderedQty >= totalConfirmedQuotedQty) {
-        return `Duplicate PO prevented: "${req.materialCode} - ${req.materialDescription}" is already fully ordered (${alreadyOrderedQty}/${totalConfirmedQuotedQty} ${req.unit}) for this quotation under ${poLabels}.`
+        return `Duplicate order prevented: "${req.materialCode} - ${req.materialDescription}" is already fully procured (${alreadyOrderedQty}/${totalConfirmedQuotedQty} ${req.unit}) for this quotation under ${sourceLabels}.`
       }
       if (alreadyOrderedQty + req.totalRequestedQty > totalConfirmedQuotedQty) {
         const remaining = Math.max(0, totalConfirmedQuotedQty - alreadyOrderedQty)
-        return `Duplicate PO quantity exceeded for "${req.materialCode}": ${alreadyOrderedQty} of ${totalConfirmedQuotedQty} ${req.unit} is already ordered under ${poLabels}. Only ${remaining} ${req.unit} remaining.`
+        return `Order quantity exceeded for "${req.materialCode}": ${alreadyOrderedQty} of ${totalConfirmedQuotedQty} ${req.unit} is already procured under ${sourceLabels}. Only ${remaining} ${req.unit} remaining.`
       }
     } else {
       const sameSupplierPo = existingPosForProduct.find((po) => po.supplierId === supplierId)
-      if (sameSupplierPo) {
-        return `Duplicate PO prevented: "${req.materialCode} - ${req.materialDescription}" is already ordered from this supplier under ${sameSupplierPo.poNumber || sameSupplierPo.id.toUpperCase()} for this quotation.`
+      const sameSupplierPurchase = existingPurchasesForProduct.find(
+        (pur) => pur.supplierId === supplierId
+      )
+      if (sameSupplierPo || sameSupplierPurchase) {
+        return `Duplicate order prevented: "${req.materialCode} - ${req.materialDescription}" is already procured from this supplier under ${sourceLabels} for this quotation.`
       }
     }
   }

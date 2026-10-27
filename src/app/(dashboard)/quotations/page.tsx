@@ -11,6 +11,7 @@ import {
   ArrowRight,
   Building2,
   ShieldCheck,
+  ReceiptText,
 } from "lucide-react"
 import Link from "next/link"
 import { formatRupee, formatShortId } from "@/lib/utils"
@@ -60,6 +61,12 @@ export default async function QuotationsPage(props: {
         where: { status: { not: "CANCELLED" } },
         include: {
           items: true,
+        },
+      },
+      purchases: {
+        include: {
+          items: true,
+          supplier: { select: { name: true } },
         },
       },
       cocs: {
@@ -303,10 +310,15 @@ export default async function QuotationsPage(props: {
                     </thead>
                     <tbody className="divide-y divide-slate-200">
                       {group.items.map((quote) => {
-                        // Compute PO fulfillment across confirmed items
+                        // Compute PO + Direct Purchase fulfillment across confirmed items
                         const orderedMap = new Map<string, number>()
                         for (const po of quote.purchaseOrders) {
                           for (const pi of po.items) {
+                            orderedMap.set(pi.productId, (orderedMap.get(pi.productId) || 0) + pi.quantity)
+                          }
+                        }
+                        for (const pur of quote.purchases) {
+                          for (const pi of pur.items) {
                             orderedMap.set(pi.productId, (orderedMap.get(pi.productId) || 0) + pi.quantity)
                           }
                         }
@@ -420,28 +432,50 @@ export default async function QuotationsPage(props: {
                             </td>
                             <td className="px-4 py-3.5">
                               <div className="flex flex-wrap items-center gap-1.5">
-                                {quote.purchaseOrders.length > 0 ? (
-                                  quote.purchaseOrders.map((po) => (
-                                    <Link
-                                      key={po.id}
-                                      href={`/purchase-orders/${po.id}`}
-                                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-mono font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100"
-                                    >
-                                      <ClipboardList className="w-3 h-3" />
-                                      #{po.poNumber || formatShortId(po.id)}
-                                    </Link>
-                                  ))
+                                {quote.purchaseOrders.length > 0 || quote.purchases.length > 0 ? (
+                                  <>
+                                    {quote.purchaseOrders.map((po) => (
+                                      <Link
+                                        key={po.id}
+                                        href={`/purchase-orders/${po.id}`}
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-mono font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100"
+                                        title="View Formal Purchase Order"
+                                      >
+                                        <ClipboardList className="w-3 h-3" />
+                                        #{po.poNumber || formatShortId(po.id)}
+                                      </Link>
+                                    ))}
+                                    {quote.purchases.map((pur) => (
+                                      <Link
+                                        key={pur.id}
+                                        href={`/purchases?action=edit-purchase&id=${pur.id}`}
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-mono font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100"
+                                        title={`Direct Purchase from ${pur.supplier?.name || "Vendor"}`}
+                                      >
+                                        <ReceiptText className="w-3 h-3" />
+                                        Bill #{formatShortId(pur.id)}
+                                      </Link>
+                                    ))}
+                                  </>
                                 ) : (
-                                  <span className="text-xs text-slate-400">No PO yet</span>
+                                  <span className="text-xs text-slate-400">No PO / Bill yet</span>
                                 )}
 
                                 {!isFullyOrdered && quote.status === "ACCEPTED" && (
-                                  <Link
-                                    href={`/purchase-orders/new?quotationId=${quote.id}`}
-                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100"
-                                  >
-                                    + Issue PO
-                                  </Link>
+                                  <>
+                                    <Link
+                                      href={`/purchase-orders/new?quotationId=${quote.id}`}
+                                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100"
+                                    >
+                                      + Issue PO
+                                    </Link>
+                                    <Link
+                                      href={`/purchases?action=new-purchase&quotationId=${quote.id}`}
+                                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100"
+                                    >
+                                      + Direct Bill
+                                    </Link>
+                                  </>
                                 )}
 
                                 {quote.cocs.length > 0 && (

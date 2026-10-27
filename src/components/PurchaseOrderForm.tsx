@@ -124,12 +124,18 @@ export function PurchaseOrderForm({
   const autocompleteRef = useRef<HTMLDivElement>(null)
   const didInitQuotation = useRef(false)
 
-  // Helper to compute ordered quantities per product for a quotation (excluding current PO if editing)
+  // Helper to compute ordered quantities per product for a quotation (across POs + Direct Purchases)
   const getQuotationFulfillment = (q: any) => {
     const activePos = (q?.purchaseOrders || []).filter((p: any) => p.id !== poId)
+    const activePurchases = q?.purchases || []
     const orderedByProduct = new Map<string, number>()
     for (const p of activePos) {
       for (const item of p.items || []) {
+        orderedByProduct.set(item.productId, (orderedByProduct.get(item.productId) || 0) + item.quantity)
+      }
+    }
+    for (const pur of activePurchases) {
+      for (const item of pur.items || []) {
         orderedByProduct.set(item.productId, (orderedByProduct.get(item.productId) || 0) + item.quantity)
       }
     }
@@ -150,6 +156,7 @@ export function PurchaseOrderForm({
 
     return {
       activePos,
+      activePurchases,
       orderedByProduct,
       isFullyOrdered,
       isPartiallyOrdered,
@@ -172,17 +179,22 @@ export function PurchaseOrderForm({
     const selectedQ = quotations.find((q: any) => q.id === qId)
     if (!selectedQ || !selectedQ.items) return
 
-    const { activePos, orderedByProduct, isFullyOrdered } = getQuotationFulfillment(selectedQ)
+    const { activePos, activePurchases, orderedByProduct, isFullyOrdered } = getQuotationFulfillment(selectedQ)
 
     if (isFullyOrdered) {
-      const poNums = activePos
-        .map((p: any) => `#${p.poNumber || formatShortId(p.id)} (${p.supplier?.name || "Vendor"})`)
-        .join(", ")
+      const sourceLabels = [
+        ...activePos.map(
+          (p: any) => `PO #${p.poNumber || formatShortId(p.id)} (${p.supplier?.name || "Vendor"})`
+        ),
+        ...activePurchases.map(
+          (pur: any) => `Direct Purchase #${formatShortId(pur.id)} (${pur.supplier?.name || "Vendor"})`
+        ),
+      ].join(", ")
       sileo.warning({
-        title: "Duplicate PO Prevented",
+        title: "Duplicate Order Prevented",
         description: `All confirmed items in Quotation #${formatShortId(
           selectedQ.id
-        )} are already ordered in existing PO(s): ${poNums}.`,
+        )} are already procured under: ${sourceLabels}.`,
       })
       return
     }
@@ -575,10 +587,11 @@ export function PurchaseOrderForm({
         </div>
       )}
 
-      {/* Duplicate / Existing PO Alert Banner for Selected Quotation */}
+      {/* Duplicate / Existing PO & Direct Purchase Alert Banner for Selected Quotation */}
       {selectedQuotationObj &&
         selectedQuotationFulfillment &&
-        selectedQuotationFulfillment.activePos.length > 0 && (
+        (selectedQuotationFulfillment.activePos.length > 0 ||
+          selectedQuotationFulfillment.activePurchases.length > 0) && (
           <div
             className={`p-4 rounded-xl border flex items-start gap-3 ${
               selectedQuotationFulfillment.isFullyOrdered
@@ -594,8 +607,8 @@ export function PurchaseOrderForm({
             <div className="flex-1 text-xs space-y-1.5">
               <div className="font-bold text-sm">
                 {selectedQuotationFulfillment.isFullyOrdered
-                  ? "Duplicate PO Prevention: All items in this Quotation are already ordered"
-                  : "Existing Purchase Orders Found for this Quotation (Partially Ordered)"}
+                  ? "Duplicate Order Prevention: All items in this Quotation are already procured"
+                  : "Existing Procurement Found for this Quotation (Partially Ordered)"}
               </div>
               <p>
                 Quotation{" "}
@@ -603,8 +616,8 @@ export function PurchaseOrderForm({
                   #{formatShortId(selectedQuotationObj.id)}
                 </strong>{" "}
                 ({selectedQuotationObj.client?.name}) already has{" "}
-                <strong>{selectedQuotationFulfillment.activePos.length}</strong> active Purchase
-                Order(s):
+                <strong>{selectedQuotationFulfillment.activePos.length}</strong> Purchase Order(s) and{" "}
+                <strong>{selectedQuotationFulfillment.activePurchases.length}</strong> Direct Purchase(s):
               </p>
               <div className="flex flex-wrap gap-2 pt-1">
                 {selectedQuotationFulfillment.activePos.map((existingPo: any) => (
@@ -617,6 +630,18 @@ export function PurchaseOrderForm({
                     <span>
                       PO #{existingPo.poNumber || formatShortId(existingPo.id)} •{" "}
                       {existingPo.supplier?.name || "Vendor"} ({existingPo.status})
+                    </span>
+                  </Link>
+                ))}
+                {selectedQuotationFulfillment.activePurchases.map((existingPur: any) => (
+                  <Link
+                    key={existingPur.id}
+                    href={`/purchases?action=edit-purchase&id=${existingPur.id}`}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white border border-indigo-200 text-indigo-800 font-semibold hover:border-indigo-400 transition-colors"
+                  >
+                    <span>
+                      Direct Bill #{formatShortId(existingPur.id)} •{" "}
+                      {existingPur.supplier?.name || "Vendor"}
                     </span>
                   </Link>
                 ))}
@@ -669,9 +694,9 @@ export function PurchaseOrderForm({
               {quotations.map((q) => {
                 const f = getQuotationFulfillment(q)
                 const badge = f.isFullyOrdered
-                  ? " [Fully Ordered]"
+                  ? " [Fully Procured]"
                   : f.isPartiallyOrdered
-                  ? ` [Partial - ${f.activePos.length} PO]`
+                  ? ` [Partial - ${f.activePos.length} PO, ${f.activePurchases.length} Direct]`
                   : ""
                 return (
                   <option key={q.id} value={q.id}>

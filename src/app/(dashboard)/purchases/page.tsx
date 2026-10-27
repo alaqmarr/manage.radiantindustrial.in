@@ -70,6 +70,24 @@ export default async function PurchasesPage(props: {
       prNo: true,
       client: { select: { name: true } },
       items: { include: { product: true } },
+      purchaseOrders: {
+        where: { status: { not: "CANCELLED" } },
+        select: {
+          id: true,
+          poNumber: true,
+          supplierId: true,
+          supplier: { select: { name: true } },
+          items: { select: { productId: true, quantity: true } },
+        },
+      },
+      purchases: {
+        select: {
+          id: true,
+          supplierId: true,
+          supplier: { select: { name: true } },
+          items: { select: { productId: true, quantity: true } },
+        },
+      },
     },
     orderBy: { createdAt: "desc" },
   })

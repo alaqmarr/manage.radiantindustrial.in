@@ -202,6 +202,16 @@ export async function getSidebarBadgesAction(): Promise<SidebarBadges> {
             },
           },
         },
+        purchases: {
+          select: {
+            items: {
+              select: {
+                productId: true,
+                quantity: true,
+              },
+            },
+          },
+        },
       },
     }),
     prisma.rfq.count({
@@ -223,6 +233,11 @@ export async function getSidebarBadgesAction(): Promise<SidebarBadges> {
     const orderedMap = new Map<string, number>()
     for (const po of quote.purchaseOrders) {
       for (const pi of po.items) {
+        orderedMap.set(pi.productId, (orderedMap.get(pi.productId) || 0) + pi.quantity)
+      }
+    }
+    for (const pur of quote.purchases) {
+      for (const pi of pur.items) {
         orderedMap.set(pi.productId, (orderedMap.get(pi.productId) || 0) + pi.quantity)
       }
     }

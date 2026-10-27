@@ -7,7 +7,7 @@ import { PaymentSection } from "@/components/PaymentSection"
 import { Metadata } from "next"
 import { formatRupee, numberToWordsRupees, formatShortId } from "@/lib/utils"
 import Link from "next/link"
-import { ArrowLeft, ClipboardList, CheckCircle2, AlertCircle, ExternalLink, ShieldCheck, FileSearch, XCircle } from "lucide-react"
+import { ArrowLeft, ClipboardList, CheckCircle2, AlertCircle, ExternalLink, ShieldCheck, FileSearch, XCircle, ReceiptText } from "lucide-react"
 
 export async function generateMetadata({
   params,
@@ -56,6 +56,15 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
         },
         orderBy: { createdAt: "desc" },
       },
+      purchases: {
+        include: {
+          supplier: true,
+          items: {
+            include: { product: true },
+          },
+        },
+        orderBy: { date: "desc" },
+      },
       cocs: {
         orderBy: { createdAt: "desc" },
       },
@@ -89,14 +98,34 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
 
   const isDraft = quotation.status === "DRAFT"
 
-  // Calculate PO fulfillment per quotation product across non-cancelled POs
+  // Calculate procurement fulfillment per quotation product across BOTH non-cancelled POs and Direct Purchases
   const activePos = quotation.purchaseOrders.filter((po) => po.status !== "CANCELLED")
+  const poQtyByProduct = new Map<string, number>()
+  const directPurchaseQtyByProduct = new Map<string, number>()
   const orderedQtyByProduct = new Map<string, number>()
+
   for (const po of activePos) {
     for (const poItem of po.items) {
+      poQtyByProduct.set(
+        poItem.productId,
+        (poQtyByProduct.get(poItem.productId) || 0) + poItem.quantity
+      )
       orderedQtyByProduct.set(
         poItem.productId,
         (orderedQtyByProduct.get(poItem.productId) || 0) + poItem.quantity
+      )
+    }
+  }
+
+  for (const pur of quotation.purchases) {
+    for (const purItem of pur.items) {
+      directPurchaseQtyByProduct.set(
+        purItem.productId,
+        (directPurchaseQtyByProduct.get(purItem.productId) || 0) + purItem.quantity
+      )
+      orderedQtyByProduct.set(
+        purItem.productId,
+        (orderedQtyByProduct.get(purItem.productId) || 0) + purItem.quantity
       )
     }
   }
@@ -179,39 +208,55 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
         />
       </div>
 
-      {/* Linked Purchase Orders & Certificates of Conformance (COC) */}
+      {/* Linked Purchase Orders, Direct Purchases & Certificates of Conformance (COC) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 print:hidden">
         <div className="lg:col-span-2 bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
             <div className="flex items-center gap-2">
               <ClipboardList className="w-4 h-4 text-orange-600" />
               <h2 className="text-sm font-bold text-slate-900">
-                Linked Purchase Orders ({quotation.purchaseOrders.length})
+                Linked Procurement ({quotation.purchaseOrders.length} PO
+                {quotation.purchaseOrders.length === 1 ? "" : "s"} · {quotation.purchases.length} Direct Purchase
+                {quotation.purchases.length === 1 ? "" : "s"})
               </h2>
             </div>
             {!isFullyOrdered ? (
-              <Link
-                href={`/purchase-orders/new?quotationId=${quotation.id}`}
-                className="text-xs font-semibold text-orange-600 hover:text-orange-700 flex items-center gap-1"
-              >
-                + Generate PO for Remaining Items
-              </Link>
+              <div className="flex items-center gap-3">
+                <Link
+                  href={`/purchases?action=new-purchase&quotationId=${quotation.id}`}
+                  className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+                >
+                  + Record Direct Purchase
+                </Link>
+                <Link
+                  href={`/purchase-orders/new?quotationId=${quotation.id}`}
+                  className="text-xs font-semibold text-orange-600 hover:text-orange-700 flex items-center gap-1"
+                >
+                  + Generate PO for Remaining Items
+                </Link>
+              </div>
             ) : (
               <span className="text-xs font-medium text-emerald-700 flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" /> All quotation items ordered (Duplicate POs blocked)
+                <CheckCircle2 className="w-3.5 h-3.5" /> All quotation items procured (Duplicate POs/Bills blocked)
               </span>
             )}
           </div>
 
-          {quotation.purchaseOrders.length === 0 ? (
+          {quotation.purchaseOrders.length === 0 && quotation.purchases.length === 0 ? (
             <div className="text-xs text-slate-500 bg-slate-50 p-3.5 rounded-lg border border-dashed border-slate-200 flex flex-wrap items-center justify-between gap-2">
-              <span>No Purchase Orders have been generated against this quotation yet.</span>
-              <div className="flex items-center gap-2">
+              <span>No Purchase Orders or Direct Purchases have been recorded against this quotation yet.</span>
+              <div className="flex flex-wrap items-center gap-2">
                 <Link
                   href={`/rfq/new?quotationId=${quotation.id}`}
                   className="px-3 py-1.5 bg-violet-50 hover:bg-violet-100 text-violet-700 border border-violet-200 rounded-md font-semibold text-xs transition-colors flex items-center gap-1"
                 >
                   <FileSearch className="w-3.5 h-3.5" /> Send Vendor RFQ
+                </Link>
+                <Link
+                  href={`/purchases?action=new-purchase&quotationId=${quotation.id}`}
+                  className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-md font-semibold text-xs transition-colors flex items-center gap-1"
+                >
+                  <ReceiptText className="w-3.5 h-3.5" /> Direct Purchase
                 </Link>
                 <Link
                   href={`/purchase-orders/new?quotationId=${quotation.id}`}
@@ -231,6 +276,9 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
                 >
                   <div>
                     <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5 group-hover:text-orange-700">
+                      <span className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 text-[9px] font-black uppercase">
+                        PO
+                      </span>
                       <span className="font-mono">
                         #{po.poNumber || formatShortId(po.id)}
                       </span>
@@ -257,6 +305,46 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
                       }`}
                     >
                       {po.status}
+                    </span>
+                  </div>
+                </Link>
+              ))}
+
+              {quotation.purchases.map((pur) => (
+                <Link
+                  key={pur.id}
+                  href={`/purchases?action=edit-purchase&id=${pur.id}`}
+                  className="flex items-center justify-between p-3 rounded-lg border border-indigo-200/80 bg-indigo-50/20 hover:border-indigo-300 hover:bg-indigo-50/60 transition-all group"
+                >
+                  <div>
+                    <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5 group-hover:text-indigo-700">
+                      <span className="px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-800 text-[9px] font-black uppercase">
+                        Direct Bill
+                      </span>
+                      <span className="font-mono">#{formatShortId(pur.id)}</span>
+                      <ExternalLink className="w-3 h-3 opacity-50" />
+                    </div>
+                    <div className="text-xs text-slate-600 font-medium truncate mt-0.5">
+                      {pur.supplier.name}
+                    </div>
+                    <div className="text-[11px] text-slate-400">
+                      {new Date(pur.date).toLocaleDateString()} • {pur.items.length} item(s)
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xs font-mono font-bold text-slate-900">
+                      {formatRupee(pur.totalAmount + pur.totalGst)}
+                    </div>
+                    <span
+                      className={`inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${
+                        pur.paymentStatus === "PAID"
+                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                          : pur.paymentStatus === "PARTIALLY_PAID"
+                          ? "bg-amber-50 text-amber-700 border border-amber-200"
+                          : "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                      }`}
+                    >
+                      {pur.paymentStatus}
                     </span>
                   </div>
                 </Link>
@@ -376,7 +464,7 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
                 <th className="py-3 px-4 font-semibold min-w-[260px]">Description</th>
                 <th className="py-3 px-4 font-semibold text-center w-20">UOM</th>
                 <th className="py-3 px-4 font-semibold text-center w-24">Qty</th>
-                <th className="py-3 px-4 font-semibold text-center w-24">PO Ordered</th>
+                <th className="py-3 px-4 font-semibold text-center w-32">PO / Direct Bought</th>
                 <th className="py-3 px-4 font-semibold text-right w-32">Selling Rate</th>
                 <th className="py-3 px-4 font-semibold text-right w-32">Line Amount</th>
                 <th className="py-3 px-4 font-semibold text-right w-28 text-amber-700">Vendor CP</th>
@@ -386,6 +474,8 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
             <tbody className="divide-y divide-slate-200">
               {quotation.items.map((item) => {
                 const orderedQty = orderedQtyByProduct.get(item.productId) || 0
+                const poQty = poQtyByProduct.get(item.productId) || 0
+                const directQty = directPurchaseQtyByProduct.get(item.productId) || 0
                 const isDropped = item.isConfirmed === false
                 const wasReduced =
                   !isDropped &&
@@ -455,17 +545,28 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
                           Dropped
                         </span>
                       ) : (
-                        <span
-                          className={`px-2 py-0.5 rounded-full font-semibold ${
-                            orderedQty >= item.quantity
-                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                              : orderedQty > 0
-                              ? "bg-amber-50 text-amber-700 border border-amber-200"
-                              : "bg-slate-100 text-slate-500"
-                          }`}
-                        >
-                          {orderedQty} / {item.quantity}
-                        </span>
+                        <div className="flex flex-col items-center gap-0.5">
+                          <span
+                            className={`px-2 py-0.5 rounded-full font-semibold ${
+                              orderedQty >= item.quantity
+                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                : orderedQty > 0
+                                ? "bg-amber-50 text-amber-700 border border-amber-200"
+                                : "bg-slate-100 text-slate-500"
+                            }`}
+                          >
+                            {orderedQty} / {item.quantity}
+                          </span>
+                          {(poQty > 0 || directQty > 0) && (
+                            <span className="text-[10px] text-slate-500 font-sans">
+                              {poQty > 0 && directQty > 0
+                                ? `PO: ${poQty} · Direct: ${directQty}`
+                                : directQty > 0
+                                ? `Direct Bill: ${directQty}`
+                                : `PO: ${poQty}`}
+                            </span>
+                          )}
+                        </div>
                       )}
                     </td>
                     <td className="py-3.5 px-4 text-right font-mono text-slate-800">

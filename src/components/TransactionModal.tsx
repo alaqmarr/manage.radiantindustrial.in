@@ -8,19 +8,31 @@ import { sileo } from "sileo"
 import { formatRupee, formatShortId } from "@/lib/utils"
 import { SmartNumberInput } from "./ui/SmartNumberInput"
 
-export function TransactionModal({ onClose, quotations, pos, purchases, clients }: any) {
+export function TransactionModal({
+  onClose,
+  quotations,
+  pos,
+  purchases,
+  clients,
+  initialDefaults,
+}: any) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const [category, setCategory] = useState("manual")
-  const [type, setType] = useState<"IN" | "OUT">("IN")
-  const [entityId, setEntityId] = useState("")
+  const [category, setCategory] = useState(initialDefaults?.category || "manual")
+  const [type, setType] = useState<"IN" | "OUT">(
+    initialDefaults?.type ||
+      (initialDefaults?.category === "po" || initialDefaults?.category === "purchase"
+        ? "OUT"
+        : "IN")
+  )
+  const [entityId, setEntityId] = useState(initialDefaults?.entityId || "")
   const [entityName, setEntityName] = useState("")
 
-  const [amount, setAmount] = useState("")
+  const [amount, setAmount] = useState(initialDefaults?.amount || "")
   const [method, setMethod] = useState("BANK_TRANSFER")
   const [reference, setReference] = useState("")
-  const [notes, setNotes] = useState("")
+  const [notes, setNotes] = useState(initialDefaults?.notes || "")
   const [date, setDate] = useState(new Date().toISOString().split("T")[0])
   const [status, setStatus] = useState("CLEARED")
 

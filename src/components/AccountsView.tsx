@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
-import { formatRupee } from "@/lib/utils"
+import { useState, useMemo } from "react"
+import Link from "next/link"
+import { formatRupee, formatShortId } from "@/lib/utils"
 import {
   Plus,
   ArrowDownRight,
@@ -13,10 +14,23 @@ import {
   X,
   Search,
   Trash2,
+  ShoppingBag,
+  FileText,
+  Package,
+  CreditCard,
+  Link2,
+  Check,
+  Loader2,
+  Building2,
 } from "lucide-react"
-import { updatePaymentStatus, deletePayment } from "@/app/actions/payment"
+import {
+  updatePaymentStatus,
+  deletePayment,
+  assignAndResolveQuotationItem,
+} from "@/app/actions/payment"
 import { useRouter } from "next/navigation"
 import { TransactionModal } from "./TransactionModal"
+import { SmartNumberInput } from "./ui/SmartNumberInput"
 import { sileo } from "sileo"
 
 export function AccountsView({
@@ -26,9 +40,18 @@ export function AccountsView({
   pos,
   purchases,
   clients,
+  suppliers = [],
+  acceptedQuotations = [],
 }: any) {
   const router = useRouter()
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [modalDefaults, setModalDefaults] = useState<{
+    category?: string
+    type?: "IN" | "OUT"
+    entityId?: string
+    amount?: string
+    notes?: string
+  } | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
 
   const [breakdownModal, setBreakdownModal] = useState<{
@@ -42,9 +65,311 @@ export function AccountsView({
   } | null>(null)
   const [resolvingQId, setResolvingQId] = useState("")
 
+  // Payables & Unprocured Tracker state
+  const [payablesFilter, setPayablesFilter] = useState<"ALL" | "PO" | "PURCHASE">("ALL")
+  const [payablesSearch, setPayablesSearch] = useState("")
+  const [unprocuredSearch, setUnprocuredSearch] = useState("")
+
+  // Assign & Resolve Unprocured Quotation Item Modal state
+  const [assignModal, setAssignModal] = useState<any | null>(null)
+  const [assignSupplierId, setAssignSupplierId] = useState("")
+  const [assignUnitCp, setAssignUnitCp] = useState("")
+  const [assignQty, setAssignQty] = useState(1)
+  const [assignGstPercent, setAssignGstPercent] = useState(18)
+  const [assignMode, setAssignMode] = useState<"DIRECT_PURCHASE" | "PO" | "TAG_ONLY">(
+    "DIRECT_PURCHASE"
+  )
+  const [assignPaymentMode, setAssignPaymentMode] = useState<"PAY_NOW" | "LINK_UNTAGGED" | "LATER">(
+    "PAY_NOW"
+  )
+  const [assignPayAmount, setAssignPayAmount] = useState("")
+  const [assignPayMethod, setAssignPayMethod] = useState("BANK_TRANSFER")
+  const [assignPayStatus, setAssignPayStatus] = useState<"CLEARED" | "PENDING">("CLEARED")
+  const [assignPayRef, setAssignPayRef] = useState("")
+  const [assignPayNotes, setAssignPayNotes] = useState("")
+  const [assignUntaggedPaymentId, setAssignUntaggedPaymentId] = useState("")
+
   const [searchQuery, setSearchQuery] = useState("")
   const [typeFilter, setTypeFilter] = useState("ALL")
   const [activeTab, setActiveTab] = useState("OVERVIEW")
+
+  const untaggedOutPayments = useMemo(
+    () => (initialEntries || []).filter((e: any) => e.untagged && e.type === "OUT"),
+    [initialEntries]
+  )
+
+  const unpaidPayablesList = useMemo(() => {
+    const poRows = (pos || [])
+      .map((p: any) => {
+        const total = (p.totalAmount || 0) + (p.totalGst || 0)
+        const paid = p.amountPaid || 0
+        const due = total - paid
+        return {
+          id: p.id,
+          docType: "PO" as const,
+          docNumber: p.poNumber || `PO-${formatShortId(p.id)}`,
+          date: p.createdAt,
+          dueDate: p.paymentDueDate,
+          status: p.status,
+          supplierId: p.supplier?.id,
+          supplierName: p.supplier?.name || "Unknown Supplier",
+          quotationId: p.quotation?.id,
+          quotationPrNo: p.quotation?.prNo,
+          clientName: p.quotation?.client?.name,
+          items: p.items || [],
+          total,
+          paid,
+          due,
+        }
+      })
+      .filter((r: any) => r.due > 0)
+
+    const purchaseRows = (purchases || [])
+      .map((p: any) => {
+        const total = (p.totalAmount || 0) + (p.totalGst || 0)
+        const paid = p.amountPaid || 0
+        const due = total - paid
+        return {
+          id: p.id,
+          docType: "PURCHASE" as const,
+          docNumber: `BILL-${formatShortId(p.id)}`,
+          date: p.date,
+          dueDate: null,
+          status: "RECORDED",
+          supplierId: p.supplier?.id,
+          supplierName: p.supplier?.name || "Unknown Supplier",
+          quotationId: p.quotation?.id,
+          quotationPrNo: p.quotation?.prNo,
+          clientName: p.quotation?.client?.name,
+          items: p.items || [],
+          total,
+          paid,
+          due,
+        }
+      })
+      .filter((r: any) => r.due > 0)
+
+    return [...poRows, ...purchaseRows].sort(
+      (a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime()
+    )
+  }, [pos, purchases])
+
+  const filteredPayablesList = useMemo(() => {
+    return unpaidPayablesList.filter((row) => {
+      if (payablesFilter !== "ALL" && row.docType !== payablesFilter) return false
+      if (payablesSearch.trim()) {
+        const q = payablesSearch.toLowerCase()
+        const matchDoc = row.docNumber.toLowerCase().includes(q) || row.id.toLowerCase().includes(q)
+        const matchSup = row.supplierName.toLowerCase().includes(q)
+        const matchQuote =
+          (row.quotationId || "").toLowerCase().includes(q) ||
+          (row.quotationPrNo || "").toLowerCase().includes(q) ||
+          (row.clientName || "").toLowerCase().includes(q)
+        const matchItem = row.items.some(
+          (it: any) =>
+            (it.product?.materialCode || "").toLowerCase().includes(q) ||
+            (it.customDescription || it.product?.materialDescription || "")
+              .toLowerCase()
+              .includes(q)
+        )
+        if (!matchDoc && !matchSup && !matchQuote && !matchItem) return false
+      }
+      return true
+    })
+  }, [unpaidPayablesList, payablesFilter, payablesSearch])
+
+  const unprocuredQuotationItems = useMemo(() => {
+    const result: any[] = []
+    for (const q of acceptedQuotations || []) {
+      const remainingProcuredByProduct = new Map<string, number>()
+
+      for (const po of q.purchaseOrders || []) {
+        if (po.status === "CANCELLED") continue
+        for (const poItem of po.items || []) {
+          remainingProcuredByProduct.set(
+            poItem.productId,
+            (remainingProcuredByProduct.get(poItem.productId) || 0) + (poItem.quantity || 0)
+          )
+        }
+      }
+
+      for (const pur of q.purchases || []) {
+        for (const purItem of pur.items || []) {
+          remainingProcuredByProduct.set(
+            purItem.productId,
+            (remainingProcuredByProduct.get(purItem.productId) || 0) + (purItem.quantity || 0)
+          )
+        }
+      }
+
+      for (const item of q.items || []) {
+        if (item.isConfirmed === false) continue
+        const avail = remainingProcuredByProduct.get(item.productId) || 0
+        const coveredQty = Math.min(item.quantity, avail)
+        remainingProcuredByProduct.set(item.productId, avail - coveredQty)
+        const unprocuredQty = item.quantity - coveredQty
+
+        if (unprocuredQty > 0) {
+          const lowestCatalogVendor = item.product?.productSuppliers?.[0]
+          const unitCpPaise =
+            item.cpSnapshot && item.cpSnapshot > 0
+              ? item.cpSnapshot
+              : lowestCatalogVendor?.costPrice && lowestCatalogVendor.costPrice > 0
+              ? lowestCatalogVendor.costPrice
+              : item.product?.costPrice || 0
+
+          const taggedSupplier = item.supplier || null
+          const suggestedSupplier =
+            taggedSupplier || lowestCatalogVendor?.supplier || item.product?.supplier || null
+
+          const gstPercent = item.gstPercent ?? item.product?.gstPercent ?? 18
+          const estExclGst = unprocuredQty * unitCpPaise
+          const estGst = Math.round(estExclGst * (gstPercent / 100))
+          const estInclGst = estExclGst + estGst
+          const sellingUnitPaise = item.unitPrice || 0
+          const sellingExclGst = unprocuredQty * sellingUnitPaise
+
+          result.push({
+            quotationId: q.id,
+            quotationPrNo: q.prNo,
+            quotationStatus: q.status,
+            clientName: q.client?.name || "Unknown Client",
+            quotationItemId: item.id,
+            productId: item.productId,
+            materialCode: item.product?.materialCode || "ITEM",
+            description:
+              item.customDescription || item.product?.materialDescription || "Unnamed Item",
+            unit: item.product?.unit || "Nos",
+            totalQuotedQty: item.quantity,
+            coveredQty,
+            unprocuredQty,
+            unitCpPaise,
+            gstPercent,
+            estExclGst,
+            estGst,
+            estInclGst,
+            sellingUnitPaise,
+            sellingExclGst,
+            taggedSupplier,
+            suggestedSupplier,
+            productSuppliers: item.product?.productSuppliers || [],
+          })
+        }
+      }
+    }
+    return result
+  }, [acceptedQuotations])
+
+  const filteredUnprocuredItems = useMemo(() => {
+    if (!unprocuredSearch.trim()) return unprocuredQuotationItems
+    const q = unprocuredSearch.toLowerCase()
+    return unprocuredQuotationItems.filter(
+      (it) =>
+        it.quotationId.toLowerCase().includes(q) ||
+        (it.quotationPrNo || "").toLowerCase().includes(q) ||
+        it.clientName.toLowerCase().includes(q) ||
+        it.materialCode.toLowerCase().includes(q) ||
+        it.description.toLowerCase().includes(q) ||
+        (it.suggestedSupplier?.name || "").toLowerCase().includes(q)
+    )
+  }, [unprocuredQuotationItems, unprocuredSearch])
+
+  const openAssignModal = (item: any) => {
+    const initialCpRupees = item.unitCpPaise > 0 ? (item.unitCpPaise / 100).toFixed(2) : ""
+    const initialTotalRupees =
+      item.estInclGst > 0 ? (item.estInclGst / 100).toFixed(2) : ""
+    setAssignModal(item)
+    setAssignSupplierId(item.suggestedSupplier?.id || "")
+    setAssignUnitCp(initialCpRupees)
+    setAssignQty(item.unprocuredQty)
+    setAssignGstPercent(item.gstPercent ?? 18)
+    setAssignMode("DIRECT_PURCHASE")
+    setAssignPaymentMode("PAY_NOW")
+    setAssignPayAmount(initialTotalRupees)
+    setAssignPayMethod("BANK_TRANSFER")
+    setAssignPayStatus("CLEARED")
+    setAssignPayRef("")
+    setAssignPayNotes(
+      `Direct settlement for ${item.materialCode} (${item.unprocuredQty} ${item.unit}) on Quote #${formatShortId(item.quotationId)}`
+    )
+    setAssignUntaggedPaymentId("")
+  }
+
+  const handleAssignSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!assignModal) return
+    if (!assignSupplierId) {
+      sileo.warning({
+        title: "Supplier Required",
+        description: "Please select a vendor/supplier to assign this item to.",
+      })
+      return
+    }
+    const unitCpNum = Number(assignUnitCp)
+    if (isNaN(unitCpNum) || unitCpNum <= 0) {
+      sileo.warning({
+        title: "Valid Cost Price Required",
+        description: "Please enter a unit cost price greater than ₹0.",
+      })
+      return
+    }
+
+    setIsUpdating(true)
+    try {
+      const shouldRecordNow =
+        assignMode !== "TAG_ONLY" &&
+        assignPaymentMode === "PAY_NOW" &&
+        Number(assignPayAmount) > 0
+
+      const res = await assignAndResolveQuotationItem({
+        quotationId: assignModal.quotationId,
+        quotationItemId: assignModal.quotationItemId,
+        productId: assignModal.productId,
+        supplierId: assignSupplierId,
+        quantity: Number(assignQty) || assignModal.unprocuredQty,
+        unitCpPaise: Math.round(unitCpNum * 100),
+        gstRate: Number(assignGstPercent) || 0,
+        itemDescription: assignModal.description,
+        mode: assignMode,
+        existingUntaggedPaymentId:
+          assignMode !== "TAG_ONLY" && assignPaymentMode === "LINK_UNTAGGED"
+            ? assignUntaggedPaymentId || undefined
+            : undefined,
+        recordPaymentNow: shouldRecordNow,
+        paymentAmountRupees: shouldRecordNow ? Number(assignPayAmount) : undefined,
+        paymentMethod: shouldRecordNow ? assignPayMethod : undefined,
+        paymentReference: shouldRecordNow ? assignPayRef : undefined,
+        paymentStatus: shouldRecordNow ? assignPayStatus : undefined,
+        paymentDate: shouldRecordNow ? new Date().toISOString().split("T")[0] : undefined,
+      })
+
+      if (res.success) {
+        sileo.success({
+          title:
+            assignMode === "DIRECT_PURCHASE"
+              ? "Direct Purchase & Payment Recorded"
+              : assignMode === "PO"
+              ? "Purchase Order Issued & Linked"
+              : "Vendor Tagged to Quotation Item",
+          description: `${assignModal.materialCode} (${assignQty} ${assignModal.unit}) has been resolved.`,
+        })
+        setAssignModal(null)
+        router.refresh()
+      } else {
+        sileo.error({
+          title: "Failed to Resolve Item",
+          description: (res as any).error || "Could not assign and resolve this item.",
+        })
+      }
+    } catch (err) {
+      sileo.error({
+        title: "Unexpected Error",
+        description: "An error occurred while resolving the item.",
+      })
+    } finally {
+      setIsUpdating(false)
+    }
+  }
 
   const handleResolve = async () => {
     if (!resolveModal || !resolvingQId) return
@@ -55,7 +380,7 @@ export function AccountsView({
       if (res.success) {
         sileo.success({
           title: "Payment Resolved",
-          description: "Untagged payment has been linked to the selected quotation.",
+          description: "Untagged payment has been linked to the selected document.",
         })
         setResolveModal(null)
         setResolvingQId("")
@@ -384,6 +709,29 @@ export function AccountsView({
           }`}
         >
           <span className={activeTab === "OVERVIEW" ? "text-white" : ""}>Overview & Ledger</span>
+        </button>
+        <button
+          onClick={() => setActiveTab("PAYABLES_TRACKER")}
+          className={`px-4 py-2 text-xs font-bold rounded-xl transition-colors flex items-center gap-2 ${
+            activeTab === "PAYABLES_TRACKER"
+              ? "bg-orange-600 text-white shadow-xs"
+              : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+          }`}
+        >
+          <span className={activeTab === "PAYABLES_TRACKER" ? "text-white" : ""}>
+            Vendor Payables & Unprocured Items
+          </span>
+          {unpaidPayablesList.length + unprocuredQuotationItems.length > 0 && (
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                activeTab === "PAYABLES_TRACKER"
+                  ? "bg-white text-orange-700"
+                  : "bg-orange-100 text-orange-800"
+              }`}
+            >
+              {unpaidPayablesList.length + unprocuredQuotationItems.length}
+            </span>
+          )}
         </button>
         <button
           onClick={() => setActiveTab("PNL")}
@@ -1027,14 +1375,985 @@ export function AccountsView({
         </div>
       )}
 
+      {activeTab === "PAYABLES_TRACKER" && (
+        <div className="space-y-6">
+          {/* Summary KPI Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Unpaid Purchase Orders
+                </p>
+                <span className="text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full">
+                  {unpaidPayablesList.filter((r) => r.docType === "PO").length} POs
+                </span>
+              </div>
+              <h3 className="text-2xl font-bold font-mono text-rose-700">
+                {formatRupee(
+                  unpaidPayablesList
+                    .filter((r) => r.docType === "PO")
+                    .reduce((acc, r) => acc + r.due, 0)
+                )}
+              </h3>
+              <p className="text-[11px] text-slate-400 mt-1">
+                Formal POs issued to vendors awaiting payment
+              </p>
+            </div>
+
+            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Unpaid Direct Purchases
+                </p>
+                <span className="text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-full">
+                  {unpaidPayablesList.filter((r) => r.docType === "PURCHASE").length} Bills
+                </span>
+              </div>
+              <h3 className="text-2xl font-bold font-mono text-rose-700">
+                {formatRupee(
+                  unpaidPayablesList
+                    .filter((r) => r.docType === "PURCHASE")
+                    .reduce((acc, r) => acc + r.due, 0)
+                )}
+              </h3>
+              <p className="text-[11px] text-slate-400 mt-1">
+                Direct purchase bills recorded without full payment
+              </p>
+            </div>
+
+            <div className="bg-amber-50/50 p-5 rounded-xl border border-amber-200 shadow-xs">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-xs font-bold uppercase tracking-wider text-amber-800">
+                  Unprocured Quote Items
+                </p>
+                <span className="text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-full">
+                  {unprocuredQuotationItems.length} Items
+                </span>
+              </div>
+              <h3 className="text-2xl font-bold font-mono text-amber-800">
+                {formatRupee(
+                  unprocuredQuotationItems.reduce((acc, it) => acc + it.estInclGst, 0)
+                )}
+              </h3>
+              <p className="text-[11px] text-amber-700 mt-1">
+                Excl. GST:{" "}
+                <span className="font-mono font-bold">
+                  {formatRupee(
+                    unprocuredQuotationItems.reduce((acc, it) => acc + it.estExclGst, 0)
+                  )}
+                </span>{" "}
+                · Accepted items not yet in a PO/Purchase
+              </p>
+            </div>
+
+            <div className="bg-slate-900 p-5 rounded-xl border border-slate-800 shadow-xs text-white">
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-1">
+                Total Pending Vendor Outflow
+              </p>
+              <h3 className="text-2xl font-bold font-mono text-orange-400">
+                {formatRupee(
+                  unpaidPayablesList.reduce((acc, r) => acc + r.due, 0) +
+                    unprocuredQuotationItems.reduce((acc, it) => acc + it.estInclGst, 0)
+                )}
+              </h3>
+              <p className="text-[11px] text-slate-400 mt-1">
+                Unpaid POs + Direct Bills + Est. Unprocured Items
+              </p>
+            </div>
+          </div>
+
+          {/* SECTION 1: UNPAID POs & DIRECT PURCHASES */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+            <div className="p-5 border-b border-slate-200 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <ShoppingBag className="w-4 h-4 text-orange-600" />
+                  <h2 className="text-base font-bold text-slate-900">
+                    1. Unpaid Purchase Orders & Direct Purchases
+                  </h2>
+                </div>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  All issued POs and recorded direct purchases with pending balances. Click{" "}
+                  <strong>Pay Now</strong> to directly record a payment or{" "}
+                  <strong>Link Untagged</strong> to assign an existing untagged outgoing payment.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center gap-3">
+                <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setPayablesFilter("ALL")}
+                    className={`px-3 py-1.5 rounded-lg transition-colors ${
+                      payablesFilter === "ALL"
+                        ? "bg-white text-slate-900 shadow-2xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    All ({unpaidPayablesList.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPayablesFilter("PO")}
+                    className={`px-3 py-1.5 rounded-lg transition-colors ${
+                      payablesFilter === "PO"
+                        ? "bg-white text-blue-700 shadow-2xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    POs ({unpaidPayablesList.filter((r) => r.docType === "PO").length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPayablesFilter("PURCHASE")}
+                    className={`px-3 py-1.5 rounded-lg transition-colors ${
+                      payablesFilter === "PURCHASE"
+                        ? "bg-white text-indigo-700 shadow-2xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    Direct Bills (
+                    {unpaidPayablesList.filter((r) => r.docType === "PURCHASE").length})
+                  </button>
+                </div>
+
+                <div className="relative w-full sm:w-64">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search PO, supplier, quote, item..."
+                    value={payablesSearch}
+                    onChange={(e) => setPayablesSearch(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="text-[11px] text-slate-500 uppercase bg-slate-50 font-bold border-b border-slate-200">
+                  <tr>
+                    <th className="px-5 py-3.5">Document & Date</th>
+                    <th className="px-5 py-3.5">Vendor / Supplier</th>
+                    <th className="px-5 py-3.5">Linked Quotation</th>
+                    <th className="px-5 py-3.5">Individual Items & Amounts</th>
+                    <th className="px-5 py-3.5 text-right">Total Bill</th>
+                    <th className="px-5 py-3.5 text-right">Paid</th>
+                    <th className="px-5 py-3.5 text-right text-rose-700">Balance Due</th>
+                    <th className="px-5 py-3.5 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {filteredPayablesList.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="px-6 py-10 text-center text-slate-500 text-xs">
+                        No unpaid Purchase Orders or Direct Purchases match your filter.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredPayablesList.map((row) => (
+                      <tr
+                        key={`${row.docType}-${row.id}`}
+                        className="hover:bg-slate-50/80 transition-colors align-top"
+                      >
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                                row.docType === "PO"
+                                  ? "bg-blue-50 text-blue-700 border-blue-200"
+                                  : "bg-indigo-50 text-indigo-700 border-indigo-200"
+                              }`}
+                            >
+                              {row.docType === "PO" ? "PO" : "DIRECT BILL"}
+                            </span>
+                            {row.docType === "PO" ? (
+                              <Link
+                                href={`/purchase-orders/${row.id}`}
+                                className="font-mono font-bold text-xs text-slate-900 hover:text-orange-600 underline"
+                              >
+                                {row.docNumber}
+                              </Link>
+                            ) : (
+                              <Link
+                                href="/purchases"
+                                className="font-mono font-bold text-xs text-slate-900 hover:text-orange-600 underline"
+                              >
+                                {row.docNumber}
+                              </Link>
+                            )}
+                          </div>
+                          {row.date && (
+                            <div className="text-[11px] text-slate-400 mt-1">
+                              {new Date(row.date).toLocaleDateString("en-IN", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              })}
+                            </div>
+                          )}
+                          {row.dueDate && (
+                            <div className="text-[10px] font-semibold text-amber-700 mt-0.5">
+                              Due: {new Date(row.dueDate).toLocaleDateString("en-IN")}
+                            </div>
+                          )}
+                        </td>
+
+                        <td className="px-5 py-4">
+                          <div className="font-semibold text-xs text-slate-900">
+                            {row.supplierName}
+                          </div>
+                          <div className="text-[10px] text-slate-400 uppercase mt-0.5">
+                            {row.status}
+                          </div>
+                        </td>
+
+                        <td className="px-5 py-4">
+                          {row.quotationId ? (
+                            <div>
+                              <Link
+                                href={`/quotations/${row.quotationId}`}
+                                className="inline-flex items-center gap-1 text-xs font-mono font-bold text-orange-600 hover:text-orange-700 underline"
+                              >
+                                #{formatShortId(row.quotationId)}
+                              </Link>
+                              {row.quotationPrNo && (
+                                <span className="ml-1 text-[10px] text-slate-500 font-mono">
+                                  ({row.quotationPrNo})
+                                </span>
+                              )}
+                              <div className="text-[11px] text-slate-600 mt-0.5">
+                                {row.clientName}
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-slate-400 italic">Standalone / Stock</span>
+                          )}
+                        </td>
+
+                        <td className="px-5 py-4 max-w-xs">
+                          <div className="space-y-1.5">
+                            {row.items.map((it: any) => {
+                              const unitRate = it.unitPrice ?? it.costPrice ?? 0
+                              const lineTotal = (it.quantity || 0) * unitRate
+                              return (
+                                <div
+                                  key={it.id}
+                                  className="text-xs bg-slate-50 border border-slate-200/80 rounded-lg px-2.5 py-1.5 flex items-center justify-between gap-2"
+                                >
+                                  <div className="min-w-0">
+                                    <span className="font-mono font-bold text-slate-800 text-[11px]">
+                                      {it.product?.materialCode || "ITEM"}
+                                    </span>
+                                    <span className="text-slate-500 text-[11px] ml-1.5 truncate block">
+                                      {it.customDescription || it.product?.materialDescription}
+                                    </span>
+                                  </div>
+                                  <div className="text-right shrink-0">
+                                    <div className="font-mono font-bold text-slate-900 text-[11px]">
+                                      {formatRupee(lineTotal)}
+                                    </div>
+                                    <div className="text-[10px] text-slate-400 font-mono">
+                                      {it.quantity} × {formatRupee(unitRate)}
+                                    </div>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </td>
+
+                        <td className="px-5 py-4 text-right font-mono text-xs font-semibold text-slate-900">
+                          {formatRupee(row.total)}
+                        </td>
+
+                        <td className="px-5 py-4 text-right font-mono text-xs text-emerald-700 font-semibold">
+                          {formatRupee(row.paid)}
+                        </td>
+
+                        <td className="px-5 py-4 text-right font-mono text-sm font-bold text-rose-700">
+                          {formatRupee(row.due)}
+                        </td>
+
+                        <td className="px-5 py-4 text-right">
+                          <div className="flex flex-col items-end gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setModalDefaults({
+                                  category: row.docType === "PO" ? "po" : "purchase",
+                                  type: "OUT",
+                                  entityId: row.id,
+                                  amount: (row.due / 100).toFixed(2),
+                                  notes: `Payment against ${row.docNumber} (${row.supplierName})`,
+                                })
+                                setIsModalOpen(true)
+                              }}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white text-xs font-semibold rounded-lg transition-colors shadow-2xs whitespace-nowrap"
+                            >
+                              <CreditCard className="w-3.5 h-3.5 text-white" />
+                              <span className="text-white">Pay Now</span>
+                            </button>
+
+                            {untaggedOutPayments.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const firstUntagged = untaggedOutPayments[0]
+                                  setResolvingQId(
+                                    `${row.docType === "PO" ? "po" : "purchase"}:${row.id}`
+                                  )
+                                  setResolveModal({
+                                    paymentId: firstUntagged.id,
+                                    amount: firstUntagged.amount,
+                                    type: "OUT",
+                                  })
+                                }}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-[11px] font-semibold rounded-lg transition-colors whitespace-nowrap"
+                              >
+                                <Link2 className="w-3 h-3" />
+                                Link Untagged ({untaggedOutPayments.length})
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* SECTION 2: ACCEPTED QUOTATION ITEMS NOT YET TAGGED TO A PO OR DIRECT PURCHASE */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+            <div className="p-5 border-b border-slate-200 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Package className="w-4 h-4 text-amber-600" />
+                  <h2 className="text-base font-bold text-slate-900">
+                    2. Accepted Quotation Items Not Yet Tagged to a PO or Direct Purchase
+                  </h2>
+                </div>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Individual confirmed items from Accepted/Completed Quotations that have not yet
+                  been ordered via a PO or recorded in Direct Purchases. Check their individual cost
+                  amounts and directly assign a vendor, create a Direct Purchase / PO, or settle payment.
+                </p>
+              </div>
+
+              <div className="relative w-full sm:w-72">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search quote, client, item, vendor..."
+                  value={unprocuredSearch}
+                  onChange={(e) => setUnprocuredSearch(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-orange-500"
+                />
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="text-[11px] text-slate-500 uppercase bg-slate-50 font-bold border-b border-slate-200">
+                  <tr>
+                    <th className="px-5 py-3.5">Quotation & Client</th>
+                    <th className="px-5 py-3.5">Individual Item</th>
+                    <th className="px-5 py-3.5 text-center">Unprocured Qty</th>
+                    <th className="px-5 py-3.5">Vendor Status</th>
+                    <th className="px-5 py-3.5 text-right">Unit CP (vs SP)</th>
+                    <th className="px-5 py-3.5 text-right">Est. Cost (Excl. GST)</th>
+                    <th className="px-5 py-3.5 text-right text-amber-800">
+                      Est. Payable (Incl. GST)
+                    </th>
+                    <th className="px-5 py-3.5 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {filteredUnprocuredItems.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="px-6 py-10 text-center text-slate-500 text-xs">
+                        All items in Accepted Quotations are already covered by Purchase Orders or
+                        Direct Purchases!
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredUnprocuredItems.map((it) => (
+                      <tr
+                        key={it.quotationItemId}
+                        className="hover:bg-slate-50/80 transition-colors"
+                      >
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-1.5">
+                            <Link
+                              href={`/quotations/${it.quotationId}`}
+                              className="font-mono font-bold text-xs text-orange-600 hover:text-orange-700 underline"
+                            >
+                              #{formatShortId(it.quotationId)}
+                            </Link>
+                            {it.quotationPrNo && (
+                              <span className="text-[10px] font-mono text-slate-500">
+                                ({it.quotationPrNo})
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs font-semibold text-slate-900 mt-0.5">
+                            {it.clientName}
+                          </div>
+                        </td>
+
+                        <td className="px-5 py-4 max-w-xs">
+                          <div className="font-mono font-bold text-xs text-slate-900">
+                            {it.materialCode}
+                          </div>
+                          <div className="text-xs text-slate-600 mt-0.5 line-clamp-2">
+                            {it.description}
+                          </div>
+                        </td>
+
+                        <td className="px-5 py-4 text-center">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                            {it.unprocuredQty} {it.unit}
+                          </span>
+                          {it.coveredQty > 0 && (
+                            <div className="text-[10px] text-slate-400 mt-0.5">
+                              ({it.coveredQty} of {it.totalQuotedQty} procured)
+                            </div>
+                          )}
+                        </td>
+
+                        <td className="px-5 py-4">
+                          {it.taggedSupplier ? (
+                            <div>
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
+                                Tagged on Quote
+                              </span>
+                              <div className="text-xs font-semibold text-slate-900 mt-1">
+                                {it.taggedSupplier.name}
+                              </div>
+                            </div>
+                          ) : it.suggestedSupplier ? (
+                            <div>
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                                Lowest Catalog Vendor
+                              </span>
+                              <div className="text-xs font-medium text-slate-800 mt-1">
+                                {it.suggestedSupplier.name}
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200">
+                              No Vendor Tagged
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="px-5 py-4 text-right">
+                          <div className="font-mono font-bold text-xs text-slate-900">
+                            {it.unitCpPaise > 0 ? formatRupee(it.unitCpPaise) : "Not Set"}
+                          </div>
+                          <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                            SP: {formatRupee(it.sellingUnitPaise)}
+                          </div>
+                        </td>
+
+                        <td className="px-5 py-4 text-right font-mono text-xs font-semibold text-slate-800">
+                          {formatRupee(it.estExclGst)}
+                        </td>
+
+                        <td className="px-5 py-4 text-right">
+                          <div className="font-mono font-bold text-sm text-amber-800">
+                            {formatRupee(it.estInclGst)}
+                          </div>
+                          <div className="text-[10px] text-slate-400 font-mono">
+                            +{it.gstPercent}% GST ({formatRupee(it.estGst)})
+                          </div>
+                        </td>
+
+                        <td className="px-5 py-4 text-right">
+                          <button
+                            type="button"
+                            onClick={() => openAssignModal(it)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white text-xs font-semibold rounded-lg transition-colors shadow-2xs whitespace-nowrap"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                            <span className="text-white">Assign & Resolve</span>
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isModalOpen && (
         <TransactionModal
-          onClose={() => setIsModalOpen(false)}
+          onClose={() => {
+            setIsModalOpen(false)
+            setModalDefaults(null)
+          }}
           quotations={quotations}
           pos={pos}
           purchases={purchases}
           clients={clients}
+          initialDefaults={modalDefaults}
         />
+      )}
+
+      {assignModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[92vh]">
+            <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-slate-50">
+              <div>
+                <h2 className="text-base font-bold text-slate-900">
+                  Assign Vendor & Resolve Unprocured Item
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Quotation #{formatShortId(assignModal.quotationId)} · {assignModal.clientName}
+                </p>
+              </div>
+              <button
+                onClick={() => setAssignModal(null)}
+                className="text-slate-400 hover:text-slate-700 p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form
+              id="assign-resolve-form"
+              onSubmit={handleAssignSubmit}
+              className="p-6 overflow-y-auto space-y-5"
+            >
+              {/* Item Summary Box */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center justify-between gap-4">
+                <div>
+                  <span className="font-mono font-bold text-xs text-orange-600">
+                    {assignModal.materialCode}
+                  </span>
+                  <p className="text-xs font-semibold text-slate-900 mt-0.5">
+                    {assignModal.description}
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <span className="text-xs font-mono font-bold bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-full">
+                    Qty: {assignQty} {assignModal.unit}
+                  </span>
+                </div>
+              </div>
+
+              {/* Known Catalog Vendor Quick Picks */}
+              {assignModal.productSuppliers && assignModal.productSuppliers.length > 0 && (
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                    Known Vendor Rates for this Product (Click to Auto-Fill)
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {assignModal.productSuppliers.map((ps: any) => {
+                      const isSelected = assignSupplierId === ps.supplierId
+                      return (
+                        <button
+                          key={ps.supplierId}
+                          type="button"
+                          onClick={() => {
+                            setAssignSupplierId(ps.supplierId)
+                            if (ps.costPrice > 0) {
+                              const cpR = (ps.costPrice / 100).toFixed(2)
+                              setAssignUnitCp(cpR)
+                              const newTotalIncl =
+                                (ps.costPrice / 100) *
+                                assignQty *
+                                (1 + (Number(assignGstPercent) || 0) / 100)
+                              setAssignPayAmount(newTotalIncl.toFixed(2))
+                            }
+                          }}
+                          className={`text-xs px-3 py-1.5 rounded-lg border font-semibold transition-colors flex items-center gap-1.5 ${
+                            isSelected
+                              ? "bg-orange-50 border-orange-500 text-orange-800"
+                              : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                          }`}
+                        >
+                          <Building2 className="w-3.5 h-3.5" />
+                          <span>{ps.supplier?.name}</span>
+                          <span className="font-mono font-bold text-emerald-700">
+                            {formatRupee(ps.costPrice)}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Supplier + Unit Cost + GST */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="sm:col-span-3">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Select Vendor / Supplier *
+                  </label>
+                  <select
+                    required
+                    value={assignSupplierId}
+                    onChange={(e) => setAssignSupplierId(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-orange-500"
+                  >
+                    <option value="">-- Select Vendor --</option>
+                    {suppliers.map((s: any) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Unit Cost (₹ Excl. GST) *
+                  </label>
+                  <SmartNumberInput
+                    required
+                    value={assignUnitCp}
+                    onValueChange={(num, str) => {
+                      setAssignUnitCp(str)
+                      if (!isNaN(num) && num > 0) {
+                        const totalIncl =
+                          num * assignQty * (1 + (Number(assignGstPercent) || 0) / 100)
+                        setAssignPayAmount(totalIncl.toFixed(2))
+                      }
+                    }}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-sm font-mono font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-orange-500"
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Quantity ({assignModal.unit})
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={assignModal.unprocuredQty}
+                    value={assignQty}
+                    onChange={(e) => {
+                      const q = Math.max(1, Number(e.target.value) || 1)
+                      setAssignQty(q)
+                      const cpNum = Number(assignUnitCp) || 0
+                      if (cpNum > 0) {
+                        const totalIncl =
+                          cpNum * q * (1 + (Number(assignGstPercent) || 0) / 100)
+                        setAssignPayAmount(totalIncl.toFixed(2))
+                      }
+                    }}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-sm font-mono font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    GST %
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step="0.1"
+                    value={assignGstPercent}
+                    onChange={(e) => {
+                      const gst = Number(e.target.value) || 0
+                      setAssignGstPercent(gst)
+                      const cpNum = Number(assignUnitCp) || 0
+                      if (cpNum > 0) {
+                        const totalIncl = cpNum * assignQty * (1 + gst / 100)
+                        setAssignPayAmount(totalIncl.toFixed(2))
+                      }
+                    }}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-sm font-mono font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+              </div>
+
+              {/* Live Cost Calculation Preview */}
+              {Number(assignUnitCp) > 0 && (
+                <div className="bg-amber-50/60 border border-amber-200 rounded-xl p-3.5 text-xs space-y-1">
+                  <div className="flex justify-between text-slate-600">
+                    <span>Subtotal (Excl. GST):</span>
+                    <span className="font-mono font-semibold text-slate-900">
+                      {formatRupee(Math.round(Number(assignUnitCp) * 100 * assignQty))}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-slate-600">
+                    <span>GST ({assignGstPercent}%):</span>
+                    <span className="font-mono font-semibold text-slate-900">
+                      {formatRupee(
+                        Math.round(
+                          Number(assignUnitCp) * 100 * assignQty * (assignGstPercent / 100)
+                        )
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-amber-950 font-bold pt-1 border-t border-amber-200">
+                    <span>Total Payable Amount (Incl. GST):</span>
+                    <span className="font-mono text-sm">
+                      {formatRupee(
+                        Math.round(
+                          Number(assignUnitCp) *
+                            100 *
+                            assignQty *
+                            (1 + assignGstPercent / 100)
+                        )
+                      )}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Resolution Mode */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  How would you like to resolve this item?
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setAssignMode("DIRECT_PURCHASE")}
+                    className={`p-3 rounded-xl border text-left transition-all ${
+                      assignMode === "DIRECT_PURCHASE"
+                        ? "bg-orange-50 border-orange-500 ring-2 ring-orange-500/20"
+                        : "bg-white border-slate-200 hover:bg-slate-50"
+                    }`}
+                  >
+                    <div className="text-xs font-bold text-slate-900">Direct Purchase Bill</div>
+                    <div className="text-[11px] text-slate-500 mt-0.5">
+                      Record in Purchases & link to Quotation
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setAssignMode("PO")}
+                    className={`p-3 rounded-xl border text-left transition-all ${
+                      assignMode === "PO"
+                        ? "bg-orange-50 border-orange-500 ring-2 ring-orange-500/20"
+                        : "bg-white border-slate-200 hover:bg-slate-50"
+                    }`}
+                  >
+                    <div className="text-xs font-bold text-slate-900">Issue Formal PO</div>
+                    <div className="text-[11px] text-slate-500 mt-0.5">
+                      Create an Issued PO linked to Quotation
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setAssignMode("TAG_ONLY")}
+                    className={`p-3 rounded-xl border text-left transition-all ${
+                      assignMode === "TAG_ONLY"
+                        ? "bg-orange-50 border-orange-500 ring-2 ring-orange-500/20"
+                        : "bg-white border-slate-200 hover:bg-slate-50"
+                    }`}
+                  >
+                    <div className="text-xs font-bold text-slate-900">Tag Vendor Only</div>
+                    <div className="text-[11px] text-slate-500 mt-0.5">
+                      Save vendor & CP on Quote for later
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Payment Resolution Options when creating Direct Purchase or PO */}
+              {assignMode !== "TAG_ONLY" && (
+                <div className="space-y-4 pt-3 border-t border-slate-200">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                      Payment Settlement
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setAssignPaymentMode("PAY_NOW")}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                          assignPaymentMode === "PAY_NOW"
+                            ? "bg-emerald-600 text-white border-emerald-600"
+                            : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                        }`}
+                      >
+                        <span className={assignPaymentMode === "PAY_NOW" ? "text-white" : ""}>
+                          Record Payment Now
+                        </span>
+                      </button>
+
+                      {untaggedOutPayments.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setAssignPaymentMode("LINK_UNTAGGED")}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                            assignPaymentMode === "LINK_UNTAGGED"
+                              ? "bg-amber-600 text-white border-amber-600"
+                              : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                          }`}
+                        >
+                          <span
+                            className={assignPaymentMode === "LINK_UNTAGGED" ? "text-white" : ""}
+                          >
+                            Link Existing Untagged Payment ({untaggedOutPayments.length})
+                          </span>
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => setAssignPaymentMode("LATER")}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                          assignPaymentMode === "LATER"
+                            ? "bg-slate-800 text-white border-slate-800"
+                            : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                        }`}
+                      >
+                        <span className={assignPaymentMode === "LATER" ? "text-white" : ""}>
+                          Pay Later (Keep in Unpaid Payables)
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {assignPaymentMode === "PAY_NOW" && (
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                            Payment Amount (₹)
+                          </label>
+                          <SmartNumberInput
+                            required
+                            value={assignPayAmount}
+                            onValueChange={(_, str) => setAssignPayAmount(str)}
+                            className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-sm font-mono font-bold text-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                            Method
+                          </label>
+                          <select
+                            value={assignPayMethod}
+                            onChange={(e) => setAssignPayMethod(e.target.value)}
+                            className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-900"
+                          >
+                            <option value="BANK_TRANSFER">Bank Transfer</option>
+                            <option value="UPI">UPI</option>
+                            <option value="CHEQUE">Cheque</option>
+                            <option value="CASH">Cash</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                            Status
+                          </label>
+                          <select
+                            value={assignPayStatus}
+                            onChange={(e) =>
+                              setAssignPayStatus(e.target.value as "CLEARED" | "PENDING")
+                            }
+                            className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-900"
+                          >
+                            <option value="CLEARED">Cleared</option>
+                            <option value="PENDING">Pending (Cheque/PDC)</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                            UTR / Cheque Ref (Optional)
+                          </label>
+                          <input
+                            type="text"
+                            value={assignPayRef}
+                            onChange={(e) => setAssignPayRef(e.target.value)}
+                            placeholder="e.g. UTR123456"
+                            className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                            Notes
+                          </label>
+                          <input
+                            type="text"
+                            value={assignPayNotes}
+                            onChange={(e) => setAssignPayNotes(e.target.value)}
+                            className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {assignPaymentMode === "LINK_UNTAGGED" && (
+                    <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-4">
+                      <label className="block text-xs font-bold text-amber-950 uppercase mb-1.5">
+                        Select Untagged Outgoing Payment to Link
+                      </label>
+                      <select
+                        required
+                        value={assignUntaggedPaymentId}
+                        onChange={(e) => setAssignUntaggedPaymentId(e.target.value)}
+                        className="w-full bg-white border border-amber-300 rounded-lg px-3 py-2 text-xs font-semibold text-slate-900"
+                      >
+                        <option value="">-- Choose Untagged Outgoing Payment --</option>
+                        {untaggedOutPayments.map((u: any) => (
+                          <option key={u.id} value={u.id}>
+                            {formatRupee(u.amount)} — {new Date(u.date).toLocaleDateString()} (
+                            {u.notes || u.reference || u.method})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              )}
+            </form>
+
+            <div className="p-5 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setAssignModal(null)}
+                disabled={isUpdating}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="assign-resolve-form"
+                disabled={isUpdating}
+                className="inline-flex items-center gap-2 px-5 py-2 bg-orange-600 hover:bg-orange-700 text-white text-xs font-semibold rounded-xl transition-colors disabled:opacity-50"
+              >
+                {isUpdating ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-white" />
+                ) : (
+                  <Check className="w-4 h-4 text-white" />
+                )}
+                <span className="text-white">
+                  {isUpdating
+                    ? "Processing..."
+                    : assignMode === "DIRECT_PURCHASE"
+                    ? "Create Direct Purchase & Resolve"
+                    : assignMode === "PO"
+                    ? "Create PO & Resolve"
+                    : "Save Vendor Tag"}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {resolveModal && (
@@ -1049,39 +2368,105 @@ export function AccountsView({
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-6">
-              <p className="text-xs text-slate-600 mb-4">
-                Resolving payment of{" "}
-                <span className="text-slate-900 font-bold font-mono">
-                  {formatRupee(resolveModal.amount)}
-                </span>
-                .
-              </p>
-
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                {resolveModal.type === "IN"
-                  ? "Select Quotation to apply this payment"
-                  : "Select PO / Purchase to apply this payment"}
-              </label>
-              <select
-                value={resolvingQId}
-                onChange={(e) => setResolvingQId(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-sm text-slate-900 focus:bg-white focus:outline-none"
-              >
-                <option value="">-- Select --</option>
-                {resolveModal.type === "IN" &&
-                  quotations
-                    ?.filter((q: any) => q.status === "ACCEPTED" || q.status === "COMPLETED")
-                    .map((q: any) => {
-                      const due =
-                        (q.totalAmount || 0) + (q.totalGst || 0) - (q.amountPaid || 0)
-                      return (
-                        <option key={q.id} value={q.id} disabled={due <= 0}>
-                          {q.id} - {q.client?.name} (Due: {formatRupee(due)})
+            <div className="p-6 space-y-4">
+              <div>
+                <p className="text-xs text-slate-600 mb-2">
+                  Select which {resolveModal.type === "IN" ? "Client Quotation" : "Purchase Order or Direct Purchase"} to link this payment to:
+                </p>
+                {untaggedOutPayments.length > 1 && resolveModal.type === "OUT" && (
+                  <div className="mb-3">
+                    <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
+                      Untagged Payment Entry
+                    </label>
+                    <select
+                      value={resolveModal.paymentId}
+                      onChange={(e) => {
+                        const found = untaggedOutPayments.find((u: any) => u.id === e.target.value)
+                        if (found) {
+                          setResolveModal({
+                            paymentId: found.id,
+                            amount: found.amount,
+                            type: "OUT",
+                          })
+                        }
+                      }}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900"
+                    >
+                      {untaggedOutPayments.map((u: any) => (
+                        <option key={u.id} value={u.id}>
+                          {formatRupee(u.amount)} — {new Date(u.date).toLocaleDateString()} (
+                          {u.notes || u.reference || u.method})
                         </option>
-                      )
-                    })}
-              </select>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                <p className="text-xs text-slate-600">
+                  Payment Amount:{" "}
+                  <span className="text-slate-900 font-bold font-mono">
+                    {formatRupee(resolveModal.amount)}
+                  </span>
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  {resolveModal.type === "IN"
+                    ? "Select Quotation to apply this payment"
+                    : "Select PO / Direct Purchase to apply this payment"}
+                </label>
+                <select
+                  value={resolvingQId}
+                  onChange={(e) => setResolvingQId(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-sm text-slate-900 focus:bg-white focus:outline-none"
+                >
+                  <option value="">-- Select --</option>
+                  {resolveModal.type === "IN" &&
+                    quotations
+                      ?.filter((q: any) => q.status === "ACCEPTED" || q.status === "COMPLETED")
+                      .map((q: any) => {
+                        const due =
+                          (q.totalAmount || 0) + (q.totalGst || 0) - (q.amountPaid || 0)
+                        return (
+                          <option key={q.id} value={q.id} disabled={due <= 0}>
+                            #{formatShortId(q.id)} - {q.client?.name} (Due: {formatRupee(due)})
+                          </option>
+                        )
+                      })}
+                  {resolveModal.type === "OUT" && (
+                    <>
+                      <optgroup label="Unpaid Purchase Orders">
+                        {pos?.map((p: any) => {
+                          const due =
+                            (p.totalAmount || 0) + (p.totalGst || 0) - (p.amountPaid || 0)
+                          return (
+                            <option key={`po:${p.id}`} value={`po:${p.id}`} disabled={due <= 0}>
+                              {p.poNumber || `PO-${formatShortId(p.id)}`} - {p.supplier?.name} (Due:{" "}
+                              {formatRupee(due)})
+                            </option>
+                          )
+                        })}
+                      </optgroup>
+                      <optgroup label="Unpaid Direct Purchases">
+                        {purchases?.map((p: any) => {
+                          const due =
+                            (p.totalAmount || 0) + (p.totalGst || 0) - (p.amountPaid || 0)
+                          return (
+                            <option
+                              key={`purchase:${p.id}`}
+                              value={`purchase:${p.id}`}
+                              disabled={due <= 0}
+                            >
+                              BILL-{formatShortId(p.id)} - {p.supplier?.name} (Due:{" "}
+                              {formatRupee(due)})
+                            </option>
+                          )
+                        })}
+                      </optgroup>
+                    </>
+                  )}
+                </select>
+              </div>
             </div>
             <div className="p-5 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
               <button

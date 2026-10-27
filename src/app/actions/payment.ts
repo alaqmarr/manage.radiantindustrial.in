@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
+import { generateSmartPurchaseId, generateSmartPoId } from "@/lib/smartId"
 
 function computePaymentStatus(amountPaid: number, totalAmount: number, totalGst: number): string {
   const total = totalAmount + totalGst
@@ -312,33 +313,253 @@ export async function recordManualPayment(data: {
   }
 }
 
-export async function resolveUntaggedPayment(paymentId: string, quotationId: string) {
+export async function resolveUntaggedPayment(
+  paymentId: string,
+  targetId: string,
+  targetType?: "quotation" | "po" | "purchase"
+) {
   try {
     const session = await auth()
     if (!session?.user) return { error: "Unauthorized" }
-    
+
     const payment = await prisma.payment.findUnique({ where: { id: paymentId } })
     if (!payment || !payment.untagged) return { error: "Untagged payment not found" }
-    
-    const quotation = await prisma.quotation.findUnique({ where: { id: quotationId } })
-    if (!quotation) return { error: "Quotation not found" }
-    
-    await prisma.payment.update({
-      where: { id: paymentId },
-      data: {
-        untagged: false,
-        category: "quotation",
-        quotationId: quotationId,
-        clientId: null, // Clear this since we now link directly to quotation
-      }
-    })
-    
-    await recalculateParentPayment("quotation", quotationId)
+
+    let resolvedType: "quotation" | "po" | "purchase" =
+      targetType || (payment.type === "IN" ? "quotation" : "po")
+    let cleanId = targetId
+
+    if (targetId.startsWith("quotation:")) {
+      resolvedType = "quotation"
+      cleanId = targetId.replace("quotation:", "")
+    } else if (targetId.startsWith("po:")) {
+      resolvedType = "po"
+      cleanId = targetId.replace("po:", "")
+    } else if (targetId.startsWith("purchase:")) {
+      resolvedType = "purchase"
+      cleanId = targetId.replace("purchase:", "")
+    }
+
+    if (resolvedType === "quotation") {
+      const quotation = await prisma.quotation.findUnique({ where: { id: cleanId } })
+      if (!quotation) return { error: "Quotation not found" }
+
+      await prisma.payment.update({
+        where: { id: paymentId },
+        data: {
+          untagged: false,
+          category: "quotation",
+          quotationId: cleanId,
+          clientId: null,
+        },
+      })
+      await recalculateParentPayment("quotation", cleanId)
+    } else if (resolvedType === "po") {
+      const po = await prisma.purchaseOrder.findUnique({ where: { id: cleanId } })
+      if (!po) return { error: "Purchase Order not found" }
+
+      await prisma.payment.update({
+        where: { id: paymentId },
+        data: {
+          untagged: false,
+          category: "po",
+          poId: cleanId,
+          supplierId: null,
+        },
+      })
+      await recalculateParentPayment("po", cleanId)
+    } else if (resolvedType === "purchase") {
+      const purchase = await prisma.purchase.findUnique({ where: { id: cleanId } })
+      if (!purchase) return { error: "Direct Purchase not found" }
+
+      await prisma.payment.update({
+        where: { id: paymentId },
+        data: {
+          untagged: false,
+          category: "purchase",
+          purchaseId: cleanId,
+          supplierId: null,
+        },
+      })
+      await recalculateParentPayment("purchase", cleanId)
+    }
+
     revalidatePath("/accounts")
     return { success: true }
   } catch (error: any) {
     console.error("Error resolving untagged payment:", error)
     return { error: error.message || "Failed to resolve payment" }
+  }
+}
+
+export async function assignAndResolveQuotationItem(data: {
+  quotationId: string
+  quotationItemId: string
+  productId: string
+  supplierId: string
+  quantity: number
+  unitCpPaise: number
+  gstRate: number
+  itemDescription?: string
+  mode: "DIRECT_PURCHASE" | "PO" | "TAG_ONLY"
+  recordPaymentNow?: boolean
+  paymentAmountRupees?: number
+  paymentMethod?: string
+  paymentReference?: string
+  paymentStatus?: string
+  paymentDate?: string
+  existingUntaggedPaymentId?: string
+}) {
+  try {
+    const session = await auth()
+    if (!session?.user) return { error: "Unauthorized" }
+
+    if (!data.supplierId) return { error: "Please select a vendor/supplier" }
+    if (!data.unitCpPaise || data.unitCpPaise <= 0) {
+      return { error: "Please enter a valid unit cost price greater than 0" }
+    }
+    if (!data.quantity || data.quantity <= 0) {
+      return { error: "Quantity must be greater than 0" }
+    }
+
+    // 1. Update QuotationItem with supplierId and cpSnapshot
+    await prisma.quotationItem.update({
+      where: { id: data.quotationItemId },
+      data: {
+        supplierId: data.supplierId,
+        cpSnapshot: Math.round(data.unitCpPaise),
+      },
+    })
+
+    // 2. Upsert ProductSupplier costPrice
+    await prisma.productSupplier.upsert({
+      where: {
+        productId_supplierId: {
+          productId: data.productId,
+          supplierId: data.supplierId,
+        },
+      },
+      update: { costPrice: Math.round(data.unitCpPaise) },
+      create: {
+        productId: data.productId,
+        supplierId: data.supplierId,
+        costPrice: Math.round(data.unitCpPaise),
+      },
+    })
+
+    const subtotalPaise = Math.round(data.quantity * data.unitCpPaise)
+    const gstPaise = Math.round(subtotalPaise * ((data.gstRate || 0) / 100))
+
+    let createdDocId = ""
+
+    if (data.mode === "DIRECT_PURCHASE") {
+      const purchaseId = await generateSmartPurchaseId(data.supplierId)
+      const purchase = await prisma.purchase.create({
+        data: {
+          id: purchaseId,
+          supplierId: data.supplierId,
+          quotationId: data.quotationId,
+          totalAmount: subtotalPaise,
+          totalGst: gstPaise,
+          items: {
+            create: [
+              {
+                id: `${purchaseId}-item-1`,
+                productId: data.productId,
+                quantity: data.quantity,
+                cpSnapshot: Math.round(data.unitCpPaise),
+              },
+            ],
+          },
+        },
+      })
+      createdDocId = purchase.id
+
+      if (data.existingUntaggedPaymentId) {
+        await prisma.payment.update({
+          where: { id: data.existingUntaggedPaymentId },
+          data: {
+            untagged: false,
+            category: "purchase",
+            purchaseId: purchase.id,
+            supplierId: null,
+          },
+        })
+        await recalculateParentPayment("purchase", purchase.id)
+      } else if (data.recordPaymentNow && data.paymentAmountRupees && data.paymentAmountRupees > 0) {
+        await recordPayment({
+          type: "purchase",
+          entityId: purchase.id,
+          amount: data.paymentAmountRupees,
+          method: data.paymentMethod || "BANK_TRANSFER",
+          reference: data.paymentReference,
+          status: data.paymentStatus || "CLEARED",
+          date: data.paymentDate,
+          notes: `Payment for Direct Purchase #${purchase.id.toUpperCase()} (Quote #${data.quotationId.toUpperCase()})`,
+        })
+      }
+    } else if (data.mode === "PO") {
+      const smartPo = await generateSmartPoId(data.supplierId)
+      const po = await prisma.purchaseOrder.create({
+        data: {
+          id: smartPo.id,
+          poNumber: smartPo.poNumber,
+          supplierId: data.supplierId,
+          quotationId: data.quotationId,
+          status: "ISSUED",
+          totalAmount: subtotalPaise,
+          totalGst: gstPaise,
+          items: {
+            create: [
+              {
+                id: `${smartPo.id}-item-1`,
+                productId: data.productId,
+                itemDescription: data.itemDescription || null,
+                quantity: data.quantity,
+                unitPrice: Math.round(data.unitCpPaise),
+                gstRate: data.gstRate || 18,
+              },
+            ],
+          },
+        },
+      })
+      createdDocId = po.poNumber || po.id
+
+      if (data.existingUntaggedPaymentId) {
+        await prisma.payment.update({
+          where: { id: data.existingUntaggedPaymentId },
+          data: {
+            untagged: false,
+            category: "po",
+            poId: po.id,
+            supplierId: null,
+          },
+        })
+        await recalculateParentPayment("po", po.id)
+      } else if (data.recordPaymentNow && data.paymentAmountRupees && data.paymentAmountRupees > 0) {
+        await recordPayment({
+          type: "po",
+          entityId: po.id,
+          amount: data.paymentAmountRupees,
+          method: data.paymentMethod || "BANK_TRANSFER",
+          reference: data.paymentReference,
+          status: data.paymentStatus || "CLEARED",
+          date: data.paymentDate,
+          notes: `Payment for PO #${po.poNumber || po.id.toUpperCase()} (Quote #${data.quotationId.toUpperCase()})`,
+        })
+      }
+    }
+
+    revalidatePath("/accounts")
+    revalidatePath("/purchases")
+    revalidatePath("/purchase-orders")
+    revalidatePath("/quotations")
+    revalidatePath(`/quotations/${data.quotationId}`)
+
+    return { success: true, createdDocId }
+  } catch (error: any) {
+    console.error("Error assigning quotation item:", error)
+    return { error: error.message || "Failed to assign and resolve quotation item" }
   }
 }
 
@@ -436,6 +657,7 @@ export async function getAccountMetrics() {
     for (const q of acceptedQuotations) {
       let estCost = 0
       for (const item of q.items) {
+        if (item.isConfirmed === false) continue
         estCost += ((item.cpSnapshot || 0) * item.quantity) + (item.additionalCost || 0)
       }
       
@@ -479,6 +701,7 @@ export async function getAccountMetrics() {
       let cogs = 0
       let expenses = 0
       for (const item of q.items) {
+        if (item.isConfirmed === false) continue
         revenue += (item.spSnapshot || 0) * item.quantity
         cogs += (item.cpSnapshot || 0) * item.quantity
         expenses += item.additionalCost || 0

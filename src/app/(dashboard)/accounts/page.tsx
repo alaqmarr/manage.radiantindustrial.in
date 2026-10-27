@@ -26,6 +26,7 @@ export default async function AccountsPage() {
     select: {
       id: true,
       prNo: true,
+      status: true,
       totalAmount: true,
       totalGst: true,
       amountPaid: true,
@@ -41,27 +42,111 @@ export default async function AccountsPage() {
     select: {
       id: true,
       poNumber: true,
+      status: true,
+      createdAt: true,
+      paymentDueDate: true,
       totalAmount: true,
       totalGst: true,
       amountPaid: true,
-      supplier: { select: { name: true } },
+      supplier: { select: { id: true, name: true } },
+      quotation: {
+        select: {
+          id: true,
+          prNo: true,
+          client: { select: { name: true } },
+        },
+      },
+      items: {
+        include: {
+          product: {
+            select: {
+              id: true,
+              materialCode: true,
+              materialDescription: true,
+              unit: true,
+            },
+          },
+        },
+      },
     },
+    orderBy: { createdAt: "desc" },
   })
 
   const purchases = await prisma.purchase.findMany({
     where: { paymentStatus: { not: "PAID" } },
     select: {
       id: true,
+      date: true,
       totalAmount: true,
       totalGst: true,
       amountPaid: true,
-      supplier: { select: { name: true } },
+      supplier: { select: { id: true, name: true } },
+      quotation: {
+        select: {
+          id: true,
+          prNo: true,
+          client: { select: { name: true } },
+        },
+      },
+      items: {
+        include: {
+          product: {
+            select: {
+              id: true,
+              materialCode: true,
+              materialDescription: true,
+              unit: true,
+            },
+          },
+        },
+      },
     },
+    orderBy: { date: "desc" },
   })
 
   const clients = await prisma.client.findMany({
     select: { id: true, name: true, creditBalance: true },
     orderBy: { name: "asc" },
+  })
+
+  const suppliers = await prisma.supplier.findMany({
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  })
+
+  const acceptedQuotations = await prisma.quotation.findMany({
+    where: { status: { in: ["ACCEPTED", "COMPLETED"] } },
+    include: {
+      client: { select: { id: true, name: true } },
+      items: {
+        include: {
+          supplier: { select: { id: true, name: true } },
+          product: {
+            include: {
+              supplier: { select: { id: true, name: true } },
+              productSuppliers: {
+                include: { supplier: { select: { id: true, name: true } } },
+                orderBy: { costPrice: "asc" },
+              },
+            },
+          },
+        },
+      },
+      purchaseOrders: {
+        where: { status: { not: "CANCELLED" } },
+        include: {
+          items: true,
+          supplier: { select: { id: true, name: true } },
+        },
+      },
+      purchases: {
+        include: {
+          items: true,
+          supplier: { select: { id: true, name: true } },
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
   })
 
   return (
@@ -121,6 +206,8 @@ export default async function AccountsPage() {
         pos={pos}
         purchases={purchases}
         clients={clients}
+        suppliers={suppliers}
+        acceptedQuotations={acceptedQuotations}
       />
     </div>
   )

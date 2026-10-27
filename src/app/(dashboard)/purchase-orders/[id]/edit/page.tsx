@@ -40,6 +40,7 @@ export default async function EditPurchaseOrderPage(props: { params: Promise<{ i
     where: { status: { in: ['ACCEPTED', 'COMPLETED'] } },
     select: { 
       id: true, 
+      prNo: true,
       client: { select: { name: true } },
       items: {
         include: { product: true }

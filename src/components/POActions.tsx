@@ -76,7 +76,7 @@ export function POActions({
       const htmlContent = emailTableRef.current.innerHTML;
       const result = await sendEmailAction({
         to: finalEmails,
-        subject: `Purchase Order - ${po.id.slice(-6).toUpperCase()} from ${settings?.companyName || "Our Company"}`,
+        subject: `Purchase Order - ${po.poNumber || po.id.slice(-6).toUpperCase()} from ${settings?.companyName || "Our Company"}`,
         html: htmlContent
       });
 
@@ -317,7 +317,7 @@ export function POActions({
                 <td valign="top" width="50%" align="right">
                   <h2 style={{ margin: "0 0 6px 0", fontSize: "22px", fontWeight: "800", color: "#f97316", textTransform: "uppercase", letterSpacing: "1px", fontFamily: "var(--font-heading), 'Montserrat', Arial, sans-serif" }}>Purchase Order</h2>
                   <p style={{ margin: "0 0 2px 0", color: "#4b5563" }}><strong>Date:</strong> {new Date(po.createdAt).toLocaleDateString()}</p>
-                  <p style={{ margin: "0", color: "#4b5563", wordBreak: "break-all" }}><strong>PO No:</strong> {po.id}</p>
+                  <p style={{ margin: "0", color: "#4b5563", wordBreak: "break-all" }}><strong>PO No:</strong> {po.poNumber || po.id}</p>
                 </td>
               </tr>
             </tbody>

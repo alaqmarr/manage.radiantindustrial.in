@@ -36,6 +36,7 @@ export default async function NewPurchaseOrderPage(props: { searchParams: Promis
     where: { status: { in: ['ACCEPTED', 'COMPLETED'] } },
     select: { 
       id: true, 
+      prNo: true,
       client: { select: { name: true } },
       items: {
         include: { product: true }

@@ -22,6 +22,7 @@ export async function createPurchaseOrder(data: {
   supplierId: string
   rfqId?: string
   quotationId?: string
+  poNumber?: string
   status: string
   paymentTerms?: string
   deliveryTerms?: string
@@ -35,6 +36,38 @@ export async function createPurchaseOrder(data: {
 
     if (data.items.length === 0) return { error: "PO must have at least one item" }
 
+    const supplier = await prisma.supplier.findUnique({
+      where: { id: data.supplierId },
+      select: { id: true }
+    })
+    if (!supplier) return { error: "Selected supplier does not exist" }
+
+    let validRfqId: string | null = null
+    if (data.rfqId && data.rfqId.trim()) {
+      const trimmedRfqId = data.rfqId.trim()
+      const existingRfq = await prisma.rfq.findUnique({
+        where: { id: trimmedRfqId },
+        select: { id: true }
+      }) || await prisma.rfq.findFirst({
+        where: { id: { contains: trimmedRfqId } },
+        select: { id: true }
+      })
+      if (existingRfq) {
+        validRfqId = existingRfq.id
+      }
+    }
+
+    let validQuotationId: string | null = null
+    if (data.quotationId && data.quotationId.trim()) {
+      const existingQuotation = await prisma.quotation.findUnique({
+        where: { id: data.quotationId.trim() },
+        select: { id: true }
+      })
+      if (existingQuotation) {
+        validQuotationId = existingQuotation.id
+      }
+    }
+
     let totalAmount = 0
     let totalGst = 0
     
@@ -46,53 +79,86 @@ export async function createPurchaseOrder(data: {
     }
 
     // Upsert products
+    const resolvedItems: {
+      productId: string
+      quantity: number
+      unitPrice: number
+      gstRate: number
+      comment: string | null
+    }[] = []
+
     for (const item of data.items) {
+      const materialCode = (item.product.materialCode || "").trim() || `PROD-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
       const p = await prisma.product.upsert({
-        where: { materialCode: item.product.materialCode },
+        where: { materialCode },
         update: {
           materialDescription: item.product.materialDescription,
-          unit: item.product.unit,
+          unit: item.product.unit || "NUM",
           gstRate: item.gstRate
         },
         create: {
-          id: generateSlug(`${item.product.materialCode} ${item.product.materialDescription}`, true),
-          materialCode: item.product.materialCode,
+          id: generateSlug(`${materialCode} ${item.product.materialDescription}`, true),
+          materialCode,
           materialDescription: item.product.materialDescription,
-          unit: item.product.unit,
+          unit: item.product.unit || "NUM",
           gstRate: item.gstRate,
           costPrice: 0,
           sellingPrice: 0
         }
       })
-      item.product.id = p.id
       
       // Update supplier product linkage (cost price)
       await prisma.productSupplier.upsert({
-        where: { productId_supplierId: { productId: p.id, supplierId: data.supplierId } },
+        where: { productId_supplierId: { productId: p.id, supplierId: supplier.id } },
         update: { costPrice: item.unitPrice },
-        create: { productId: p.id, supplierId: data.supplierId, costPrice: item.unitPrice }
+        create: { productId: p.id, supplierId: supplier.id, costPrice: item.unitPrice }
+      })
+
+      resolvedItems.push({
+        productId: p.id,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        gstRate: item.gstRate,
+        comment: item.comment || null
       })
     }
 
-        const lastPo = await prisma.purchaseOrder.findFirst({
-      orderBy: { poNumber: 'desc' },
+    const allPos = await prisma.purchaseOrder.findMany({
+      where: { poNumber: { startsWith: 'PO-' } },
       select: { poNumber: true }
     });
-    let nextNum = 1;
-    if (lastPo && lastPo.poNumber) {
-      const match = lastPo.poNumber.match(/PO-(\d+)/);
-      if (match) nextNum = parseInt(match[1], 10) + 1;
+    let maxNum = 0;
+    for (const p of allPos) {
+      if (p.poNumber) {
+        const match = p.poNumber.match(/^PO-(\d+)$/);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (num > maxNum) maxNum = num;
+        }
+      }
     }
+    const nextNum = maxNum + 1;
     const id = generateSlug(`PO-${Date.now()}-${nextNum}`);
-    const poNumber = `PO-${String(nextNum).padStart(6, '0')}`;
+    let poNumber = data.poNumber?.trim() || `PO-${String(nextNum).padStart(6, '0')}`;
+
+    const existingWithPoNum = await prisma.purchaseOrder.findUnique({
+      where: { poNumber },
+      select: { id: true }
+    });
+    if (existingWithPoNum) {
+      if (data.poNumber?.trim()) {
+        return { error: `PO Number "${poNumber}" already exists. Please use a different PO Number.` };
+      }
+      poNumber = `PO-${Date.now()}`;
+    }
 
     const po = await prisma.purchaseOrder.create({
       data: {
         id,
         poNumber,
-        supplierId: data.supplierId,
-        rfqId: data.rfqId,
-        quotationId: data.quotationId,
+        supplierId: supplier.id,
+        rfqId: validRfqId,
+        quotationId: validQuotationId,
         status: data.status || "DRAFT",
         paymentTerms: data.paymentTerms,
         deliveryTerms: data.deliveryTerms,
@@ -101,21 +167,21 @@ export async function createPurchaseOrder(data: {
         totalAmount,
         totalGst,
         items: {
-          create: data.items.map((item: any, index: number) => ({
-            id: generateSlug(`POI-${id}-${index}`),
-            productId: item.product.id,
+          create: resolvedItems.map((item, index) => ({
+            id: generateSlug(`POI-${id}-${index}`, true),
+            productId: item.productId,
             quantity: item.quantity,
             unitPrice: item.unitPrice,
             gstRate: item.gstRate,
-            comment: item.comment || null
+            comment: item.comment
           }))
         }
       }
     })
 
-    if (data.rfqId) {
+    if (validRfqId) {
        await prisma.rfq.update({
-         where: { id: data.rfqId },
+         where: { id: validRfqId },
          data: { status: "COMPLETED" }
        })
     }
@@ -164,6 +230,38 @@ export async function updatePurchaseOrder(id: string, data: any) {
 
     if (data.items.length === 0) return { error: 'PO must have at least one item' }
 
+    const supplier = await prisma.supplier.findUnique({
+      where: { id: data.supplierId },
+      select: { id: true }
+    })
+    if (!supplier) return { error: 'Selected supplier does not exist' }
+
+    let validRfqId: string | null = null
+    if (data.rfqId && data.rfqId.trim()) {
+      const trimmedRfqId = data.rfqId.trim()
+      const existingRfq = await prisma.rfq.findUnique({
+        where: { id: trimmedRfqId },
+        select: { id: true }
+      }) || await prisma.rfq.findFirst({
+        where: { id: { contains: trimmedRfqId } },
+        select: { id: true }
+      })
+      if (existingRfq) {
+        validRfqId = existingRfq.id
+      }
+    }
+
+    let validQuotationId: string | null = null
+    if (data.quotationId && data.quotationId.trim()) {
+      const existingQuotation = await prisma.quotation.findUnique({
+        where: { id: data.quotationId.trim() },
+        select: { id: true }
+      })
+      if (existingQuotation) {
+        validQuotationId = existingQuotation.id
+      }
+    }
+
     let totalAmount = 0
     let totalGst = 0
     
@@ -175,25 +273,47 @@ export async function updatePurchaseOrder(id: string, data: any) {
     }
 
     // Upsert products
+    const resolvedItems: {
+      productId: string
+      quantity: number
+      unitPrice: number
+      gstRate: number
+      comment: string | null
+    }[] = []
+
     for (const item of data.items) {
+      const materialCode = (item.product.materialCode || "").trim() || `PROD-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
       const p = await prisma.product.upsert({
-        where: { materialCode: item.product.materialCode },
+        where: { materialCode },
         update: {
           materialDescription: item.product.materialDescription,
-          unit: item.product.unit,
+          unit: item.product.unit || "NUM",
           gstRate: item.gstRate
         },
         create: {
-          id: generateSlug(`${item.product.materialCode} `, true),
-          materialCode: item.product.materialCode,
+          id: generateSlug(`${materialCode} ${item.product.materialDescription}`, true),
+          materialCode,
           materialDescription: item.product.materialDescription,
-          unit: item.product.unit,
+          unit: item.product.unit || "NUM",
           gstRate: item.gstRate,
           costPrice: 0,
           sellingPrice: 0
         }
       })
-      item.product.id = p.id
+
+      await prisma.productSupplier.upsert({
+        where: { productId_supplierId: { productId: p.id, supplierId: supplier.id } },
+        update: { costPrice: item.unitPrice },
+        create: { productId: p.id, supplierId: supplier.id, costPrice: item.unitPrice }
+      })
+
+      resolvedItems.push({
+        productId: p.id,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        gstRate: item.gstRate,
+        comment: item.comment || null
+      })
     }
 
     const po = await prisma.$transaction(async (tx) => {
@@ -205,9 +325,10 @@ export async function updatePurchaseOrder(id: string, data: any) {
       return await tx.purchaseOrder.update({
         where: { id },
         data: {
-          supplierId: data.supplierId,
-          rfqId: data.rfqId,
-          quotationId: data.quotationId,
+          supplierId: supplier.id,
+          rfqId: validRfqId,
+          quotationId: validQuotationId,
+          ...(data.poNumber?.trim() ? { poNumber: data.poNumber.trim() } : {}),
           status: data.status || 'DRAFT',
           paymentTerms: data.paymentTerms,
           deliveryTerms: data.deliveryTerms,
@@ -216,13 +337,13 @@ export async function updatePurchaseOrder(id: string, data: any) {
           totalAmount,
           totalGst,
           items: {
-            create: data.items.map((item: any, index: number) => ({
-              id: generateSlug(`POI-${id}-${index}`),
-              productId: item.product.id,
+            create: resolvedItems.map((item, index) => ({
+              id: generateSlug(`POI-${id}-${index}`, true),
+              productId: item.productId,
               quantity: item.quantity,
               unitPrice: item.unitPrice,
               gstRate: item.gstRate,
-              comment: item.comment || null
+              comment: item.comment
             }))
           }
         }

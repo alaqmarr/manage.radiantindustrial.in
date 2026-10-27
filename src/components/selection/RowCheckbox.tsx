@@ -8,12 +8,12 @@ export function RowCheckbox({ id }: { id: string }) {
   const isSelected = selectedIds.has(id)
 
   return (
-    <input 
-      type="checkbox" 
-      className="w-4 h-4 rounded border-zinc-700 bg-zinc-950 text-brand-orange focus:ring-brand-slate focus:ring-offset-zinc-900 cursor-pointer"
+    <input
+      type="checkbox"
+      className="w-4 h-4 rounded border-slate-300 bg-white text-orange-600 focus:ring-orange-500 cursor-pointer accent-orange-600"
       checked={isSelected}
       onChange={() => toggleId(id)}
-      onClick={e => e.stopPropagation()} // Prevent row click if any
+      onClick={(e) => e.stopPropagation()}
     />
   )
 }

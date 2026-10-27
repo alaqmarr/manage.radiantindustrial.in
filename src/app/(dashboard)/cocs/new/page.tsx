@@ -1,30 +1,93 @@
 import { prisma } from "@/lib/prisma"
 import { CocForm } from "@/components/CocForm"
+import Link from "next/link"
+import { ArrowLeft, ShieldCheck } from "lucide-react"
 
-export default async function NewCocPage() {
+export default async function NewCocPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ clientId?: string; quotationId?: string }>
+}) {
+  const { clientId, quotationId } = await searchParams
+
   const clients = await prisma.client.findMany({
-    orderBy: { name: 'asc' }
+    orderBy: { name: "asc" },
   })
-  
+
   const products = await prisma.product.findMany({
-    orderBy: { materialDescription: 'asc' }
+    orderBy: { materialDescription: "asc" },
   })
-  
+
+  const quotations = await prisma.quotation.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 100,
+    include: {
+      client: { select: { id: true, name: true } },
+      items: {
+        include: { product: true },
+      },
+    },
+  })
+
   const settings = await prisma.companySettings.findUnique({
-    where: { id: "default" }
+    where: { id: "default" },
   })
+
+  // Pre-populate if quotationId or clientId was passed in query params
+  const matchedQuotation = quotationId
+    ? quotations.find((q) => q.id === quotationId)
+    : undefined
+
+  const initialData = matchedQuotation
+    ? {
+        clientId: matchedQuotation.clientId,
+        quotationId: matchedQuotation.id,
+        clientPoRef: matchedQuotation.prNo || "",
+        items: matchedQuotation.items.map((item) => ({
+          product: item.product,
+          quantity: item.quantity,
+          batchNo: "",
+          remarks: "Verified & Compliant",
+          attributes: "[]",
+        })),
+      }
+    : clientId
+    ? { clientId }
+    : undefined
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-white">Create Certificate of Conformance</h1>
-        <p className="text-zinc-400 mt-2">Issue a new conformance certificate for a client.</p>
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
+        <Link
+          href="/cocs"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 mb-2 transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" /> Back to Certificates (COC)
+        </Link>
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-600">
+            <ShieldCheck className="w-5 h-5" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              Create Certificate of Conformance (COC)
+            </h1>
+            <p className="text-slate-500 text-sm mt-0.5">
+              Issue a quality assurance certificate for delivered client materials, or import items directly from a Quotation.
+            </p>
+          </div>
+        </div>
       </div>
 
-      <CocForm 
-        clients={clients} 
-        products={products} 
-        defaultCocMessage={settings?.cocMessage || "We hereby certify that the materials supplied against this order conform strictly to your company standards and have been procured from genuine sources."}
+      <CocForm
+        clients={clients}
+        products={products}
+        quotations={quotations}
+        initialData={initialData}
+        defaultCocMessage={
+          settings?.cocMessage ||
+          "We hereby certify that the materials supplied against this order conform strictly to your company standards and have been procured from genuine sources."
+        }
       />
     </div>
   )

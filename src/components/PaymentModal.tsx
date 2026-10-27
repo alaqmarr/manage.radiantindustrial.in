@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation"
 import { recordPayment } from "@/app/actions/payment"
 import { Loader2, X, IndianRupee, CreditCard } from "lucide-react"
 import { formatRupee } from "@/lib/utils"
+import { SmartNumberInput } from "./ui/SmartNumberInput"
+import { sileo } from "sileo"
 
 interface PaymentModalProps {
   isOpen: boolean
@@ -16,13 +18,7 @@ interface PaymentModalProps {
   amountPaid: number // paise
 }
 
-const PAYMENT_METHODS = [
-  "Bank Transfer",
-  "Cash",
-  "Cheque",
-  "UPI",
-  "Other"
-]
+const PAYMENT_METHODS = ["Bank Transfer", "Cash", "Cheque", "UPI", "Other"]
 
 export function PaymentModal({
   isOpen,
@@ -42,7 +38,7 @@ export function PaymentModal({
   const [amount, setAmount] = useState(defaultAmountRupees)
   const [method, setMethod] = useState("Bank Transfer")
   const [reference, setReference] = useState("")
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  const [date, setDate] = useState(new Date().toISOString().split("T")[0])
   const [notes, setNotes] = useState("")
   const [status, setStatus] = useState("CLEARED")
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -64,10 +60,10 @@ export function PaymentModal({
   useEffect(() => {
     if (!isOpen) return
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === "Escape") onClose()
     }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
   }, [isOpen, onClose])
 
   if (!isOpen) return null
@@ -93,80 +89,106 @@ export function PaymentModal({
         reference: reference.trim() || undefined,
         notes: notes.trim() || undefined,
         date: date || undefined,
-        status
+        status,
       })
 
       if (res?.error) {
         setError(res.error)
+        sileo.error({ title: "Payment Error", description: res.error })
       } else if (res?.success) {
+        sileo.success({
+          title: "Payment Recorded",
+          description: `₹${numericAmount.toLocaleString("en-IN")} recorded via ${method}.`,
+        })
         router.refresh()
         onClose()
       }
     } catch (err: any) {
       setError(err.message || "An unexpected error occurred.")
+      sileo.error({
+        title: "Payment Error",
+        description: err.message || "An unexpected error occurred.",
+      })
     } finally {
       setIsSubmitting(false)
     }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
-        onClick={onClose} 
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+      <div
+        className="absolute inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity"
+        onClick={onClose}
       />
 
-      {/* Modal Card */}
-      <div role="dialog" aria-modal="true" className="relative bg-zinc-900 border border-premium-border rounded-lg shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col z-10">
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="relative bg-white border border-slate-200 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col z-10"
+      >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-premium-border bg-white/[0.02]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-md bg-brand-orange/10 border border-brand-orange/20 text-brand-orange">
+            <div className="p-2 rounded-lg bg-orange-50 border border-orange-200 text-orange-600">
               <CreditCard className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-white">Record Payment</h2>
-              <p className="text-xs text-zinc-400">
-                {type === "quotation" ? "Customer Quotation Payment" : "Supplier Purchase Order Payment"}
+              <h2 className="text-base font-bold text-slate-900">Record Payment</h2>
+              <p className="text-xs text-slate-500">
+                {type === "quotation"
+                  ? "Client Quotation Receipt"
+                  : "Supplier Purchase Order Payment"}
               </p>
             </div>
           </div>
-          <button 
+          <button
             type="button"
-            onClick={onClose} 
-            className="text-zinc-400 hover:text-white transition-colors p-1.5 hover:bg-white/5 rounded-md"
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-700 transition-colors p-1.5 hover:bg-slate-200/60 rounded-lg cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content & Form */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar">
+        <form
+          onSubmit={handleSubmit}
+          className="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar"
+        >
           {/* Financial Summary */}
-          <div className="grid grid-cols-3 gap-3 p-3 bg-zinc-950/80 rounded-md border border-premium-border text-center">
+          <div className="grid grid-cols-3 gap-3 p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-center">
             <div>
-              <div className="text-[10px] uppercase font-semibold text-zinc-500 tracking-wider">Total Amount</div>
-              <div className="text-sm font-bold text-white mt-0.5">
+              <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+                Total Invoice
+              </div>
+              <div className="text-sm font-bold font-mono text-slate-900 mt-0.5">
                 {formatRupee(totalBillPaise)}
               </div>
             </div>
-            <div className="border-x border-premium-border px-2">
-              <div className="text-[10px] uppercase font-semibold text-zinc-500 tracking-wider">Already Paid</div>
-              <div className="text-sm font-bold text-emerald-500 mt-0.5">
+            <div className="border-x border-slate-200 px-2">
+              <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+                Already Paid
+              </div>
+              <div className="text-sm font-bold font-mono text-emerald-700 mt-0.5">
                 {formatRupee(amountPaid || 0)}
               </div>
             </div>
             <div>
-              <div className="text-[10px] uppercase font-semibold text-zinc-500 tracking-wider">Balance Due</div>
-              <div className={`text-sm font-bold mt-0.5 ${remainingPaise > 0 ? "text-amber-500" : "text-zinc-400"}`}>
+              <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+                Balance Due
+              </div>
+              <div
+                className={`text-sm font-bold font-mono mt-0.5 ${
+                  remainingPaise > 0 ? "text-rose-600" : "text-slate-400"
+                }`}
+              >
                 {formatRupee(remainingPaise)}
               </div>
             </div>
           </div>
 
           {error && (
-            <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-md text-xs text-rose-400 font-medium">
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700 font-medium">
               {error}
             </div>
           )}
@@ -174,32 +196,29 @@ export function PaymentModal({
           {/* Amount Field */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+              <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider">
                 Payment Amount (₹) *
               </label>
               {remainingPaise > 0 && (
                 <button
                   type="button"
                   onClick={() => setAmount((remainingPaise / 100).toString())}
-                  className="text-xs text-brand-orange hover:text-brand-orange-light transition-colors"
+                  className="text-xs font-semibold text-orange-600 hover:text-orange-700 cursor-pointer"
                 >
-                  Pay Remaining ({formatRupee(remainingPaise)})
+                  Pay Full Remaining ({formatRupee(remainingPaise)})
                 </button>
               )}
             </div>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 z-10">
                 <IndianRupee className="w-4 h-4" />
               </div>
-              <input
+              <SmartNumberInput
                 required
-                type="number"
-                step="0.01"
-                min="0.01"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00"
-                className="w-full bg-zinc-950 border border-premium-border rounded-md pl-10 pr-4 py-2 text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-brand-slate text-sm font-medium"
+                onValueChange={(_, str) => setAmount(str)}
+                placeholder="0.00 or e.g. 15000/2"
+                className="w-full bg-white border border-slate-300 rounded-lg pl-10 pr-4 py-2 text-slate-900 font-mono font-bold text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-600"
               />
             </div>
           </div>
@@ -207,17 +226,17 @@ export function PaymentModal({
           {/* Method, Date, and Status Row */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5">
-                Payment Method *
+              <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+                Method *
               </label>
               <select
                 required
                 value={method}
                 onChange={(e) => setMethod(e.target.value)}
-                className="w-full bg-zinc-950 border border-premium-border rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate text-sm"
+                className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 text-sm focus:outline-none focus:border-orange-600"
               >
                 {PAYMENT_METHODS.map((m) => (
-                  <option key={m} value={m} className="bg-zinc-900 text-white">
+                  <option key={m} value={m}>
                     {m}
                   </option>
                 ))}
@@ -225,51 +244,51 @@ export function PaymentModal({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
                 Status *
               </label>
               <select
                 required
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                className="w-full bg-zinc-950 border border-premium-border rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate text-sm"
+                className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 text-sm focus:outline-none focus:border-orange-600"
               >
-                <option value="CLEARED" className="bg-zinc-900 text-white">Cleared</option>
-                <option value="PENDING" className="bg-zinc-900 text-white">Pending (PDC)</option>
+                <option value="CLEARED">Cleared</option>
+                <option value="PENDING">Pending (PDC)</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5">
-                Payment Date *
+              <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+                Date *
               </label>
               <input
                 required
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full bg-zinc-950 border border-premium-border rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate text-sm [color-scheme:dark]"
+                className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 text-sm focus:outline-none focus:border-orange-600"
               />
             </div>
           </div>
 
           {/* Reference Field */}
           <div>
-            <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5">
-              Reference / Transaction ID
+            <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+              Reference / UTR / Cheque No
             </label>
             <input
               type="text"
               value={reference}
               onChange={(e) => setReference(e.target.value)}
               placeholder="e.g. Cheque No, UTR, UPI Ref ID"
-              className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-brand-slate text-sm"
+              className="w-full bg-white border border-slate-300 rounded-lg px-3.5 py-2 text-slate-900 text-sm focus:outline-none focus:border-orange-600"
             />
           </div>
 
           {/* Notes Field */}
           <div>
-            <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
               Notes
             </label>
             <textarea
@@ -277,32 +296,32 @@ export function PaymentModal({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Optional payment notes or comments..."
-              className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-brand-slate text-sm resize-none"
+              className="w-full bg-white border border-slate-300 rounded-lg px-3.5 py-2 text-slate-900 text-sm resize-none focus:outline-none focus:border-orange-600"
             />
           </div>
 
           {/* Modal Footer */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-premium-border">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
             <button
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-5 py-2.5 bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white font-medium rounded-md transition-colors border border-premium-border disabled:opacity-50 text-sm"
+              className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 font-medium rounded-lg transition-colors border border-slate-300 disabled:opacity-50 text-sm cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-brand-orange to-brand-orange-dark hover:from-brand-orange-dark hover:to-brand-orange shadow-lg shadow-brand-orange/20 text-white font-medium rounded-md transition-all active:scale-95 disabled:opacity-50 text-sm"
+              className="flex items-center justify-center gap-2 px-5 py-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-lg shadow-xs transition-all disabled:opacity-50 text-sm cursor-pointer"
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Recording...</span>
+                  <Loader2 className="w-4 h-4 animate-spin text-white" />
+                  <span className="text-white">Recording...</span>
                 </>
               ) : (
-                <span>Record Payment</span>
+                <span className="text-white">Record Payment</span>
               )}
             </button>
           </div>

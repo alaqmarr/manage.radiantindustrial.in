@@ -1,46 +1,93 @@
 "use client"
-import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  BarChart, Bar
-} from 'recharts'
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar
+} from "recharts"
 
 export function DashboardCharts({ data }: { data: any }) {
   const revenueData = data.chartData || []
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-      <div className="glass-panel rounded-md p-6 h-96 flex flex-col">
-        <h3 className="text-zinc-200 font-medium mb-6">Revenue Trend</h3>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-xs h-96 flex flex-col">
+        <h3 className="text-slate-800 font-bold text-sm mb-4">7-Day Sales Revenue Trend</h3>
         <div className="flex-1 w-full h-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={revenueData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
-              <XAxis dataKey="name" stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `₹${val/1000}k`} />
-              <Tooltip 
-                contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', borderRadius: '8px' }}
-                itemStyle={{ color: '#e4e4e7' }}
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+              <XAxis
+                dataKey="name"
+                stroke="#64748b"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
               />
-              <Line type="monotone" dataKey="sales" stroke="#f48c36" strokeWidth={3} dot={false} />
+              <YAxis
+                stroke="#64748b"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(val) => `₹${val}`}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "#ffffff",
+                  borderColor: "#e2e8f0",
+                  borderRadius: "8px",
+                  boxShadow: "0 4px 12px rgba(15,23,42,0.08)",
+                }}
+                itemStyle={{ color: "#0f172a", fontWeight: 600 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="sales"
+                stroke="#ea580c"
+                strokeWidth={3}
+                dot={{ r: 3, fill: "#ea580c" }}
+              />
             </LineChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      <div className="glass-panel rounded-md p-6 h-96 flex flex-col">
-        <h3 className="text-zinc-200 font-medium mb-6">Purchases vs Sales</h3>
+      <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-xs h-96 flex flex-col">
+        <h3 className="text-slate-800 font-bold text-sm mb-4">Sales vs PO Spend (Last 7 Days)</h3>
         <div className="flex-1 w-full h-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={revenueData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
-              <XAxis dataKey="name" stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `₹${val/1000}k`} />
-              <Tooltip 
-                contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', borderRadius: '8px' }}
-                cursor={{ fill: '#27272a', opacity: 0.4 }}
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+              <XAxis
+                dataKey="name"
+                stroke="#64748b"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
               />
-              <Bar dataKey="sales" fill="#f48c36" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="purchases" fill="#556270" radius={[4, 4, 0, 0]} />
+              <YAxis
+                stroke="#64748b"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(val) => `₹${val}`}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "#ffffff",
+                  borderColor: "#e2e8f0",
+                  borderRadius: "8px",
+                  boxShadow: "0 4px 12px rgba(15,23,42,0.08)",
+                }}
+                cursor={{ fill: "#f1f5f9" }}
+              />
+              <Bar dataKey="sales" fill="#ea580c" radius={[4, 4, 0, 0]} name="Sales" />
+              <Bar dataKey="purchases" fill="#334155" radius={[4, 4, 0, 0]} name="Purchases" />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -48,4 +95,3 @@ export function DashboardCharts({ data }: { data: any }) {
     </div>
   )
 }
-

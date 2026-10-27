@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createSupplier, updateSupplier } from "@/app/actions/supplier"
-import { Loader2, X, Search } from "lucide-react"
+import { Loader2, X, Search, Truck } from "lucide-react"
 import { verifyGSTAction } from "@/app/actions/gst"
-import { toast } from "sonner"
+import { sileo } from "sileo"
 
 export function SupplierModal({ 
   suppliers,
@@ -31,25 +31,27 @@ export function SupplierModal({
 
   const handleVerifyGST = async () => {
     if (!gstInput.trim() || gstInput.length < 15) {
-      toast.error("Please enter a valid 15-character GST Number.");
+      sileo.warning({ title: "Invalid GSTIN", description: "Please enter a valid 15-character GST Number." });
       return;
     }
     setIsVerifyingGST(true);
     try {
       const res = await verifyGSTAction(gstInput.trim());
       if (res.error) {
-        toast.error(res.error);
+        sileo.error({ title: "GST Verification Failed", description: res.error });
       } else if (res.data) {
         setName(res.data.name || name);
         setLocation(res.data.location || location);
-        // Note: Supplier might not have address field, so we combine it to location
         if (!res.data.location && res.data.address) {
             setLocation(res.data.address);
         }
-        toast.success("Details fetched successfully! \n" + (res.data.legalName ? "(" + res.data.legalName + ")" : ""));
+        sileo.success({
+          title: "GST Details Fetched",
+          description: res.data.legalName ? `${res.data.name} (${res.data.legalName})` : res.data.name
+        });
       }
     } catch (e) {
-      toast.error("Failed to verify GST.");
+      sileo.error({ title: "Verification Error", description: "Failed to verify GSTIN." });
     } finally {
       setIsVerifyingGST(false);
     }
@@ -64,7 +66,6 @@ export function SupplierModal({
   const [location, setLocation] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Reset form when modal opens
   useEffect(() => {
     if (isOpen) {
       setName(supplierToEdit?.name || "")
@@ -110,6 +111,11 @@ export function SupplierModal({
         
       if (result.error) throw new Error(result.error)
       
+      sileo.success({
+        title: isEditing ? "Supplier Updated" : "Supplier Added",
+        description: `${name} has been saved to your vendor directory.`
+      })
+
       if (onSuccess && result.supplier) {
         onSuccess(result.supplier)
       }
@@ -118,28 +124,33 @@ export function SupplierModal({
         router.refresh()
       }
     } catch (error: any) {
-      toast.error(error.message)
+      sileo.error({ title: "Save Failed", description: error.message || "Could not save supplier." })
     } finally {
       setIsSubmitting(false)
     }
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-0">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={close} />
-      <div role="dialog" aria-modal="true" className="relative bg-zinc-900 border border-premium-border rounded-md shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between p-6 border-b border-premium-border bg-white/[0.02]">
-          <h2 className="text-xl font-semibold text-white">
-            {isEditing ? "Edit Supplier" : "Add New Supplier"}
-          </h2>
-          <button onClick={close} className="text-zinc-400 hover:text-white transition-colors">
-            <X className="w-5 h-5" />
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs" onClick={close} />
+      <div role="dialog" aria-modal="true" className="relative bg-white border border-slate-200 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-orange-50 border border-orange-200 flex items-center justify-center text-orange-600">
+              <Truck className="w-4 h-4" />
+            </div>
+            <h2 className="text-base font-bold text-slate-900">
+              {isEditing ? "Edit Supplier" : "Add New Supplier"}
+            </h2>
+          </div>
+          <button onClick={close} className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-lg transition-colors">
+            <X className="w-4 h-4" />
           </button>
         </div>
         
         <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1">
           <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-1">GST Number</label>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">GST Number</label>
             <div className="flex gap-2">
               <input 
                 type="text" 
@@ -148,67 +159,74 @@ export function SupplierModal({
                   setGstNumber(e.target.value);
                   setGstInput(e.target.value);
                 }}
-                className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate uppercase" 
+                className="w-full bg-white border border-slate-300 rounded-lg px-3.5 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 uppercase font-mono" 
                 placeholder="e.g. 22AAAAA0000A1Z5"
               />
               <button
                 type="button"
                 onClick={handleVerifyGST}
                 disabled={isVerifyingGST}
-                className="flex items-center gap-1 px-3 py-2 bg-brand-orange/20 text-brand-orange hover:bg-brand-orange/30 disabled:opacity-50 rounded-md transition-colors"
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-orange-50 border border-orange-200 text-orange-700 hover:bg-orange-100 disabled:opacity-50 rounded-lg transition-colors"
               >
                 {isVerifyingGST ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                <span className="text-xs font-semibold whitespace-nowrap">Verify</span>
+                <span className="text-xs font-bold whitespace-nowrap">Verify</span>
               </button>
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-1">Supplier Name *</label>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">Supplier Name *</label>
             <input 
               required 
               type="text" 
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
+              className="w-full bg-white border border-slate-300 rounded-lg px-3.5 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500" 
               placeholder="Company or Contact Name"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-1">Contact Info (Phone, etc.)</label>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">Contact Info (Phone, etc.)</label>
             <input 
               type="text" 
               value={contact}
               onChange={(e) => setContact(e.target.value)}
-              className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
+              className="w-full bg-white border border-slate-300 rounded-lg px-3.5 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500" 
               placeholder="Phone, etc."
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-1">Email Address</label>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">Email Address</label>
             <input 
               type="email" 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
+              className="w-full bg-white border border-slate-300 rounded-lg px-3.5 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500" 
               placeholder="supplier@company.com"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-1">Location / Address</label>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">Location / Address</label>
             <input 
               type="text" 
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              className="w-full bg-zinc-950 border border-premium-border rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" 
+              className="w-full bg-white border border-slate-300 rounded-lg px-3.5 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500" 
               placeholder="City, State, or full address"
             />
           </div>
           
-          <div className="flex justify-end pt-4">
+          <div className="flex justify-end gap-2.5 pt-4 border-t border-slate-200">
+            <button
+              type="button"
+              onClick={close}
+              className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
             <button 
               type="submit" 
               disabled={isSubmitting}
-              className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-brand-orange to-brand-orange-dark hover:from-brand-orange-dark hover:to-brand-orange shadow-lg shadow-brand-orange/20 disabled:opacity-50 text-white font-medium rounded-md transition-all active:scale-95"
+              className="flex items-center gap-2 px-5 py-2 bg-orange-600 hover:bg-orange-700 shadow-xs disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-all"
             >
               {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
               {isEditing ? "Update Supplier" : "Save Supplier"}

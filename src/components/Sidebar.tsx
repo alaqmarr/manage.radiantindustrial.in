@@ -1,12 +1,12 @@
 "use client"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { motion } from "framer-motion"
-import { 
-  LayoutDashboard, 
-  PackageSearch, 
-  FileText, 
-  Users, 
+import {
+  LayoutDashboard,
+  PackageSearch,
+  FileText,
+  Users,
   Truck,
   ShoppingCart,
   Settings,
@@ -18,99 +18,289 @@ import {
   ClipboardList,
   HandCoins,
   Heart,
-  HandHeart
+  HandHeart,
+  FileSpreadsheet,
+  Clock,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
+import { getSidebarBadgesAction, type SidebarBadges } from "@/app/actions/search"
+
+const SIDEBAR_STORAGE_KEY = "radiant_sidebar_collapsed"
+const SIDEBAR_TOGGLE_EVENT = "radiant-sidebar-toggle"
 
 const menuGroups = [
   {
     label: "Overview",
-    items: [
-      { icon: LayoutDashboard, label: "Dashboard", href: "/" },
-    ]
+    items: [{ icon: LayoutDashboard, label: "Dashboard", href: "/" }],
   },
   {
-    label: "Sales & CRM",
+    label: "Sales & Quotations",
     items: [
       { icon: FileText, label: "Quotations", href: "/quotations" },
       { icon: Award, label: "Certificates (COC)", href: "/cocs" },
       { icon: Users, label: "Clients", href: "/clients" },
       { icon: Mail, label: "Email Templates", href: "/emails" },
-    ]
+    ],
   },
   {
-    label: "Finance",
+    label: "Procurement & Catalog",
+    items: [
+      { icon: PackageSearch, label: "Product Catalog", href: "/products" },
+      { icon: FileSpreadsheet, label: "Vendor RFQs", href: "/rfq" },
+      { icon: ClipboardList, label: "Purchase Orders", href: "/purchase-orders" },
+      { icon: Truck, label: "Deliveries (GRN)", href: "/deliveries" },
+      { icon: ShoppingCart, label: "Purchases & Bills", href: "/purchases" },
+      { icon: Truck, label: "Suppliers", href: "/suppliers" },
+    ],
+  },
+  {
+    label: "Finance & Ledger",
     items: [
       { icon: Wallet, label: "Accounts & Ledger", href: "/accounts" },
-      { icon: FileText, label: "Quotation Dues", href: "/quotation-dues" },
-    ]
+      { icon: Clock, label: "Quotation Dues", href: "/quotation-dues" },
+    ],
   },
   {
     label: "Religious Obligations",
     items: [
-      { icon: HandHeart, label: "Overview", href: "/obligations-overview" },
+      { icon: HandHeart, label: "Obligations Overview", href: "/obligations-overview" },
       { icon: HandCoins, label: "Khumus", href: "/khumus" },
       { icon: Heart, label: "Zakaat", href: "/zakaat" },
-    ]
+    ],
   },
   {
-    label: "Inventory & Supply",
-    items: [
-      { icon: PackageSearch, label: "Products", href: "/products" },
-      { icon: FileText, label: "RFQ", href: "/rfq" },
-      { icon: ClipboardList, label: "Purchase Orders", href: "/purchase-orders" },
-      { icon: Truck, label: "Deliveries (GRN)", href: "/deliveries" },
-      { icon: ShoppingCart, label: "Purchases", href: "/purchases" },
-      { icon: Truck, label: "Suppliers", href: "/suppliers" },
-    ]
+    label: "Administration",
+    items: [{ icon: Settings, label: "System Settings", href: "/settings" }],
   },
-  {
-    label: "System",
-    items: [
-      { icon: Settings, label: "Settings", href: "/settings" },
-    ]
-  }
 ]
+
+export function SidebarContentWrapper({ children }: { children: React.ReactNode }) {
+  const [collapsed, setCollapsed] = useState(false)
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(SIDEBAR_STORAGE_KEY)
+      if (saved === "true") setCollapsed(true)
+    } catch {}
+
+    const handleToggle = (e: Event) => {
+      const customEvent = e as CustomEvent<{ collapsed: boolean }>
+      if (customEvent.detail && typeof customEvent.detail.collapsed === "boolean") {
+        setCollapsed(customEvent.detail.collapsed)
+      }
+    }
+
+    window.addEventListener(SIDEBAR_TOGGLE_EVENT, handleToggle)
+    return () => window.removeEventListener(SIDEBAR_TOGGLE_EVENT, handleToggle)
+  }, [])
+
+  return (
+    <div
+      className={`${
+        collapsed ? "ml-18" : "ml-64"
+      } flex-1 flex flex-col min-h-screen transition-all duration-200 print:ml-0 print:block print:min-h-0`}
+    >
+      {children}
+    </div>
+  )
+}
 
 export function Sidebar() {
   const pathname = usePathname()
+  const [collapsed, setCollapsed] = useState(false)
+  const [badges, setBadges] = useState<SidebarBadges>({
+    quotationsNeedingAction: 0,
+    openRfqs: 0,
+    draftPos: 0,
+    unpaidDues: 0,
+  })
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(SIDEBAR_STORAGE_KEY)
+      if (saved === "true") setCollapsed(true)
+    } catch {}
+  }, [])
+
+  useEffect(() => {
+    let active = true
+    getSidebarBadgesAction()
+      .then((data) => {
+        if (active && data) setBadges(data)
+      })
+      .catch((err) => console.error("Failed to fetch sidebar badges:", err))
+    return () => {
+      active = false
+    }
+  }, [pathname])
+
+  const toggleCollapsed = () => {
+    const next = !collapsed
+    setCollapsed(next)
+    try {
+      localStorage.setItem(SIDEBAR_STORAGE_KEY, String(next))
+    } catch {}
+    window.dispatchEvent(
+      new CustomEvent(SIDEBAR_TOGGLE_EVENT, { detail: { collapsed: next } })
+    )
+  }
 
   if (pathname === "/login") return null
 
+  const getBadgeForHref = (href: string): { count: number; style: string; title: string } | null => {
+    switch (href) {
+      case "/quotations":
+        return badges.quotationsNeedingAction > 0
+          ? {
+              count: badges.quotationsNeedingAction,
+              style: "bg-orange-100 text-orange-700 border-orange-200",
+              title: `${badges.quotationsNeedingAction} quotation(s) pending or awaiting PO`,
+            }
+          : null
+      case "/rfq":
+        return badges.openRfqs > 0
+          ? {
+              count: badges.openRfqs,
+              style: "bg-indigo-100 text-indigo-700 border-indigo-200",
+              title: `${badges.openRfqs} open issued RFQ(s)`,
+            }
+          : null
+      case "/purchase-orders":
+        return badges.draftPos > 0
+          ? {
+              count: badges.draftPos,
+              style: "bg-blue-100 text-blue-700 border-blue-200",
+              title: `${badges.draftPos} draft Purchase Order(s)`,
+            }
+          : null
+      case "/quotation-dues":
+        return badges.unpaidDues > 0
+          ? {
+              count: badges.unpaidDues,
+              style: "bg-rose-100 text-rose-700 border-rose-200",
+              title: `${badges.unpaidDues} quotation(s) with unpaid client dues`,
+            }
+          : null
+      default:
+        return null
+    }
+  }
+
   return (
-    <div className="w-64 bg-premium-dark border-r border-premium-border flex flex-col h-screen fixed left-0 top-0 text-zinc-300 z-50 shadow-2xl">
-      <div className="h-16 px-6 border-b border-premium-border flex items-center shrink-0">
-        <img src="/logo-long-white.png" alt="Radiant Industrial Co." className="h-6 object-contain opacity-90" />
+    <aside
+      className={`${
+        collapsed ? "w-18" : "w-64"
+      } bg-white border-r border-slate-200 flex flex-col h-screen fixed left-0 top-0 text-slate-700 z-40 select-none transition-all duration-200`}
+    >
+      {/* Brand Header */}
+      <div
+        className={`h-16 ${
+          collapsed ? "px-2 justify-center" : "px-4 justify-between"
+        } border-b border-slate-200 flex items-center shrink-0 bg-white`}
+      >
+        {!collapsed && (
+          <Link href="/" className="flex items-center gap-2.5 focus:outline-none min-w-0">
+            <img
+              src="/logo-long.png"
+              alt="Radiant Industrial Co."
+              className="h-7 object-contain"
+            />
+          </Link>
+        )}
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          title={collapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          className="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
+        >
+          {collapsed ? (
+            <PanelLeftOpen className="w-4 h-4" />
+          ) : (
+            <PanelLeftClose className="w-4 h-4" />
+          )}
+        </button>
       </div>
-      
-      <nav className="flex-1 px-4 py-6 overflow-y-auto custom-scrollbar flex flex-col gap-6">
+
+      {/* Navigation */}
+      <nav
+        className={`flex-1 ${
+          collapsed ? "px-2 py-4 gap-3" : "px-3 py-5 gap-5"
+        } overflow-y-auto custom-scrollbar flex flex-col`}
+      >
         {menuGroups.map((group, idx) => (
           <div key={idx}>
-            <div className="px-3 mb-2 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-              {group.label}
-            </div>
+            {!collapsed ? (
+              <div className="px-3 mb-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate">
+                {group.label}
+              </div>
+            ) : (
+              idx > 0 && <div className="h-px bg-slate-100 mx-2 mb-2" />
+            )}
             <div className="space-y-0.5">
               {group.items.map((item) => {
-                const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href))
+                const isActive =
+                  pathname === item.href ||
+                  (item.href !== "/" && pathname.startsWith(item.href))
+                const badge = getBadgeForHref(item.href)
+
                 return (
-                  <Link key={item.href} href={item.href}>
-                    <span className={`group flex items-center justify-between px-3 py-2 rounded-md transition-all relative ${isActive ? 'text-brand-orange shadow-[0_0_10px_rgba(244,140,54,0.1)] bg-brand-orange/5' : 'hover:bg-white/5 hover:text-white'}`}>
-                      {isActive && (
-                        <motion.div 
-                          layoutId="active-nav"
-                          className="absolute inset-0 border-l-2 border-brand-orange rounded-md -z-10"
-                          initial={false}
-                          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                        />
-                      )}
-                      <div className="flex items-center gap-3">
-                        <item.icon className={`w-[18px] h-[18px] ${isActive ? 'text-brand-orange' : 'text-zinc-400 group-hover:text-zinc-300'}`} />
-                        <span className="font-medium tracking-wide text-sm">{item.label}</span>
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    title={
+                      collapsed
+                        ? badge
+                          ? `${item.label} (${badge.count})`
+                          : item.label
+                        : badge?.title
+                    }
+                    className={`group relative flex items-center ${
+                      collapsed ? "justify-center px-2 py-2.5" : "justify-between px-3 py-2"
+                    } rounded-lg text-sm font-medium transition-all ${
+                      isActive
+                        ? "bg-orange-50 text-orange-700 font-semibold border border-orange-200/70 shadow-2xs"
+                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent"
+                    }`}
+                  >
+                    <div className={`flex items-center ${collapsed ? "justify-center" : "gap-3 min-w-0"}`}>
+                      <item.icon
+                        className={`w-4 h-4 shrink-0 transition-colors ${
+                          isActive
+                            ? "text-orange-600"
+                            : "text-slate-400 group-hover:text-slate-600"
+                        }`}
+                      />
+                      {!collapsed && <span className="truncate">{item.label}</span>}
+                    </div>
+
+                    {!collapsed ? (
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {badge && (
+                          <span
+                            className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full border leading-none ${badge.style}`}
+                          >
+                            {badge.count}
+                          </span>
+                        )}
+                        {isActive ? (
+                          <span className="w-1.5 h-1.5 rounded-full bg-orange-600 shrink-0" />
+                        ) : (
+                          !badge && (
+                            <ChevronRight className="w-3.5 h-3.5 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-slate-400 shrink-0" />
+                          )
+                        )}
                       </div>
-                      {!isActive && (
-                        <ChevronRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-zinc-500" />
-                      )}
-                    </span>
+                    ) : (
+                      badge && (
+                        <span
+                          className={`absolute top-1 right-1 min-w-[16px] h-4 px-1 text-[9px] font-bold rounded-full border flex items-center justify-center leading-none ${badge.style}`}
+                        >
+                          {badge.count}
+                        </span>
+                      )
+                    )}
                   </Link>
                 )
               })}
@@ -119,15 +309,26 @@ export function Sidebar() {
         ))}
       </nav>
 
-      <div className="p-4 border-t border-premium-border bg-premium-surface/30">
-        <button 
+      {/* Footer / Sign Out */}
+      <div className="p-2.5 border-t border-slate-200 bg-slate-50/70">
+        <button
           onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex w-full items-center gap-3 px-3 py-2 text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors rounded-md group"
+          title={collapsed ? "Sign Out" : undefined}
+          className={`flex w-full items-center ${
+            collapsed ? "justify-center px-2 py-2.5" : "justify-between px-3 py-2"
+          } text-slate-600 hover:text-rose-700 hover:bg-rose-50 transition-colors rounded-lg group text-sm font-medium cursor-pointer`}
         >
-          <LogOut className="w-[18px] h-[18px] group-hover:rotate-12 transition-transform" />
-          <span className="font-medium tracking-wide text-sm">Logout</span>
+          <div className={`flex items-center ${collapsed ? "justify-center" : "gap-3"}`}>
+            <LogOut className="w-4 h-4 text-slate-400 group-hover:text-rose-600 transition-colors shrink-0" />
+            {!collapsed && <span>Sign Out</span>}
+          </div>
+          {!collapsed && (
+            <span className="text-[10px] font-mono text-slate-400 group-hover:text-rose-500">
+              Exit
+            </span>
+          )}
         </button>
       </div>
-    </div>
+    </aside>
   )
 }

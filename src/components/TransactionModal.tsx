@@ -3,71 +3,83 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { recordManualPayment, recordPayment, recordBulkPayment } from "@/app/actions/payment"
-import { X } from "lucide-react"
-
-import { formatRupee } from "@/lib/utils"
+import { X, Check, Loader2 } from "lucide-react"
+import { sileo } from "sileo"
+import { formatRupee, formatShortId } from "@/lib/utils"
+import { SmartNumberInput } from "./ui/SmartNumberInput"
 
 export function TransactionModal({ onClose, quotations, pos, purchases, clients }: any) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  
-  const [category, setCategory] = useState("manual") // manual, quotation, po
+
+  const [category, setCategory] = useState("manual")
   const [type, setType] = useState<"IN" | "OUT">("IN")
   const [entityId, setEntityId] = useState("")
   const [entityName, setEntityName] = useState("")
-  
+
   const [amount, setAmount] = useState("")
   const [method, setMethod] = useState("BANK_TRANSFER")
   const [reference, setReference] = useState("")
   const [notes, setNotes] = useState("")
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
-  const [status, setStatus] = useState("CLEARED") // PENDING, CLEARED
+  const [date, setDate] = useState(new Date().toISOString().split("T")[0])
+  const [status, setStatus] = useState("CLEARED")
 
   const getSelectedEntity = () => {
-    if (!entityId) return null;
-    if (category === "quotation") return quotations?.find((q: any) => q.id === entityId);
-    if (category === "po") return pos?.find((p: any) => p.id === entityId);
-    if (category === "purchase") return purchases?.find((p: any) => p.id === entityId);
-    return null;
+    if (!entityId) return null
+    if (category === "quotation") return quotations?.find((q: any) => q.id === entityId)
+    if (category === "po") return pos?.find((p: any) => p.id === entityId)
+    if (category === "purchase") return purchases?.find((p: any) => p.id === entityId)
+    return null
   }
 
-  const selectedEntity = getSelectedEntity();
-  
+  const selectedEntity = getSelectedEntity()
+
   const handleEntityChange = (newEntityId: string) => {
-    setEntityId(newEntityId);
+    setEntityId(newEntityId)
     if (!newEntityId) {
-      setAmount("");
-      return;
+      setAmount("")
+      return
     }
-    
-    // Autofill amount
-    let entity = null;
-    if (category === "quotation") entity = quotations?.find((q: any) => q.id === newEntityId);
-    if (category === "po") entity = pos?.find((p: any) => p.id === newEntityId);
-    if (category === "purchase") entity = purchases?.find((p: any) => p.id === newEntityId);
-    
+
+    let entity = null
+    if (category === "quotation") entity = quotations?.find((q: any) => q.id === newEntityId)
+    if (category === "po") entity = pos?.find((p: any) => p.id === newEntityId)
+    if (category === "purchase") entity = purchases?.find((p: any) => p.id === newEntityId)
+
     if (entity) {
-      const remainingPaise = (entity.totalAmount || 0) + (entity.totalGst || 0) - (entity.amountPaid || 0);
-      setAmount((remainingPaise / 100).toFixed(2));
+      const remainingPaise =
+        (entity.totalAmount || 0) + (entity.totalGst || 0) - (entity.amountPaid || 0)
+      setAmount((remainingPaise / 100).toFixed(2))
     }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
-    
+
     try {
       if (selectedEntity) {
-        const remainingPaise = (selectedEntity.totalAmount || 0) + (selectedEntity.totalGst || 0) - (selectedEntity.amountPaid || 0);
-        const amountPaise = Number(amount) * 100;
+        const remainingPaise =
+          (selectedEntity.totalAmount || 0) +
+          (selectedEntity.totalGst || 0) -
+          (selectedEntity.amountPaid || 0)
+        const amountPaise = Number(amount) * 100
         if (amountPaise > remainingPaise) {
-          alert(`You cannot overpay. Maximum amount allowed is ${formatRupee(remainingPaise)}`);
-          setIsSubmitting(false);
-          return;
+          sileo.warning({
+            title: "Overpayment Prevented",
+            description: `Maximum amount allowed is ${formatRupee(remainingPaise)}.`,
+          })
+          setIsSubmitting(false)
+          return
         }
       }
 
-      if (category === "manual" || category === "LOAN" || category === "TRANSFER" || category === "UNTAGGED") {
+      if (
+        category === "manual" ||
+        category === "LOAN" ||
+        category === "TRANSFER" ||
+        category === "UNTAGGED"
+      ) {
         await recordManualPayment({
           type,
           category: category === "manual" ? "MANUAL" : category,
@@ -89,7 +101,7 @@ export function TransactionModal({ onClose, quotations, pos, purchases, clients 
           reference,
           notes,
           date,
-          status
+          status,
         })
       } else {
         await recordPayment({
@@ -100,42 +112,61 @@ export function TransactionModal({ onClose, quotations, pos, purchases, clients 
           reference,
           notes,
           date,
-          status
+          status,
         })
       }
+      sileo.success({
+        title: "Transaction Recorded",
+        description: `₹${Number(amount).toLocaleString("en-IN")} (${type}) added to ledger.`,
+      })
       router.refresh()
       onClose()
     } catch (err) {
-      alert("Failed to save transaction")
+      sileo.error({
+        title: "Transaction Failed",
+        description: "Failed to save transaction to ledger.",
+      })
       setIsSubmitting(false)
     }
   }
 
+  const inputClass =
+    "w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+  const labelClass = "block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1"
+
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm">
-      <div className="bg-zinc-950 border border-premium-border rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="flex items-center justify-between p-6 border-b border-premium-border bg-white/[0.02]">
-          <h2 className="text-xl font-semibold text-white">Add Transaction</h2>
-          <button onClick={onClose} className="text-zinc-400 hover:text-white transition-colors">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-slate-900/50 backdrop-blur-xs">
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-slate-50">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900">Record Ledger Transaction</h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Log incoming client collections, vendor payments, loans, or manual entries.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-700 transition-colors p-1"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="p-6 overflow-y-auto">
           <form id="transaction-form" onSubmit={handleSubmit} className="space-y-4">
-            
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-1">Category</label>
-                <select 
-                  value={category} 
+                <label className={labelClass}>Category</label>
+                <select
+                  value={category}
                   onChange={(e) => {
                     setCategory(e.target.value)
                     handleEntityChange("")
-                    if (e.target.value === "quotation" || e.target.value === "bulk_payment") setType("IN")
+                    if (e.target.value === "quotation" || e.target.value === "bulk_payment")
+                      setType("IN")
                     if (e.target.value === "po" || e.target.value === "purchase") setType("OUT")
                   }}
-                  className="w-full bg-black/50 border border-premium-border rounded-md px-3 py-2 text-white focus:outline-none focus:border-brand-slate"
+                  className={inputClass}
                 >
                   <option value="manual">Manual Entry</option>
                   <option value="LOAN">Loan (Borrow / Lend)</option>
@@ -147,81 +178,103 @@ export function TransactionModal({ onClose, quotations, pos, purchases, clients 
                   <option value="purchase">Against Direct Purchase</option>
                 </select>
               </div>
-              
+
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-1">Direction</label>
-                <select 
-                  value={type} 
+                <label className={labelClass}>Direction</label>
+                <select
+                  value={type}
                   onChange={(e) => setType(e.target.value as "IN" | "OUT")}
                   disabled={!["manual", "LOAN", "TRANSFER", "UNTAGGED"].includes(category)}
-                  className="w-full bg-black/50 border border-premium-border rounded-md px-3 py-2 text-white focus:outline-none focus:border-brand-slate disabled:opacity-50"
+                  className={`${inputClass} disabled:opacity-60`}
                 >
-                  <option value="IN">{category === "LOAN" ? "Borrowed from someone (+)" : category === "TRANSFER" ? "Transferred IN (+)" : "Money IN (+)"}</option>
-                  <option value="OUT">{category === "LOAN" ? "Lent to someone (-)" : category === "TRANSFER" ? "Transferred OUT (-)" : "Money OUT (-)"}</option>
+                  <option value="IN">
+                    {category === "LOAN"
+                      ? "Borrowed from someone (+)"
+                      : category === "TRANSFER"
+                      ? "Transferred IN (+)"
+                      : "Money IN (+)"}
+                  </option>
+                  <option value="OUT">
+                    {category === "LOAN"
+                      ? "Lent to someone (-)"
+                      : category === "TRANSFER"
+                      ? "Transferred OUT (-)"
+                      : "Money OUT (-)"}
+                  </option>
                 </select>
               </div>
             </div>
 
             {(category === "LOAN" || category === "TRANSFER") && (
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-1">Name of person / account</label>
-                <input 
-                  type="text" 
-                  value={entityName} 
-                  onChange={e => setEntityName(e.target.value)} 
-                  required 
-                  className="w-full bg-black/50 border border-premium-border rounded-md px-3 py-2 text-white focus:outline-none focus:border-brand-slate"
+                <label className={labelClass}>Name of Person / Account</label>
+                <input
+                  type="text"
+                  value={entityName}
+                  onChange={(e) => setEntityName(e.target.value)}
+                  required
+                  className={inputClass}
                 />
               </div>
             )}
 
             {category === "UNTAGGED" && (
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-1">Select Client (Optional)</label>
-                <select 
-                  value={entityId} 
+                <label className={labelClass}>Select Client (Optional)</label>
+                <select
+                  value={entityId}
                   onChange={(e) => handleEntityChange(e.target.value)}
-                  className="w-full bg-black/50 border border-premium-border rounded-md px-3 py-2 text-white focus:outline-none focus:border-brand-slate"
+                  className={inputClass}
                 >
                   <option value="">-- No specific client --</option>
                   {clients?.map((c: any) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
                   ))}
                 </select>
-                <p className="text-xs text-zinc-500 mt-1">This payment can be resolved and linked to a quotation later.</p>
+                <p className="text-xs text-slate-400 mt-1">
+                  This payment can be resolved and linked to a quotation later.
+                </p>
               </div>
             )}
 
             {category === "bulk_payment" && (
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-1">Select Client</label>
-                <select 
+                <label className={labelClass}>Select Client</label>
+                <select
                   required
-                  value={entityId} 
+                  value={entityId}
                   onChange={(e) => handleEntityChange(e.target.value)}
-                  className="w-full bg-black/50 border border-premium-border rounded-md px-3 py-2 text-white focus:outline-none focus:border-brand-slate"
+                  className={inputClass}
                 >
                   <option value="">-- Select --</option>
                   {clients?.map((c: any) => (
-                    <option key={c.id} value={c.id}>{c.name} {c.creditBalance > 0 ? `(Cr: ${formatRupee(c.creditBalance)})` : ''}</option>
+                    <option key={c.id} value={c.id}>
+                      {c.name} {c.creditBalance > 0 ? `(Cr: ${formatRupee(c.creditBalance)})` : ""}
+                    </option>
                   ))}
                 </select>
-                <p className="text-xs text-zinc-500 mt-1">Payment will be auto-allocated to oldest unpaid invoices first. Any excess will be added to credit balance.</p>
+                <p className="text-xs text-slate-400 mt-1">
+                  Payment will be auto-allocated to oldest unpaid quotations first.
+                </p>
               </div>
             )}
 
             {category === "quotation" && (
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-1">Select Quotation</label>
-                <select 
+                <label className={labelClass}>Select Quotation</label>
+                <select
                   required
-                  value={entityId} 
+                  value={entityId}
                   onChange={(e) => handleEntityChange(e.target.value)}
-                  className="w-full bg-black/50 border border-premium-border rounded-md px-3 py-2 text-white focus:outline-none focus:border-brand-slate"
+                  className={inputClass}
                 >
                   <option value="">-- Select --</option>
                   {quotations?.map((q: any) => (
-                    <option key={q.id} value={q.id}>{q.prNo || q.id.slice(0,8)} - {q.client.name}</option>
+                    <option key={q.id} value={q.id}>
+                      #{formatShortId(q.id)} {q.prNo ? `(${q.prNo}) ` : ""}- {q.client.name}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -229,16 +282,18 @@ export function TransactionModal({ onClose, quotations, pos, purchases, clients 
 
             {category === "po" && (
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-1">Select Purchase Order</label>
-                <select 
+                <label className={labelClass}>Select Purchase Order</label>
+                <select
                   required
-                  value={entityId} 
+                  value={entityId}
                   onChange={(e) => handleEntityChange(e.target.value)}
-                  className="w-full bg-black/50 border border-premium-border rounded-md px-3 py-2 text-white focus:outline-none focus:border-brand-slate"
+                  className={inputClass}
                 >
                   <option value="">-- Select --</option>
                   {pos?.map((p: any) => (
-                    <option key={p.id} value={p.id}>{p.poNumber || p.id.slice(0,8)} - {p.supplier.name}</option>
+                    <option key={p.id} value={p.id}>
+                      {p.poNumber || formatShortId(p.id)} - {p.supplier.name}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -246,42 +301,60 @@ export function TransactionModal({ onClose, quotations, pos, purchases, clients 
 
             {category === "purchase" && (
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-1">Select Direct Purchase</label>
-                <select 
+                <label className={labelClass}>Select Direct Purchase</label>
+                <select
                   required
-                  value={entityId} 
+                  value={entityId}
                   onChange={(e) => handleEntityChange(e.target.value)}
-                  className="w-full bg-black/50 border border-premium-border rounded-md px-3 py-2 text-white focus:outline-none focus:border-brand-slate"
+                  className={inputClass}
                 >
                   <option value="">-- Select --</option>
                   {purchases?.map((p: any) => (
-                    <option key={p.id} value={p.id}>{p.id.slice(0,8)} - {p.supplier.name}</option>
+                    <option key={p.id} value={p.id}>
+                      #{formatShortId(p.id)} - {p.supplier.name}
+                    </option>
                   ))}
                 </select>
               </div>
             )}
 
             {selectedEntity && (
-              <div className="bg-black/30 border border-premium-border/50 rounded-lg p-3 text-sm">
-                <div className="flex justify-between text-zinc-400 mb-1">
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs space-y-1.5">
+                <div className="flex justify-between text-slate-500">
                   <span>Total Value:</span>
-                  <span className="text-white font-medium">{formatRupee((selectedEntity.totalAmount || 0) + (selectedEntity.totalGst || 0))}</span>
-                </div>
-                <div className="flex justify-between text-zinc-400 mb-1">
-                  <span>Already Paid:</span>
-                  <span className="text-white font-medium">{formatRupee(selectedEntity.amountPaid || 0)}</span>
-                </div>
-                <div className="flex justify-between text-zinc-400 mb-2 pb-2 border-b border-white/10">
-                  <span>Current Due:</span>
-                  <span className="text-brand-orange font-bold">
-                    {formatRupee((selectedEntity.totalAmount || 0) + (selectedEntity.totalGst || 0) - (selectedEntity.amountPaid || 0))}
+                  <span className="text-slate-900 font-mono font-bold">
+                    {formatRupee(
+                      (selectedEntity.totalAmount || 0) + (selectedEntity.totalGst || 0)
+                    )}
                   </span>
                 </div>
-                <div className="flex justify-between text-zinc-400">
-                  <span>Due after this txn:</span>
-                  <span className="text-emerald-400 font-bold">
+                <div className="flex justify-between text-slate-500">
+                  <span>Already Paid:</span>
+                  <span className="text-emerald-700 font-mono font-semibold">
+                    {formatRupee(selectedEntity.amountPaid || 0)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-slate-500 pb-1.5 border-b border-slate-200">
+                  <span>Current Due:</span>
+                  <span className="text-orange-600 font-mono font-bold">
                     {formatRupee(
-                      Math.max(0, (selectedEntity.totalAmount || 0) + (selectedEntity.totalGst || 0) - (selectedEntity.amountPaid || 0) - (Number(amount) * 100 || 0))
+                      (selectedEntity.totalAmount || 0) +
+                        (selectedEntity.totalGst || 0) -
+                        (selectedEntity.amountPaid || 0)
+                    )}
+                  </span>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>Due after this txn:</span>
+                  <span className="text-emerald-700 font-mono font-bold">
+                    {formatRupee(
+                      Math.max(
+                        0,
+                        (selectedEntity.totalAmount || 0) +
+                          (selectedEntity.totalGst || 0) -
+                          (selectedEntity.amountPaid || 0) -
+                          (Number(amount) * 100 || 0)
+                      )
                     )}
                   </span>
                 </div>
@@ -290,36 +363,34 @@ export function TransactionModal({ onClose, quotations, pos, purchases, clients 
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-1">Amount (₹)</label>
-                <input 
-                  type="number" 
-                  step="0.01" 
+                <label className={labelClass}>Amount (₹)</label>
+                <SmartNumberInput
                   required
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="w-full bg-black/50 border border-premium-border rounded-md px-3 py-2 text-white focus:outline-none focus:border-brand-slate"
-                  placeholder="0.00"
+                  onValueChange={(_, str) => setAmount(str)}
+                  className={`${inputClass} font-mono font-bold`}
+                  placeholder="0.00 or e.g. 5000+1200"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-1">Date</label>
-                <input 
-                  type="date" 
+                <label className={labelClass}>Date</label>
+                <input
+                  type="date"
                   required
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full bg-black/50 border border-premium-border rounded-md px-3 py-2 text-white focus:outline-none focus:border-brand-slate"
+                  className={inputClass}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-1">Method</label>
-                <select 
-                  value={method} 
+                <label className={labelClass}>Method</label>
+                <select
+                  value={method}
                   onChange={(e) => setMethod(e.target.value)}
-                  className="w-full bg-black/50 border border-premium-border rounded-md px-3 py-2 text-white focus:outline-none focus:border-brand-slate"
+                  className={inputClass}
                 >
                   <option value="BANK_TRANSFER">Bank Transfer (NEFT/RTGS/IMPS)</option>
                   <option value="CHEQUE">Cheque</option>
@@ -328,11 +399,11 @@ export function TransactionModal({ onClose, quotations, pos, purchases, clients 
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-1">Status</label>
-                <select 
-                  value={status} 
+                <label className={labelClass}>Status</label>
+                <select
+                  value={status}
                   onChange={(e) => setStatus(e.target.value)}
-                  className="w-full bg-black/50 border border-premium-border rounded-md px-3 py-2 text-white focus:outline-none focus:border-brand-slate"
+                  className={inputClass}
                 >
                   <option value="CLEARED">Cleared (Completed)</option>
                   <option value="PENDING">Pending (PDC / Uncleared)</option>
@@ -341,45 +412,49 @@ export function TransactionModal({ onClose, quotations, pos, purchases, clients 
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1">Reference (Cheque No, UTR, etc)</label>
-              <input 
-                type="text" 
+              <label className={labelClass}>Reference (Cheque No, UTR, etc)</label>
+              <input
+                type="text"
                 value={reference}
                 onChange={(e) => setReference(e.target.value)}
-                className="w-full bg-black/50 border border-premium-border rounded-md px-3 py-2 text-white focus:outline-none focus:border-brand-slate"
+                className={inputClass}
                 placeholder="Optional"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1">Remarks / Notes</label>
-              <textarea 
+              <label className={labelClass}>Remarks / Notes</label>
+              <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={2}
-                className="w-full bg-black/50 border border-premium-border rounded-md px-3 py-2 text-white focus:outline-none focus:border-brand-slate"
+                className={inputClass}
                 placeholder="Optional notes"
               />
             </div>
-
           </form>
         </div>
 
-        <div className="p-6 border-t border-premium-border bg-black/20 flex justify-end gap-3">
-          <button 
-            type="button" 
+        <div className="p-5 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+          <button
+            type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-zinc-400 hover:text-white transition-colors"
+            className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
           >
             Cancel
           </button>
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             form="transaction-form"
             disabled={isSubmitting}
-            className="px-4 py-2 bg-brand-slate hover:bg-slate-500 text-white text-sm font-medium rounded-md transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-5 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-50"
           >
-            {isSubmitting ? "Saving..." : "Save Transaction"}
+            {isSubmitting ? (
+              <Loader2 className="w-4 h-4 animate-spin text-white" />
+            ) : (
+              <Check className="w-4 h-4 text-white" />
+            )}
+            <span className="text-white">{isSubmitting ? "Saving..." : "Save Transaction"}</span>
           </button>
         </div>
       </div>

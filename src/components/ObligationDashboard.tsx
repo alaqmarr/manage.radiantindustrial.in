@@ -6,6 +6,7 @@ import { formatRupee } from "@/lib/utils"
 import { recordObligationPayment, recordObligationAda, ObligationQuotationDetail, ObligationType } from "@/app/actions/obligations"
 import { Plus, Wallet, FileText, IndianRupee, HandCoins, AlertCircle, HeartHandshake } from "lucide-react"
 import { ObligationPayment, ObligationAda } from "@/generated/prisma/client"
+import { sileo } from "sileo"
 
 interface ObligationDashboardProps {
   type: ObligationType
@@ -46,7 +47,10 @@ export function ObligationDashboard({
   const handleRecordPayment = async (e: React.FormEvent) => {
     e.preventDefault()
     const amountPaise = Math.round(parseFloat(amountStr) * 100)
-    if (amountPaise <= 0) return alert("Enter a valid amount")
+    if (amountPaise <= 0) {
+      sileo.warning({ title: "Invalid Amount", description: "Please enter a valid positive amount." })
+      return
+    }
     
     setIsSubmitting(true)
     const res = await recordObligationPayment({
@@ -57,19 +61,23 @@ export function ObligationDashboard({
     })
     setIsSubmitting(false)
     if (res.success) {
+      sileo.success({ title: "Transferred to Paid", description: `${formatRupee(amountPaise)} recorded in ${title} paid account.` })
       setIsPaymentModalOpen(false)
       setAmountStr("")
       setNotes("")
       router.refresh()
     } else {
-      alert("Failed to record payment: " + res.error)
+      sileo.error({ title: "Payment Failed", description: res.error || "Could not record payment." })
     }
   }
 
   const handleRecordAda = async (e: React.FormEvent) => {
     e.preventDefault()
     const amountPaise = Math.round(parseFloat(amountStr) * 100)
-    if (amountPaise <= 0) return alert("Enter a valid amount")
+    if (amountPaise <= 0) {
+      sileo.warning({ title: "Invalid Amount", description: "Please enter a valid positive amount." })
+      return
+    }
     
     setIsSubmitting(true)
     const res = await recordObligationAda({
@@ -80,12 +88,13 @@ export function ObligationDashboard({
     })
     setIsSubmitting(false)
     if (res.success) {
+      sileo.success({ title: "Marked as Ada", description: `${formatRupee(amountPaise)} recorded as Ada for ${title}.` })
       setIsAdaModalOpen(false)
       setAmountStr("")
       setNotes("")
       router.refresh()
     } else {
-      alert("Failed to record Ada: " + res.error)
+      sileo.error({ title: "Failed to Record Ada", description: res.error || "Could not record Ada." })
     }
   }
 

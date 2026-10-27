@@ -1,7 +1,7 @@
 "use server"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
-import { generateSlug } from "@/lib/slugify"
+import { generateSmartSupplierId } from "@/lib/smartId"
 
 export async function searchSuppliers(query: string) {
   try {
@@ -56,21 +56,20 @@ export async function addProductSupplier(
     }
 
     // Check if supplier exists or create
-    let supplierId = generateSlug(supplierName, true)
-    
     let supplier = await prisma.supplier.findFirst({
       where: { name: { equals: supplierName } }
     })
 
+    let supplierId = supplier?.id || ""
+
     if (!supplier) {
+      supplierId = await generateSmartSupplierId(supplierName)
       supplier = await prisma.supplier.create({
         data: {
           id: supplierId,
           name: supplierName
         }
       })
-    } else {
-      supplierId = supplier.id
     }
 
     // Now upsert the ProductSupplier
@@ -145,7 +144,7 @@ export async function createSupplier(data: { name: string; contact?: string; ema
       return { error: "Supplier name is required" }
     }
 
-    const id = generateSlug(data.name, true)
+    const id = await generateSmartSupplierId(data.name)
 
     const supplier = await prisma.supplier.create({
       data: {

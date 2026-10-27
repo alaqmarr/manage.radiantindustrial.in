@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
-import { generateSlug } from "@/lib/slugify"
+import { generateSmartClientId } from "@/lib/smartId"
 
 export async function createClient(data: { name: string; contact?: string; email?: string; gstNumber?: string; location?: string; address?: string }) {
   try {
@@ -16,7 +16,7 @@ export async function createClient(data: { name: string; contact?: string; email
       return { error: "Client name is required" }
     }
 
-    const id = generateSlug(data.name, true)
+    const id = await generateSmartClientId(data.name)
 
     const client = await prisma.client.create({
       data: {

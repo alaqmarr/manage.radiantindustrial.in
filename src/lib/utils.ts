@@ -36,3 +36,19 @@ export function numberToWordsRupees(paise: number): string {
 
   return inWords(amount) + " Rupees Only";
 }
+
+/**
+ * Formats a document ID for display.
+ * - For smart IDs (e.g., "wco-q-1", "wco-po-2", "pub-rfq-1"), returns the full uppercase ID ("WCO-Q-1").
+ * - For legacy long timestamp/cuid IDs (e.g., "qt-1785944596120-2"), returns a concise trailing suffix.
+ */
+export function formatShortId(id?: string | null): string {
+  if (!id) return ""
+  const trimmed = id.trim()
+  // Legacy timestamp IDs contain 10+ consecutive digits or are longer than 18 chars
+  if (/\d{10,}/.test(trimmed) || trimmed.length > 18) {
+    return trimmed.slice(-6).toUpperCase()
+  }
+  return trimmed.toUpperCase()
+}
+

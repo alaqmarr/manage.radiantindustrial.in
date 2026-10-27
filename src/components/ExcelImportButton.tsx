@@ -3,7 +3,7 @@ import { useRef, useState } from "react"
 import { FileUp, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { importExcelAction } from "@/app/actions/import"
-import { toast } from "sonner"
+import { sileo } from "sileo"
 
 export function ExcelImportButton() {
   const router = useRouter()
@@ -27,17 +27,20 @@ export function ExcelImportButton() {
     }
 
     if (result.error) {
-      toast.error("Error: " + result.error)
+      sileo.error({ title: "Excel Import Failed", description: result.error })
     } else {
-      toast.success(`Successfully imported ${result.count} products!`)
+      sileo.success({
+        title: "Products Imported",
+        description: `Successfully imported ${result.count} products into the catalog.`
+      })
       router.refresh()
     }
   }
 
   return (
-    <label className={`flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-zinc-800 text-white rounded-md transition-colors cursor-pointer ${isUploading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-800'}`}>
-      {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileUp className="w-4 h-4" />}
-      <span className="font-medium text-sm">{isUploading ? 'Importing...' : 'Import Excel'}</span>
+    <label className={`flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg transition-colors shadow-2xs cursor-pointer ${isUploading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50 hover:text-slate-900'}`}>
+      {isUploading ? <Loader2 className="w-4 h-4 animate-spin text-orange-600" /> : <FileUp className="w-4 h-4 text-slate-500" />}
+      <span className="font-semibold text-sm">{isUploading ? 'Importing...' : 'Import Excel'}</span>
       <input 
         ref={fileInputRef}
         type="file" 
@@ -49,4 +52,3 @@ export function ExcelImportButton() {
     </label>
   )
 }
-

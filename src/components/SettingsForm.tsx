@@ -3,7 +3,8 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { getPresignedUrl } from "@/app/actions/upload"
 import { saveCompanySettings } from "@/app/actions/settings"
-import { Loader2, ImagePlus } from "lucide-react"
+import { Loader2, ImagePlus, Check } from "lucide-react"
+import { sileo } from "sileo"
 
 export function SettingsForm({ settings }: { settings: any }) {
   const router = useRouter()
@@ -11,7 +12,9 @@ export function SettingsForm({ settings }: { settings: any }) {
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(settings?.logoUrl || null)
   const [signatureFile, setSignatureFile] = useState<File | null>(null)
-  const [signaturePreview, setSignaturePreview] = useState<string | null>(settings?.signatureUrl || null)
+  const [signaturePreview, setSignaturePreview] = useState<string | null>(
+    settings?.signatureUrl || null
+  )
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -36,7 +39,7 @@ export function SettingsForm({ settings }: { settings: any }) {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsSubmitting(true)
-    
+
     try {
       const formData = new FormData(e.currentTarget)
       let imageUrl = null
@@ -57,7 +60,10 @@ export function SettingsForm({ settings }: { settings: any }) {
       }
 
       if (signatureFile) {
-        const { uploadUrl, publicUrl } = await getPresignedUrl("signature_" + signatureFile.name, signatureFile.type)
+        const { uploadUrl, publicUrl } = await getPresignedUrl(
+          "signature_" + signatureFile.name,
+          signatureFile.type
+        )
         const uploadResponse = await fetch(uploadUrl, {
           method: "PUT",
           body: signatureFile,
@@ -82,197 +88,353 @@ export function SettingsForm({ settings }: { settings: any }) {
         throw new Error(result.error)
       }
 
-      alert("Settings saved successfully!")
+      sileo.success({
+        title: "Settings Saved",
+        description: "Company profile, branding, and configuration updated.",
+      })
       router.refresh()
     } catch (error: any) {
       console.error(error)
-      alert(error.message || "Something went wrong")
+      sileo.error({
+        title: "Save Failed",
+        description: error.message || "Could not save company settings.",
+      })
     } finally {
       setIsSubmitting(false)
     }
   }
 
+  const inputClass =
+    "w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+  const labelClass = "block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5"
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl bg-zinc-900 border border-zinc-800 p-6 rounded-md">
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-6 max-w-4xl bg-white border border-slate-200 p-6 sm:p-8 rounded-2xl shadow-xs"
+    >
       <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6 border-b border-slate-100">
           <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-2">Company Logo</label>
+            <label className={labelClass}>Company Logo</label>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <div className="w-48 h-24 rounded-md bg-zinc-950 border border-zinc-800 flex items-center justify-center overflow-hidden p-2">
+              <div className="w-48 h-24 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center overflow-hidden p-2">
                 {imagePreview ? (
                   <img src={imagePreview} alt="Preview" className="w-full h-full object-contain" />
                 ) : (
-                  <ImagePlus className="w-8 h-8 text-zinc-700" />
+                  <ImagePlus className="w-8 h-8 text-slate-300" />
                 )}
               </div>
-              <label className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-medium rounded-md cursor-pointer transition-colors">
+              <label className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold rounded-lg cursor-pointer transition-colors border border-slate-200">
                 Choose Logo
                 <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
               </label>
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-2">Digital Signature Stamp</label>
+            <label className={labelClass}>Digital Signature Stamp</label>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <div className="w-48 h-24 rounded-md bg-zinc-950 border border-zinc-800 flex items-center justify-center overflow-hidden p-2">
+              <div className="w-48 h-24 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center overflow-hidden p-2">
                 {signaturePreview ? (
-                  <img src={signaturePreview} alt="Signature Preview" className="w-full h-full object-contain" />
+                  <img
+                    src={signaturePreview}
+                    alt="Signature Preview"
+                    className="w-full h-full object-contain"
+                  />
                 ) : (
-                  <ImagePlus className="w-8 h-8 text-zinc-700" />
+                  <ImagePlus className="w-8 h-8 text-slate-300" />
                 )}
               </div>
-              <label className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-medium rounded-md cursor-pointer transition-colors">
+              <label className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold rounded-lg cursor-pointer transition-colors border border-slate-200">
                 Choose Signature
-                <input type="file" className="hidden" accept="image/*" onChange={handleSignatureChange} />
+                <input
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleSignatureChange}
+                />
               </label>
             </div>
-            <p className="text-xs text-zinc-500 mt-2">Used as the authorized signatory on PDFs.</p>
+            <p className="text-xs text-slate-400 mt-1.5">
+              Used as the authorized signatory on Quotations, POs, RFQs, and COC PDFs.
+            </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-5">
           <div className="col-span-2">
-            <label className="block text-sm font-medium text-zinc-400 mb-1">Company Name *</label>
-            <input required defaultValue={settings?.companyName} name="companyName" type="text" className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+            <label className={labelClass}>Company Name *</label>
+            <input
+              required
+              defaultValue={settings?.companyName}
+              name="companyName"
+              type="text"
+              className={inputClass}
+            />
           </div>
 
           <div className="col-span-2">
-            <label className="block text-sm font-medium text-zinc-400 mb-1">Company Address</label>
-            <textarea defaultValue={settings?.address || ""} name="address" rows={2} className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+            <label className={labelClass}>Company Address</label>
+            <textarea
+              defaultValue={settings?.address || ""}
+              name="address"
+              rows={2}
+              className={inputClass}
+            />
           </div>
 
           <div className="col-span-2 md:col-span-1">
-            <label className="block text-sm font-medium text-zinc-400 mb-1">Billing Address</label>
-            <textarea defaultValue={settings?.billingAddress || ""} name="billingAddress" rows={3} className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+            <label className={labelClass}>Billing Address</label>
+            <textarea
+              defaultValue={settings?.billingAddress || ""}
+              name="billingAddress"
+              rows={3}
+              className={inputClass}
+            />
           </div>
 
           <div className="col-span-2 md:col-span-1">
-            <label className="block text-sm font-medium text-zinc-400 mb-1">Shipping Address</label>
-            <textarea defaultValue={settings?.shippingAddress || ""} name="shippingAddress" rows={3} className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+            <label className={labelClass}>Shipping Address</label>
+            <textarea
+              defaultValue={settings?.shippingAddress || ""}
+              name="shippingAddress"
+              rows={3}
+              className={inputClass}
+            />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-1">Email</label>
-            <input defaultValue={settings?.email || ""} name="email" type="email" className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+            <label className={labelClass}>Email</label>
+            <input
+              defaultValue={settings?.email || ""}
+              name="email"
+              type="email"
+              className={inputClass}
+            />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-1">Phone</label>
-            <input defaultValue={settings?.phone || ""} name="phone" type="text" className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+            <label className={labelClass}>Phone</label>
+            <input
+              defaultValue={settings?.phone || ""}
+              name="phone"
+              type="text"
+              className={inputClass}
+            />
           </div>
 
           <div className="col-span-2">
-            <label className="block text-sm font-medium text-zinc-400 mb-1">Company GST Number</label>
-            <input defaultValue={settings?.gstNumber || ""} name="gstNumber" type="text" className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate uppercase" />
+            <label className={labelClass}>Company GST Number</label>
+            <input
+              defaultValue={settings?.gstNumber || ""}
+              name="gstNumber"
+              type="text"
+              className={`${inputClass} uppercase font-mono`}
+            />
           </div>
 
           <div className="col-span-2">
-            <label className="block text-sm font-medium text-zinc-400 mb-1">Default Quotation Message</label>
-            <textarea defaultValue={settings?.quotationMessage || "Here is your quotation for the RFQ as requested."} name="quotationMessage" rows={2} className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+            <label className={labelClass}>Default Quotation Message</label>
+            <textarea
+              defaultValue={
+                settings?.quotationMessage || "Here is your quotation for the RFQ as requested."
+              }
+              name="quotationMessage"
+              rows={2}
+              className={inputClass}
+            />
           </div>
 
           <div className="col-span-2">
-            <label className="block text-sm font-medium text-zinc-400 mb-1">Default RFQ Message</label>
-            <textarea defaultValue={settings?.rfqMessage || "Please find attached our Request for Quotation. Kindly share your best prices at the earliest."} name="rfqMessage" rows={2} className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+            <label className={labelClass}>Default RFQ Message</label>
+            <textarea
+              defaultValue={
+                settings?.rfqMessage ||
+                "Please find attached our Request for Quotation. Kindly share your best prices at the earliest."
+              }
+              name="rfqMessage"
+              rows={2}
+              className={inputClass}
+            />
           </div>
 
           <div className="col-span-2">
-            <label className="block text-sm font-medium text-zinc-400 mb-1">Default Certificate of Conformance Text</label>
-            <textarea defaultValue={settings?.cocMessage || "We hereby certify that the materials supplied against this order conform strictly to your company standards and have been procured from genuine sources."} name="cocMessage" rows={2} className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+            <label className={labelClass}>Default Certificate of Conformance Text</label>
+            <textarea
+              defaultValue={
+                settings?.cocMessage ||
+                "We hereby certify that the materials supplied against this order conform strictly to your company standards and have been procured from genuine sources."
+              }
+              name="cocMessage"
+              rows={2}
+              className={inputClass}
+            />
           </div>
 
           <div className="col-span-2">
-            <label className="block text-sm font-medium text-zinc-400 mb-1">Bottom Details (Terms / Signatures)</label>
-            <textarea defaultValue={settings?.bottomDetails || ""} name="bottomDetails" rows={3} placeholder="Terms and conditions, validity, etc." className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+            <label className={labelClass}>Bottom Details (Terms / Signatures)</label>
+            <textarea
+              defaultValue={settings?.bottomDetails || ""}
+              name="bottomDetails"
+              rows={3}
+              placeholder="Terms and conditions, validity, etc."
+              className={inputClass}
+            />
           </div>
         </div>
-        
+
         {/* Email / SMTP Integration */}
-        <div className="pt-6 border-t border-zinc-800">
-          <h3 className="text-lg font-semibold text-white mb-4">Email Sending Settings (SMTP)</h3>
-          <p className="text-sm text-zinc-400 mb-4">Provide your Gmail credentials to send emails directly from the app. Use a generated <strong>App Password</strong>, not your regular login password.</p>
-          <div className="grid grid-cols-2 gap-6">
+        <div className="pt-6 border-t border-slate-100">
+          <h3 className="text-base font-bold text-slate-900 mb-1">
+            Email Sending Settings (SMTP)
+          </h3>
+          <p className="text-xs text-slate-500 mb-4">
+            Provide your Gmail credentials to send emails directly from the app. Use a generated{" "}
+            <strong>App Password</strong>, not your regular login password.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1">SMTP Email Address</label>
-              <input defaultValue={settings?.smtpEmail || ""} name="smtpEmail" type="email" placeholder="e.g. sales@yourcompany.com" className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+              <label className={labelClass}>SMTP Email Address</label>
+              <input
+                defaultValue={settings?.smtpEmail || ""}
+                name="smtpEmail"
+                type="email"
+                placeholder="e.g. sales@yourcompany.com"
+                className={inputClass}
+              />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1">SMTP App Password</label>
-              <input defaultValue={settings?.smtpPassword || ""} name="smtpPassword" type="password" placeholder="16-character App Password" className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+              <label className={labelClass}>SMTP App Password</label>
+              <input
+                defaultValue={settings?.smtpPassword || ""}
+                name="smtpPassword"
+                type="password"
+                placeholder="16-character App Password"
+                className={inputClass}
+              />
             </div>
           </div>
         </div>
 
-        
         {/* API Integrations */}
-        <div className="pt-6 border-t border-zinc-800">
-          <h3 className="text-lg font-semibold text-white mb-4">API Integrations</h3>
-          <p className="text-sm text-zinc-400 mb-4">Configure third-party APIs for automation.</p>
-          <div className="grid grid-cols-2 gap-6">
+        <div className="pt-6 border-t border-slate-100">
+          <h3 className="text-base font-bold text-slate-900 mb-1">API Integrations</h3>
+          <p className="text-xs text-slate-500 mb-4">
+            Configure third-party APIs for automation.
+          </p>
+          <div className="grid grid-cols-2 gap-5">
             <div className="col-span-2">
-              <label className="block text-sm font-medium text-zinc-400 mb-1">Appyflow GST API Key (key_secret)</label>
-              <input defaultValue={settings?.gstApiKey || ""} name="gstApiKey" type="password" placeholder="e.g. Me1aB2haQFbZTaZ5THcrCTkZ0F13" className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
-              <p className="text-xs text-zinc-500 mt-1">Used for automatically fetching client and supplier details via GSTIN.</p>
+              <label className={labelClass}>Appyflow GST API Key (key_secret)</label>
+              <input
+                defaultValue={settings?.gstApiKey || ""}
+                name="gstApiKey"
+                type="password"
+                placeholder="e.g. Me1aB2haQFbZTaZ5THcrCTkZ0F13"
+                className={inputClass}
+              />
+              <p className="text-xs text-slate-400 mt-1">
+                Used for automatically fetching client and supplier details via GSTIN.
+              </p>
             </div>
           </div>
         </div>
 
         {/* Financial Settings */}
-        <div className="pt-6 border-t border-zinc-800">
-          <h3 className="text-lg font-semibold text-white mb-4">Financial Settings</h3>
-          <div className="grid grid-cols-2 gap-6">
+        <div className="pt-6 border-t border-slate-100">
+          <h3 className="text-base font-bold text-slate-900 mb-3">Financial Settings</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1">Margin Alert Threshold (%)</label>
-              <input defaultValue={settings?.marginAlertThreshold || 10.0} name="marginAlertThreshold" type="number" step="0.1" className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+              <label className={labelClass}>Margin Alert Threshold (%)</label>
+              <input
+                defaultValue={settings?.marginAlertThreshold || 10.0}
+                name="marginAlertThreshold"
+                type="number"
+                step="0.1"
+                className={inputClass}
+              />
             </div>
           </div>
         </div>
 
         {/* Banking Details */}
-        <div className="pt-6 border-t border-zinc-800">
-          <h3 className="text-lg font-semibold text-white mb-4">Banking Details</h3>
-          <p className="text-sm text-zinc-400 mb-4">These details can be used in your email templates (e.g. when requesting payment).</p>
-          <div className="grid grid-cols-2 gap-6">
+        <div className="pt-6 border-t border-slate-100">
+          <h3 className="text-base font-bold text-slate-900 mb-1">Banking Details</h3>
+          <p className="text-xs text-slate-500 mb-4">
+            These details are used in your email templates and payment requests.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1">Bank Name</label>
-              <input defaultValue={settings?.bankName || ""} name="bankName" type="text" className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+              <label className={labelClass}>Bank Name</label>
+              <input
+                defaultValue={settings?.bankName || ""}
+                name="bankName"
+                type="text"
+                className={inputClass}
+              />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1">Account Name</label>
-              <input defaultValue={settings?.accountName || ""} name="accountName" type="text" className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+              <label className={labelClass}>Account Name</label>
+              <input
+                defaultValue={settings?.accountName || ""}
+                name="accountName"
+                type="text"
+                className={inputClass}
+              />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1">Account Number</label>
-              <input defaultValue={settings?.accountNumber || ""} name="accountNumber" type="text" className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+              <label className={labelClass}>Account Number</label>
+              <input
+                defaultValue={settings?.accountNumber || ""}
+                name="accountNumber"
+                type="text"
+                className={inputClass}
+              />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1">IFSC Code</label>
-              <input defaultValue={settings?.ifscCode || ""} name="ifscCode" type="text" className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+              <label className={labelClass}>IFSC Code</label>
+              <input
+                defaultValue={settings?.ifscCode || ""}
+                name="ifscCode"
+                type="text"
+                className={inputClass}
+              />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1">SWIFT Code</label>
-              <input defaultValue={settings?.swiftCode || ""} name="swiftCode" type="text" className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+              <label className={labelClass}>SWIFT Code</label>
+              <input
+                defaultValue={settings?.swiftCode || ""}
+                name="swiftCode"
+                type="text"
+                className={inputClass}
+              />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1">Branch / Address</label>
-              <input defaultValue={settings?.bankAddress || ""} name="bankAddress" type="text" className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand-slate" />
+              <label className={labelClass}>Branch / Address</label>
+              <input
+                defaultValue={settings?.bankAddress || ""}
+                name="bankAddress"
+                type="text"
+                className={inputClass}
+              />
             </div>
           </div>
         </div>
       </div>
 
-      <div className="flex justify-end pt-4 border-t border-zinc-800">
-        <button 
-          type="submit" 
+      <div className="flex justify-end pt-5 border-t border-slate-100">
+        <button
+          type="submit"
           disabled={isSubmitting}
-          className="flex items-center gap-2 px-6 py-2 bg-brand-orange hover:bg-orange-600 disabled:opacity-50 text-white font-medium rounded-md transition-colors"
+          className="flex items-center gap-2 px-6 py-2.5 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-semibold text-sm rounded-xl shadow-sm transition-colors"
         >
-          {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-          Save Settings
+          {isSubmitting ? (
+            <Loader2 className="w-4 h-4 animate-spin text-white" />
+          ) : (
+            <Check className="w-4 h-4 text-white" />
+          )}
+          <span className="text-white">Save Settings</span>
         </button>
       </div>
     </form>
   )
 }
-

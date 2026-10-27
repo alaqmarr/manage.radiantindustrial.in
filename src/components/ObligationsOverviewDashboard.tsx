@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { formatRupee } from "@/lib/utils"
 import { FileText, IndianRupee, Wallet, AlertCircle, Plus, Layers, HeartHandshake } from "lucide-react"
 import { recordCombinedObligationPayment, recordCombinedObligationAda } from "@/app/actions/obligations"
+import { sileo } from "sileo"
 
 interface Summary {
   totalExpectedDue: number
@@ -47,15 +48,16 @@ export function ObligationsOverviewDashboard({
       })
 
       if (result.success) {
+        sileo.success({ title: "Combined Payment Recorded", description: `${formatRupee(amountPaise)} allocated to Khumus & Zakaat.` })
         setIsPaymentModalOpen(false)
         setAmountStr("")
         setNotes("")
         router.refresh()
       } else {
-        alert(result.error)
+        sileo.error({ title: "Payment Failed", description: result.error || "Could not record payment." })
       }
     } catch (e: any) {
-      alert("Error saving payment")
+      sileo.error({ title: "Error", description: "Error saving combined payment." })
     } finally {
       setIsSubmitting(false)
     }
@@ -77,15 +79,16 @@ export function ObligationsOverviewDashboard({
       })
 
       if (result.success) {
+        sileo.success({ title: "Combined Ada Recorded", description: `${formatRupee(amountPaise)} marked as Ada.` })
         setIsAdaModalOpen(false)
         setAmountStr("")
         setNotes("")
         router.refresh()
       } else {
-        alert(result.error)
+        sileo.error({ title: "Failed to Record Ada", description: result.error || "Could not record Ada." })
       }
     } catch (e: any) {
-      alert("Error saving Ada")
+      sileo.error({ title: "Error", description: "Error saving combined Ada." })
     } finally {
       setIsSubmitting(false)
     }

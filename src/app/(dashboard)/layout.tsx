@@ -1,4 +1,4 @@
-import { Sidebar } from "@/components/Sidebar"
+import { Sidebar, SidebarContentWrapper } from "@/components/Sidebar"
 import { TopBar } from "@/components/TopBar"
 import { CommandPalette } from "@/components/CommandPalette"
 import { GlobalModals } from "@/components/GlobalModals"
@@ -13,25 +13,26 @@ export default async function DashboardLayout({
 }) {
   const suppliers = await prisma.supplier.findMany({ select: { id: true, name: true } })
   const products = await prisma.product.findMany({ select: { id: true, materialCode: true, materialDescription: true, costPrice: true } })
+
   return (
-    <div className="flex bg-premium-dark min-h-screen text-zinc-200 print:bg-white print:text-black print:min-h-0 print:block">
+    <div className="flex bg-slate-50 min-h-screen text-slate-900 print:bg-white print:text-black print:min-h-0 print:block">
       <DisableNumberInputScroll />
       <div className="print:hidden">
         <Sidebar />
       </div>
-      <div className="ml-64 flex-1 flex flex-col min-h-screen print:ml-0 print:block print:min-h-0">
+      <SidebarContentWrapper>
         <div className="print:hidden">
           <TopBar />
         </div>
-        <main className="flex-1 p-8 print:p-0 print:m-0">
+        <main className="flex-1 p-6 lg:p-8 max-w-[1600px] w-full mx-auto print:p-0 print:m-0">
           <div className="print:hidden">
             <CommandPalette />
           </div>
-          <div className="w-full animate-in fade-in duration-500 print:max-w-none">
+          <div className="w-full animate-in fade-in duration-300 print:max-w-none">
             {children}
           </div>
         </main>
-      </div>
+      </SidebarContentWrapper>
       <Suspense fallback={null}>
         <GlobalModals suppliers={suppliers} products={products} />
       </Suspense>

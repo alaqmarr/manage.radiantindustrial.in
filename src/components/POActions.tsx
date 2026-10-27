@@ -1,10 +1,18 @@
 "use client"
-import { Printer, Copy, Check, Edit, Trash2, Send, X, Loader2, CheckCircle2, XCircle } from "lucide-react"
+import { Printer, Copy, Check, Edit, Trash2, Send, X, Loader2, CheckCircle2, XCircle, FileSpreadsheet } from "lucide-react"
 import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { deletePurchaseOrder } from "@/app/actions/purchaseOrder"
 import { sendEmailAction } from "@/app/actions/email"
-import { formatRupee, numberToWordsRupees } from "@/lib/utils"
+import { formatRupee, formatShortId } from "@/lib/utils"
+import { sileo } from "sileo"
+import {
+  DocumentPrintPortal,
+  CorporateDocumentTemplate,
+  buildSmartPdfFilename,
+  triggerPrintWithFilename,
+} from "./DocumentTemplate"
+import { ConfirmDeleteModal } from "./ConfirmDeleteModal"
 
 export function POActions({ 
   po, 
@@ -15,6 +23,7 @@ export function POActions({
 }) {
   const [copied, setCopied] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const emailTableRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const [isSendModalOpen, setIsSendModalOpen] = useState(false)
@@ -23,79 +32,100 @@ export function POActions({
   const [isSending, setIsSending] = useState(false)
   const [sendResults, setSendResults] = useState<{email: string, status: 'success'|'failed', error?: string}[] | null>(null)
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  const poLabel = po.poNumber || formatShortId(po.id)
+
+  const pdfFilename = buildSmartPdfFilename({
+    docType: "PurchaseOrder",
+    docNumber: poLabel,
+    partyName: po.supplier?.name,
+    referenceNo: po.quotation?.prNo || (po.quotation?.id ? formatShortId(po.quotation.id) : po.rfqId),
+    date: po.createdAt,
+  })
 
   const parseEmails = (input: string) => {
-    const parts = input.split(/[\s,;]+/);
-    const newValidEmails = [...validEmails];
-    let hasChanges = false;
+    const parts = input.split(/[\s,;]+/)
+    const newValidEmails = [...validEmails]
+    let hasChanges = false
     parts.forEach(part => {
-      const trimmed = part.trim();
+      const trimmed = part.trim()
       if (trimmed && emailRegex.test(trimmed) && !newValidEmails.includes(trimmed)) {
-        newValidEmails.push(trimmed);
-        hasChanges = true;
+        newValidEmails.push(trimmed)
+        hasChanges = true
       }
-    });
-    if (hasChanges) setValidEmails(newValidEmails);
-  };
+    })
+    if (hasChanges) setValidEmails(newValidEmails)
+  }
 
   const handleEmailInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setEmailInput(val);
-    if (val.endsWith(' ') || val.endsWith(',') || val.endsWith(';')) {
-      parseEmails(val);
-      setEmailInput('');
-    }
-  };
-
-  const handleEmailInputPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    parseEmails(e.clipboardData.getData('text'));
-  };
-
-  const removeEmail = (emailToRemove: string) => {
-    setValidEmails(validEmails.filter(e => e !== emailToRemove));
-  };
-
-  const handleSendEmail = async () => {
-    if (!emailTableRef.current) return;
-    let finalEmails = [...validEmails];
-    if (emailInput.trim() && emailRegex.test(emailInput.trim()) && !finalEmails.includes(emailInput.trim())) {
-      finalEmails.push(emailInput.trim());
-    }
-    if (finalEmails.length === 0) {
-      alert("Please enter at least one valid recipient email address.");
-      return;
-    }
-
-    setValidEmails(finalEmails);
-    setEmailInput('');
-    setIsSending(true);
-    setSendResults(null);
-    try {
-      const htmlContent = emailTableRef.current.innerHTML;
-      const result = await sendEmailAction({
-        to: finalEmails,
-        subject: `Purchase Order - ${po.poNumber || po.id.slice(-6).toUpperCase()} from ${settings?.companyName || "Our Company"}`,
-        html: htmlContent
-      });
-
-      if (result.error && !result.results) {
-        alert(result.error);
-      } else if (result.results) {
-        setSendResults(result.results as any);
-      }
-    } catch (err) {
-      console.error("Failed to send email", err);
-      alert("Failed to send email due to a network error.");
-    } finally {
-      setIsSending(false);
+    const val = e.target.value
+    setEmailInput(val)
+    if (val.endsWith(" ") || val.endsWith(",") || val.endsWith(";")) {
+      parseEmails(val)
+      setEmailInput("")
     }
   }
 
+  const handleEmailInputPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault()
+    parseEmails(e.clipboardData.getData("text"))
+  }
+
+  const removeEmail = (emailToRemove: string) => {
+    setValidEmails(validEmails.filter(e => e !== emailToRemove))
+  }
+
+  const handleSendEmail = async () => {
+    if (!emailTableRef.current) return
+    const finalEmails = [...validEmails]
+    if (emailInput.trim() && emailRegex.test(emailInput.trim()) && !finalEmails.includes(emailInput.trim())) {
+      finalEmails.push(emailInput.trim())
+    }
+    if (finalEmails.length === 0) {
+      sileo.warning({
+        title: "No Recipient Emails",
+        description: "Please enter at least one valid supplier email address."
+      })
+      return
+    }
+
+    setValidEmails(finalEmails)
+    setEmailInput("")
+    setIsSending(true)
+    setSendResults(null)
+    try {
+      const htmlContent = emailTableRef.current.innerHTML
+      const result = await sendEmailAction({
+        to: finalEmails,
+        subject: `Purchase Order ${poLabel} from ${settings?.companyName || "Radiant Industrial Company"}`,
+        html: htmlContent
+      })
+
+      if (result.error && !result.results) {
+        sileo.error({
+          title: "Email Delivery Failed",
+          description: result.error
+        })
+      } else if (result.results) {
+        setSendResults(result.results as any)
+        const sentCount = (result.results as any[]).filter(r => r.status === "success").length
+        sileo.success({
+          title: "Purchase Order Sent",
+          description: `Successfully emailed ${poLabel} to ${sentCount} recipient(s).`
+        })
+      }
+    } catch (err) {
+      sileo.error({
+        title: "Network Error",
+        description: "Failed to send Purchase Order email."
+      })
+    } finally {
+      setIsSending(false)
+    }
+  }
 
   const handlePrint = () => {
-    window.print()
+    triggerPrintWithFilename(pdfFilename, `Purchase Order #${poLabel}`)
   }
 
   const handleCopyEmail = async () => {
@@ -114,55 +144,58 @@ export function POActions({
       ])
       
       setCopied(true)
+      sileo.success({
+        title: "Purchase Order Copied",
+        description: `Formatted HTML table for ${poLabel} copied to clipboard.`
+      })
       setTimeout(() => setCopied(false), 2000)
     } catch (err) {
-      console.error("Failed to use Clipboard API, falling back to basic copy", err)
       try {
-        // Fallback for non-HTTPS or browsers that don't support ClipboardItem
         const range = document.createRange()
         range.selectNodeContents(emailTableRef.current)
         const selection = window.getSelection()
         selection?.removeAllRanges()
         selection?.addRange(range)
-        
-        // This requires the hidden div to actually be visible enough to be selected,
-        // but since it's `hidden print:block`, standard `execCommand` might fail.
-        // Let's temporarily make it visible for copying
-        const originalClass = emailTableRef.current.parentElement?.className
-        if (emailTableRef.current.parentElement) {
-          emailTableRef.current.parentElement.className = 'w-full bg-white text-black p-8 absolute top-[-9999px] left-[-9999px]'
-        }
-        
-        document.execCommand('copy')
-        
-        if (emailTableRef.current.parentElement && originalClass) {
-          emailTableRef.current.parentElement.className = originalClass
-        }
-        
+        document.execCommand("copy")
         selection?.removeAllRanges()
-        
         setCopied(true)
+        sileo.success({
+          title: "Purchase Order Copied",
+          description: "Formatted Purchase Order copied to clipboard."
+        })
         setTimeout(() => setCopied(false), 2000)
       } catch (fallbackErr) {
-        console.error("Fallback copy also failed", fallbackErr)
-        alert("Failed to copy. Your browser might not support this feature.")
+        sileo.error({
+          title: "Copy Failed",
+          description: "Your browser blocked clipboard access."
+        })
       }
     }
   }
 
   const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this po?")) return
     setIsDeleting(true)
     try {
       const res = await deletePurchaseOrder(po.id)
       if (res.success) {
+        sileo.success({
+          title: "Purchase Order Deleted",
+          description: `${poLabel} has been deleted.`
+        })
+        setIsDeleteModalOpen(false)
         router.push("/purchase-orders")
         router.refresh()
       } else {
-        alert(res.error)
+        sileo.error({
+          title: "Delete Failed",
+          description: res.error
+        })
       }
     } catch (e: any) {
-      alert("Failed to delete po")
+      sileo.error({
+        title: "Delete Failed",
+        description: "Could not delete Purchase Order."
+      })
     } finally {
       setIsDeleting(false)
     }
@@ -170,7 +203,7 @@ export function POActions({
 
   const handleExportExcel = async () => {
     try {
-      const XLSX = await import("xlsx");
+      const XLSX = await import("xlsx")
       
       const rows = po.items.map((item: any, index: number) => ({
         "SR NO": index + 1,
@@ -180,11 +213,23 @@ export function POActions({
         "Comment": item.comment || "",
         "Qty": item.quantity,
         "UOM": item.product.unit,
-        
-        
-      }));
+        "GST %": item.gstRate,
+        "Rate (INR)": item.unitPrice / 100,
+        "Amount (INR)": (item.quantity * item.unitPrice) / 100
+      }))
       
-      
+      rows.push({
+        "SR NO": "",
+        "Code": "",
+        "Description": "Subtotal (Excl. GST)",
+        "Specification": "",
+        "Comment": "",
+        "Qty": "",
+        "UOM": "",
+        "GST %": "",
+        "Rate (INR)": "",
+        "Amount (INR)": po.totalAmount / 100
+      } as any)
       rows.push({
         "SR NO": "",
         "Code": "",
@@ -193,72 +238,101 @@ export function POActions({
         "Comment": "",
         "Qty": "",
         "UOM": "",
-        "Rate": "",
-        "Amount": po.totalGst / 100
-      } as any);
+        "GST %": "",
+        "Rate (INR)": "",
+        "Amount (INR)": po.totalGst / 100
+      } as any)
       rows.push({
         "SR NO": "",
         "Code": "",
-        "Description": "Grand Total",
+        "Description": "Grand Total (Incl. GST)",
         "Specification": "",
         "Comment": "",
         "Qty": "",
         "UOM": "",
-        "Rate": "",
-        "Amount": (po.totalAmount + po.totalGst) / 100
-      } as any);
+        "GST %": "",
+        "Rate (INR)": "",
+        "Amount (INR)": (po.totalAmount + po.totalGst) / 100
+      } as any)
 
-      const worksheet = XLSX.utils.json_to_sheet(rows);
-      
-      // Auto-size columns roughly
-      const columnWidths = [
-        { wch: 8 },  // SR NO
-        { wch: 20 }, // Code
-        { wch: 50 }, // Description
-        { wch: 30 }, // Specification
-        { wch: 30 }, // Comment
-        { wch: 8 },  // Qty
-        { wch: 8 },  // UOM
-        
-        
-      ];
-      worksheet['!cols'] = columnWidths;
+      const worksheet = XLSX.utils.json_to_sheet(rows)
+      worksheet["!cols"] = [
+        { wch: 8 },
+        { wch: 18 },
+        { wch: 45 },
+        { wch: 30 },
+        { wch: 25 },
+        { wch: 10 },
+        { wch: 10 },
+        { wch: 10 },
+        { wch: 14 },
+        { wch: 16 },
+      ]
 
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Purchase Order");
-      
-      XLSX.writeFile(workbook, `Purchase Order_${po.id.slice(-6)}.xlsx`);
+      const workbook = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Purchase Order")
+      XLSX.writeFile(workbook, `${pdfFilename}.xlsx`)
+      sileo.success({
+        title: "Excel Exported",
+        description: `Downloaded ${pdfFilename}.xlsx`
+      })
     } catch (err) {
-      console.error("Failed to export to Excel", err);
-      alert("Failed to export to Excel.");
+      sileo.error({
+        title: "Export Failed",
+        description: "Failed to export Purchase Order to Excel."
+      })
     }
+  }
+
+  const deleteImpactItems: string[] = [
+    `Supplier: ${po.supplier?.name || "Unknown Supplier"}`,
+    `${po.items?.length || 0} PO line item(s) worth ${formatRupee((po.totalAmount || 0) + (po.totalGst || 0))} will be removed`,
+  ]
+  if (po.quotationId) {
+    deleteImpactItems.push(
+      `Linked Quotation #${formatShortId(po.quotationId)} fulfillment count will be released`
+    )
+  }
+  if (po.deliveries?.length > 0) {
+    deleteImpactItems.push(
+      `${po.deliveries.length} Goods Receipt (GRN) record(s) will be removed`
+    )
+  }
+  if (po.payments?.length > 0) {
+    deleteImpactItems.push(
+      `${po.payments.length} recorded vendor payment(s) will be removed`
+    )
   }
 
   return (
     <>
-      <div className="flex gap-3 print:hidden">
+      <ConfirmDeleteModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDelete}
+        isDeleting={isDeleting}
+        title={`Delete Purchase Order ${poLabel}?`}
+        description={`Are you sure you want to permanently delete this Purchase Order issued to ${
+          po.supplier?.name || "this vendor"
+        }? This action cannot be undone.`}
+        impactItems={deleteImpactItems}
+      />
+
+      <div className="flex flex-wrap items-center gap-2 print:hidden">
         <button 
           onClick={handleExportExcel}
-          className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 font-medium rounded-md transition-colors border border-emerald-500/20 active:scale-95"
+          className="flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium rounded-lg transition-colors border border-slate-200 shadow-xs"
         >
-          <span className="text-sm">Export Excel</span>
+          <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+          <span>Export Excel</span>
         </button>
         <button 
-          onClick={() => router.push(`/purchase-orders/${po.id}/edit`)}
-          className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-white font-medium rounded-md transition-colors border border-premium-border active:scale-95"
+          onClick={handleCopyEmail}
+          className="flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium rounded-lg transition-colors border border-slate-200 shadow-xs"
         >
-          <Edit className="w-4 h-4" />
-          <span className="text-sm">Edit</span>
+          {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-slate-500" />}
+          <span>{copied ? "Copied!" : "Copy for Email"}</span>
         </button>
-        <button 
-          onClick={handleDelete}
-          disabled={isDeleting}
-          className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 disabled:opacity-50 text-red-500 font-medium rounded-md transition-colors border border-red-500/20 active:scale-95"
-        >
-          <Trash2 className="w-4 h-4" />
-          <span className="text-sm">{isDeleting ? "Deleting..." : "Delete"}</span>
-        </button>
-        
         <button 
           onClick={() => {
             setIsSendModalOpen(true)
@@ -267,352 +341,343 @@ export function POActions({
               setValidEmails([po.supplier.email])
             }
           }}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-indigo-600 hover:to-blue-500 shadow-lg shadow-blue-500/20 text-white font-medium rounded-md transition-all active:scale-95"
+          className="flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-xs transition-all"
         >
-          <Send className="w-4 h-4" />
-          <span className="text-sm">Email PO</span>
+          <Send className="w-3.5 h-3.5" />
+          <span>Email PO</span>
         </button>
-
         <button 
-          onClick={handleCopyEmail}
-          className="flex items-center gap-2 px-4 py-2 bg-brand-slate hover:bg-brand-slate/80 text-white font-medium rounded-md transition-colors border border-brand-slate/50 active:scale-95"
+          onClick={() => router.push(`/purchase-orders/${po.id}/edit`)}
+          className="flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium rounded-lg transition-colors border border-slate-200 shadow-xs"
         >
-          {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-          <span className="text-sm">{copied ? "Copied!" : "Copy for Email"}</span>
+          <Edit className="w-4 h-4 text-slate-600" />
+          <span>Edit</span>
+        </button>
+        <button 
+          onClick={() => setIsDeleteModalOpen(true)}
+          disabled={isDeleting}
+          className="flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-rose-50 disabled:opacity-50 text-rose-600 text-xs font-medium rounded-lg transition-colors border border-rose-200 shadow-xs"
+        >
+          <Trash2 className="w-4 h-4" />
+          <span>{isDeleting ? "Deleting..." : "Delete"}</span>
         </button>
         <button 
           onClick={handlePrint}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-brand-orange to-brand-orange-dark hover:from-brand-orange-dark hover:to-brand-orange shadow-lg shadow-brand-orange/20 text-white font-medium rounded-md transition-all active:scale-95"
+          title={`Auto-filename: ${pdfFilename}.pdf`}
+          className="flex items-center gap-1.5 px-4 py-2 bg-brand-orange hover:bg-brand-orange-dark text-white text-xs font-semibold rounded-lg shadow-sm transition-all active:scale-95 cursor-pointer"
         >
-          <Printer className="w-4 h-4" />
-          <span className="text-sm">Print Purchase Order</span>
+          <Printer className="w-4 h-4 text-white" />
+          <span className="text-white">Print / Save PDF</span>
         </button>
       </div>
 
-      {/* Print Template & Hidden Email Table */}
-      {/* Print Template & Hidden Email Table */}
-      <div className="hidden print:block w-full bg-white text-black">
-        <style type="text/css" media="print">
-          {`
-            @page { margin: 15mm; size: A4; }
-            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: white; }
-            * { font-family: var(--font-sans), 'Outfit', system-ui, sans-serif; }
-            h1, h2, h3 { font-family: var(--font-heading), 'Montserrat', sans-serif !important; }
-          `}
-        </style>
-        
-        <div ref={emailTableRef} style={{ color: "#1f2937", width: "100%", maxWidth: "800px", margin: "0 auto", padding: "40px", boxSizing: "border-box", fontSize: "12px", lineHeight: "1.4", fontFamily: "Arial, sans-serif" }}>
-          
-          {/* Header */}
-          <table width="100%" border={0} cellPadding={0} cellSpacing={0} style={{ borderBottom: "2px solid #f3f4f6", paddingBottom: "16px", marginBottom: "24px" }}>
-            <tbody>
-              <tr>
-                <td valign="top" width="50%">
-                  {settings?.logoUrl ? (
-                    <img src={settings.logoUrl} alt={settings.companyName} style={{ maxHeight: "48px", marginBottom: "12px" }} />
-                  ) : (
-                    <h1 style={{ margin: "0 0 12px 0", fontSize: "20px", fontWeight: "700", color: "#111827", fontFamily: "var(--font-heading), 'Montserrat', Arial, sans-serif" }}>{settings?.companyName || "Company Name"}</h1>
-                  )}
-                </td>
-                <td valign="top" width="50%" align="right">
-                  <h2 style={{ margin: "0 0 6px 0", fontSize: "22px", fontWeight: "800", color: "#f97316", textTransform: "uppercase", letterSpacing: "1px", fontFamily: "var(--font-heading), 'Montserrat', Arial, sans-serif" }}>Purchase Order</h2>
-                  <p style={{ margin: "0 0 2px 0", color: "#4b5563" }}><strong>Date:</strong> {new Date(po.createdAt).toLocaleDateString()}</p>
-                  <p style={{ margin: "0", color: "#4b5563", wordBreak: "break-all" }}><strong>PO No:</strong> {po.poNumber || po.id}</p>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-
-          {/* Details */}
-          <table width="100%" border={0} cellPadding={0} cellSpacing={0} style={{ marginBottom: "24px" }}>
-            <tbody>
-              <tr>
-                <td valign="top" width="50%" style={{ paddingRight: "16px" }}>
-                  <h3 style={{ margin: "0 0 6px 0", fontSize: "10px", textTransform: "uppercase", color: "#9ca3af", letterSpacing: "0.5px" }}>Vendor</h3>
-                  <p style={{ margin: "0 0 2px 0", fontSize: "14px", fontWeight: "600", color: "#111827" }}>{po.supplier.name}</p>
-                  {po.supplier.email && <p style={{ margin: "0 0 2px 0", color: "#4b5563" }}>{po.supplier.email}</p>}
-                </td>
-                <td valign="top" width="50%" style={{ paddingLeft: "16px", borderLeft: "1px solid #f3f4f6" }}>
-                  <h3 style={{ margin: "0 0 6px 0", fontSize: "10px", textTransform: "uppercase", color: "#9ca3af", letterSpacing: "0.5px" }}>Ship To</h3>
-                  <p style={{ margin: "0 0 2px 0", fontSize: "14px", fontWeight: "600", color: "#111827" }}>{settings?.companyName}</p>
-                  {settings?.shippingAddress && <p style={{ margin: "0 0 2px 0", color: "#4b5563", whiteSpace: "pre-wrap" }}>{settings.shippingAddress}</p>}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-
-          {settings?.poMessage && (
-            <div 
-              style={{ marginBottom: "24px", padding: "12px", backgroundColor: "#f9fafb", borderRadius: "6px", color: "#374151" }}
-              dangerouslySetInnerHTML={{ __html: settings.poMessage }}
-            />
-          )}
-
-          {/* Table */}
-          <table width="100%" border={0} cellPadding={0} cellSpacing={0} style={{ borderCollapse: "collapse", border: "1px solid #d1d5db", marginBottom: "24px", tableLayout: "fixed" }}>
-            <thead style={{ backgroundColor: "#f9fafb" }}>
-              <tr>
-                <th style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "left", color: "#374151", fontSize: "11px", textTransform: "uppercase", fontWeight: "700", width: "12%" }}>Code</th>
-                <th style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "left", color: "#374151", fontSize: "11px", textTransform: "uppercase", fontWeight: "700", width: "38%" }}>Description</th>
-                <th style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "center", color: "#374151", fontSize: "11px", textTransform: "uppercase", fontWeight: "700", width: "8%" }}>Qty</th>
-                <th style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "right", color: "#374151", fontSize: "11px", textTransform: "uppercase", fontWeight: "700", width: "15%" }}>Rate</th>
-                <th style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "center", color: "#374151", fontSize: "11px", textTransform: "uppercase", fontWeight: "700", width: "7%" }}>GST</th>
-                <th style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "right", color: "#374151", fontSize: "11px", textTransform: "uppercase", fontWeight: "700", width: "20%" }}>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {po.items.map((item: any) => (
-                <tr key={item.id}>
-                  <td style={{ border: "1px solid #d1d5db", padding: "10px 8px", verticalAlign: "top", wordBreak: "break-word" }}>
-                    <span style={{ fontFamily: "monospace", color: "#4b5563" }}>{item.product.materialCode}</span>
-                  </td>
-                  <td style={{ border: "1px solid #d1d5db", padding: "10px 8px", verticalAlign: "top", wordBreak: "break-word" }}>
-                    <div style={{ fontWeight: "600", color: "#111827", marginBottom: "4px", fontSize: "13px" }}>{item.product.materialDescription}</div>
-                    {item.product.specification && (
-                      <div style={{ fontSize: "11px", color: "#6b7280", whiteSpace: "pre-wrap", marginBottom: "4px" }}>{item.product.specification}</div>
-                    )}
-                    {item.comment && (
-                      <div style={{ fontSize: "11px", color: "#dc2626", fontWeight: "bold", whiteSpace: "pre-wrap", marginTop: "4px" }}>{item.comment}</div>
-                    )}
-                  </td>
-                  <td style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "center", verticalAlign: "top" }}>
-                    <span style={{ fontWeight: "600", color: "#374151", fontSize: "13px", fontVariantNumeric: "tabular-nums" }}>{item.quantity}</span>
-                    <span style={{ fontSize: "10px", color: "#9ca3af", marginLeft: "4px" }}>{item.product.unit}</span>
-                  </td>
-                  <td style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "right", verticalAlign: "top", color: "#374151", fontSize: "13px", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
-                    {formatRupee(item.unitPrice)}
-                  </td>
-                  <td style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "center", verticalAlign: "top", color: "#374151", fontSize: "13px", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
-                    {item.gstRate}%
-                  </td>
-                  <td style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "right", verticalAlign: "top", color: "#111827", fontWeight: "600", fontSize: "13px", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
-                    {formatRupee(item.quantity * item.unitPrice)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <table width="100%" border={0} cellPadding={0} cellSpacing={0}>
-            <tbody>
-              <tr>
-                <td width="50%" valign="top" style={{ paddingRight: "24px" }}>
-                  <p style={{ margin: "0 0 8px 0", color: "#4b5563", fontSize: "12px", textTransform: "uppercase", fontWeight: "600", letterSpacing: "0.5px" }}>Amount in Words</p>
-                  <p style={{ margin: "0", color: "#111827", fontSize: "13px", fontWeight: "600", textTransform: "capitalize", fontStyle: "italic", lineHeight: "1.4" }}>
-                    {numberToWordsRupees(po.totalAmount + po.totalGst)}
-                  </p>
-                </td>
-                <td width="50%" align="right">
-                  <table width="100%" border={0} cellPadding={0} cellSpacing={0} style={{ border: "1px solid #d1d5db", backgroundColor: "#f9fafb", borderCollapse: "collapse" }}>
-                    <tbody>
-                      <tr>
-                        <td style={{ padding: "12px 16px", color: "#4b5563", textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Subtotal</td>
-                        <td style={{ padding: "12px 16px", fontWeight: "600", color: "#111827", textAlign: "right", borderBottom: "1px solid #e5e7eb", fontVariantNumeric: "tabular-nums" }}>{formatRupee(po.totalAmount)}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ padding: "12px 16px", color: "#4b5563", textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Total GST</td>
-                        <td style={{ padding: "12px 16px", fontWeight: "600", color: "#111827", textAlign: "right", borderBottom: "1px solid #e5e7eb", fontVariantNumeric: "tabular-nums" }}>{formatRupee(po.totalGst)}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ padding: "16px", fontSize: "16px", fontWeight: "800", color: "#111827", textAlign: "left" }}>Grand Total</td>
-                        <td style={{ padding: "16px", fontSize: "16px", fontWeight: "800", color: "#f97316", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{formatRupee(po.totalAmount + po.totalGst)}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-
-          {/* Terms and Notes */}
-          <table width="100%" border={0} cellPadding={0} cellSpacing={0} style={{ marginTop: "32px", marginBottom: "24px", borderCollapse: "collapse", fontSize: "12px", color: "#374151" }}>
-            <tbody>
-              {po.paymentTerms && (
-                <tr>
-                  <td style={{ padding: "8px 0", borderBottom: "1px solid #f3f4f6", width: "25%", fontWeight: "600", color: "#6b7280" }}>Payment Terms</td>
-                  <td style={{ padding: "8px 0", borderBottom: "1px solid #f3f4f6", width: "75%", fontWeight: "500" }}>{po.paymentTerms}</td>
-                </tr>
+      {/* Unified Print & Email Template */}
+      <DocumentPrintPortal filename={pdfFilename}>
+        <CorporateDocumentTemplate
+          ref={emailTableRef}
+          docType="PURCHASE ORDER"
+          docNumber={poLabel}
+          date={po.createdAt}
+          filename={pdfFilename}
+          settings={settings}
+          metaRows={[
+            ...(po.expectedDeliveryDate
+              ? [
+                  {
+                    label: "Expected Delivery",
+                    value: new Date(po.expectedDeliveryDate).toLocaleDateString("en-IN", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    }),
+                  },
+                ]
+              : []),
+            ...(po.quotation?.id
+              ? [{ label: "Quote Ref", value: formatShortId(po.quotation.id) }]
+              : []),
+            ...(po.rfqId ? [{ label: "RFQ Ref", value: formatShortId(po.rfqId) }] : []),
+          ]}
+          partyBox={{
+            heading: "Vendor / Supplier",
+            name: po.supplier?.name || "Vendor",
+            location: po.supplier?.location,
+            gstNumber: po.supplier?.gstNumber,
+            contact: po.supplier?.contact,
+            email: po.supplier?.email,
+          }}
+          summaryBox={{
+            heading: "Ship & Bill To / Order Terms",
+            title: settings?.companyName || "Radiant Industrial Company",
+            subtitle: settings?.shippingAddress || settings?.address || undefined,
+            rows: [
+              { label: "Payment Terms", value: po.paymentTerms || "As per agreement" },
+              { label: "Delivery Terms", value: po.deliveryTerms || "Ex-Works / Door Delivery" },
+              {
+                label: "Expected Delivery",
+                value: po.expectedDeliveryDate
+                  ? new Date(po.expectedDeliveryDate).toLocaleDateString("en-IN", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })
+                  : "Immediate",
+              },
+            ],
+          }}
+          columns={[
+            { label: "#", width: "6%", align: "center" },
+            { label: "Material Code", width: "15%", align: "left" },
+            { label: "Description & Specification", width: "37%", align: "left" },
+            { label: "Qty / UOM", width: "10%", align: "center" },
+            { label: "GST", width: "7%", align: "center" },
+            { label: "Unit Rate", width: "12%", align: "right" },
+            { label: "Amount", width: "13%", align: "right" },
+          ]}
+          rows={po.items.map((item: any, idx: number) => [
+            <span key="idx" style={{ color: "#64748b", fontSize: "11px" }}>
+              {idx + 1}
+            </span>,
+            <span
+              key="code"
+              style={{
+                fontFamily: "monospace",
+                fontSize: "11px",
+                fontWeight: 700,
+                color: "#0f172a",
+              }}
+            >
+              {item.product.materialCode}
+            </span>,
+            <div key="desc">
+              <div style={{ fontWeight: 700, color: "#0f172a", fontSize: "12px" }}>
+                {item.product.materialDescription}
+              </div>
+              {item.product.specification && (
+                <div
+                  style={{
+                    fontSize: "11px",
+                    color: "#475569",
+                    whiteSpace: "pre-wrap",
+                    marginTop: "3px",
+                  }}
+                >
+                  {item.product.specification}
+                </div>
               )}
-              {po.deliveryTerms && (
-                <tr>
-                  <td style={{ padding: "8px 0", borderBottom: "1px solid #f3f4f6", width: "25%", fontWeight: "600", color: "#6b7280" }}>Delivery Terms</td>
-                  <td style={{ padding: "8px 0", borderBottom: "1px solid #f3f4f6", width: "75%", fontWeight: "500" }}>{po.deliveryTerms}</td>
-                </tr>
+              {item.comment && (
+                <div
+                  style={{
+                    fontSize: "11px",
+                    color: "#c2410c",
+                    fontWeight: 600,
+                    whiteSpace: "pre-wrap",
+                    marginTop: "3px",
+                  }}
+                >
+                  Note: {item.comment}
+                </div>
               )}
-              {po.expectedDeliveryDate && (
-                <tr>
-                  <td style={{ padding: "8px 0", borderBottom: "1px solid #f3f4f6", width: "25%", fontWeight: "600", color: "#6b7280" }}>Expected Delivery</td>
-                  <td style={{ padding: "8px 0", borderBottom: "1px solid #f3f4f6", width: "75%", fontWeight: "500" }}>{new Date(po.expectedDeliveryDate).toLocaleDateString()}</td>
-                </tr>
-              )}
-              {po.notes && (
-                <tr>
-                  <td style={{ padding: "8px 0", width: "25%", fontWeight: "600", color: "#6b7280", verticalAlign: "top" }}>Notes</td>
-                  <td style={{ padding: "8px 0", width: "75%", fontWeight: "500", whiteSpace: "pre-wrap" }}>{po.notes}</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+            </div>,
+            <div key="qty">
+              <span style={{ fontWeight: 700, color: "#0f172a" }}>{item.quantity}</span>
+              <span style={{ fontSize: "10px", color: "#64748b", display: "block" }}>
+                {item.product.unit}
+              </span>
+            </div>,
+            <span key="gst" style={{ fontSize: "11px", color: "#475569" }}>
+              {item.gstRate}%
+            </span>,
+            <span
+              key="rate"
+              style={{
+                fontSize: "11.5px",
+                color: "#0f172a",
+                whiteSpace: "nowrap",
+                fontFamily: "monospace",
+              }}
+            >
+              {formatRupee(item.unitPrice)}
+            </span>,
+            <span
+              key="amt"
+              style={{
+                fontWeight: 700,
+                color: "#0f172a",
+                fontSize: "11.5px",
+                whiteSpace: "nowrap",
+                fontFamily: "monospace",
+              }}
+            >
+              {formatRupee(Math.round(item.quantity * item.unitPrice))}
+            </span>,
+          ])}
+          totals={{
+            subtotal: po.totalAmount,
+            totalGst: po.totalGst,
+            grandTotal: po.totalAmount + po.totalGst,
+          }}
+          notesBox={
+            po.notes
+              ? {
+                  heading: "Special Instructions / Notes",
+                  text: po.notes,
+                }
+              : null
+          }
+        />
+      </DocumentPrintPortal>
 
-          {/* Footer */}
-          {settings?.bottomDetails && (
-            <div 
-              style={{ borderTop: "1px solid #e5e7eb", paddingTop: "24px", fontSize: "12px", color: "#6b7280", lineHeight: "1.6" }}
-              dangerouslySetInnerHTML={{ __html: settings.bottomDetails }}
-            />
-          )}
-        </div>
-      </div>
-    
       {isSendModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 print:hidden">
-          <div className="bg-premium-dark border border-premium-border rounded-lg w-full max-w-2xl p-6 shadow-2xl relative max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 print:hidden">
+          <div className="bg-white border border-slate-200 rounded-xl w-full max-w-xl p-6 shadow-xl relative max-h-[90vh] flex flex-col">
             {!isSending && (
               <button 
                 onClick={() => setIsSendModalOpen(false)}
-                className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors"
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             )}
             
-            <h3 className="text-xl font-bold text-white mb-2 font-heading">
-              {sendResults ? 'Sending Complete' : isSending ? 'Sending Emails...' : 'Send PO Directly'}
+            <h3 className="text-lg font-bold text-slate-900 mb-1">
+              {sendResults ? "Email Delivery Summary" : isSending ? "Sending Purchase Order..." : `Email PO (${poLabel})`}
             </h3>
             
             {!sendResults && !isSending && (
-              <p className="text-zinc-400 text-sm mb-6">
-                Paste or type recipient email addresses. Invalid emails will be automatically ignored.
+              <p className="text-slate-500 text-sm mb-5">
+                Enter or paste supplier email addresses below. Press Enter, Space, or Comma to add multiple recipients.
               </p>
             )}
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-6">
+            <div className="flex-1 overflow-y-auto pr-1 space-y-5">
               {!sendResults && !isSending ? (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">To:</label>
-                    <div className="w-full bg-zinc-950 border border-zinc-800 rounded-md p-2 flex flex-wrap gap-2 items-start min-h-[100px] focus-within:border-brand-orange focus-within:ring-1 focus-within:ring-brand-orange transition-all cursor-text" onClick={() => document.getElementById('email-input')?.focus()}>
-                      {validEmails.map(email => (
-                        <div key={email} className="flex items-center gap-1 bg-brand-orange/20 text-brand-orange px-2 py-1 rounded-md text-sm">
-                          <span>{email}</span>
-                          <button onClick={(e) => { e.stopPropagation(); removeEmail(email); }} className="hover:text-white transition-colors">
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ))}
-                      <input
-                        id="email-input"
-                        type="text"
-                        value={emailInput}
-                        onChange={handleEmailInputChange}
-                        onPaste={handleEmailInputPaste}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            if (emailInput.trim()) {
-                              parseEmails(emailInput);
-                              setEmailInput('');
-                            }
-                          } else if (e.key === 'Backspace' && !emailInput && validEmails.length > 0) {
-                            const newEmails = [...validEmails];
-                            newEmails.pop();
-                            setValidEmails(newEmails);
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Recipients</label>
+                  <div
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 flex flex-wrap gap-2 items-start min-h-[90px] focus-within:border-brand-orange focus-within:bg-white transition-all cursor-text"
+                    onClick={() => document.getElementById("po-email-input")?.focus()}
+                  >
+                    {validEmails.map(email => (
+                      <div key={email} className="flex items-center gap-1.5 bg-orange-50 border border-orange-200 text-brand-orange px-2.5 py-1 rounded-md text-xs font-medium">
+                        <span>{email}</span>
+                        <button onClick={(e) => { e.stopPropagation(); removeEmail(email); }} className="hover:text-orange-900">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                    <input
+                      id="po-email-input"
+                      type="text"
+                      value={emailInput}
+                      onChange={handleEmailInputChange}
+                      onPaste={handleEmailInputPaste}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault()
+                          if (emailInput.trim()) {
+                            parseEmails(emailInput)
+                            setEmailInput("")
                           }
-                        }}
-                        placeholder={validEmails.length === 0 ? "supplier@example.com" : ""}
-                        className="flex-1 bg-transparent border-none outline-none text-white min-w-[200px] py-1 text-sm"
-                        autoFocus
-                      />
-                    </div>
+                        } else if (e.key === "Backspace" && !emailInput && validEmails.length > 0) {
+                          const newEmails = [...validEmails]
+                          newEmails.pop()
+                          setValidEmails(newEmails)
+                        }
+                      }}
+                      placeholder={validEmails.length === 0 ? "supplier@company.com" : ""}
+                      className="flex-1 bg-transparent border-none outline-none text-slate-900 min-w-[180px] py-1 text-sm"
+                      autoFocus
+                    />
                   </div>
                 </div>
               ) : (
-                <div className="space-y-6 py-4">
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="bg-premium-surface/50 border border-premium-border rounded-md p-4 text-center">
-                      <div className="text-3xl font-black text-white">{validEmails.length + (emailInput.trim() && emailRegex.test(emailInput.trim()) && !validEmails.includes(emailInput.trim()) ? 1 : 0)}</div>
-                      <div className="text-xs text-zinc-400 font-bold uppercase tracking-widest mt-1">Total</div>
+                <div className="space-y-4 py-2">
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-center">
+                      <div className="text-2xl font-bold text-slate-900">{validEmails.length}</div>
+                      <div className="text-[11px] text-slate-500 font-semibold uppercase">Total</div>
                     </div>
-                    <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-md p-4 text-center">
-                      <div className="text-3xl font-black text-emerald-500">
-                        {sendResults ? sendResults.filter(r => r.status === 'success').length : (isSending ? '-' : '0')}
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-center">
+                      <div className="text-2xl font-bold text-emerald-600">
+                        {sendResults ? sendResults.filter(r => r.status === "success").length : "-"}
                       </div>
-                      <div className="text-xs text-emerald-500/70 font-bold uppercase tracking-widest mt-1">Sent</div>
+                      <div className="text-[11px] text-emerald-700 font-semibold uppercase">Sent</div>
                     </div>
-                    <div className="bg-rose-500/10 border border-rose-500/20 rounded-md p-4 text-center">
-                      <div className="text-3xl font-black text-rose-500">
-                        {sendResults ? sendResults.filter(r => r.status === 'failed').length : (isSending ? '-' : '0')}
+                    <div className="bg-rose-50 border border-rose-200 rounded-lg p-3 text-center">
+                      <div className="text-2xl font-bold text-rose-600">
+                        {sendResults ? sendResults.filter(r => r.status === "failed").length : "-"}
                       </div>
-                      <div className="text-xs text-rose-500/70 font-bold uppercase tracking-widest mt-1">Failed</div>
+                      <div className="text-[11px] text-rose-700 font-semibold uppercase">Failed</div>
                     </div>
                   </div>
 
                   {isSending && !sendResults && (
-                    <div className="flex flex-col items-center justify-center py-8 space-y-4">
-                      <Loader2 className="w-12 h-12 text-brand-orange animate-spin" />
-                      <p className="text-zinc-400 font-medium">Sending your emails, please don't close this window...</p>
+                    <div className="flex flex-col items-center justify-center py-6 space-y-3">
+                      <Loader2 className="w-8 h-8 text-brand-orange animate-spin" />
+                      <p className="text-slate-600 text-sm font-medium">Dispatching Purchase Order email...</p>
                     </div>
                   )}
 
                   {sendResults && (
-                    <div className="mt-6">
-                      <h4 className="text-sm font-bold text-white mb-3 tracking-wide">Detailed Logs</h4>
-                      <div className="border border-premium-border rounded-md overflow-hidden">
-                        <table className="w-full text-left text-sm">
-                          <thead className="bg-premium-surface/80 border-b border-premium-border">
-                            <tr>
-                              <th className="px-4 py-3 font-semibold text-zinc-300">Email</th>
-                              <th className="px-4 py-3 font-semibold text-zinc-300">Status</th>
-                              <th className="px-4 py-3 font-semibold text-zinc-300">Log</th>
+                    <div className="border border-slate-200 rounded-lg overflow-hidden">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-50 border-b border-slate-200 text-slate-600">
+                          <tr>
+                            <th className="px-3 py-2.5 font-semibold">Recipient</th>
+                            <th className="px-3 py-2.5 font-semibold">Status</th>
+                            <th className="px-3 py-2.5 font-semibold">Details</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200">
+                          {sendResults.map((result, idx) => (
+                            <tr key={idx}>
+                              <td className="px-3 py-2.5 text-slate-900 font-medium">{result.email}</td>
+                              <td className="px-3 py-2.5">
+                                {result.status === "success" ? (
+                                  <span className="inline-flex items-center gap-1 text-emerald-600 font-semibold">
+                                    <CheckCircle2 className="w-3.5 h-3.5" /> Sent
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 text-rose-600 font-semibold">
+                                    <XCircle className="w-3.5 h-3.5" /> Failed
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-3 py-2.5 text-slate-500 font-mono">{result.error || "Delivered"}</td>
                             </tr>
-                          </thead>
-                          <tbody className="divide-y divide-premium-border bg-black/20">
-                            {sendResults.map((result, idx) => (
-                              <tr key={idx} className="hover:bg-white/5 transition-colors">
-                                <td className="px-4 py-3 text-white font-medium">{result.email}</td>
-                                <td className="px-4 py-3">
-                                  {result.status === 'success' ? (
-                                    <span className="flex items-center gap-1 text-emerald-500 text-xs font-bold uppercase tracking-wider">
-                                      <CheckCircle2 className="w-4 h-4" /> Success
-                                    </span>
-                                  ) : (
-                                    <span className="flex items-center gap-1 text-rose-500 text-xs font-bold uppercase tracking-wider">
-                                      <XCircle className="w-4 h-4" /> Failed
-                                    </span>
-                                  )}
-                                </td>
-                                <td className="px-4 py-3 text-zinc-400 text-xs font-mono break-words max-w-[200px]">
-                                  {result.error || 'OK'}
-                                </td>
-                              </tr>
-                            ))}
-                          
-              </tbody>
-            </table>
-          </div>
-          
-
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   )}
                 </div>
               )}
             </div>
 
-            <div className="mt-6 pt-6 border-t border-premium-border">
+            <div className="mt-5 pt-4 border-t border-slate-200 flex justify-end gap-2">
               {!sendResults && !isSending ? (
-                <button 
-                  onClick={handleSendEmail}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-indigo-600 hover:to-blue-500 shadow-lg shadow-blue-500/20 text-white font-medium rounded-md transition-all active:scale-95"
-                >
-                  <Send className="w-5 h-5" />
-                  <span>Send PO</span>
-                </button>
+                <>
+                  <button
+                    onClick={() => setIsSendModalOpen(false)}
+                    className="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-900"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleSendEmail}
+                    className="flex items-center gap-1.5 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-xs transition-all"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Send PO Email</span>
+                  </button>
+                </>
               ) : sendResults ? (
                 <button 
                   onClick={() => setIsSendModalOpen(false)}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-premium-surface/50 border border-premium-border hover:bg-white/5 text-white font-medium rounded-md transition-all active:scale-95"
+                  className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg"
                 >
-                  Close
+                  Done
                 </button>
               ) : null}
             </div>
@@ -620,7 +685,5 @@ export function POActions({
         </div>
       )}
     </>
-
   )
 }
-

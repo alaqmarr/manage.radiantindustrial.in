@@ -2,27 +2,21 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
-
-function generateId() {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-  let id = 'COC-'
-  for (let i = 0; i < 6; i++) {
-    id += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  return id
-}
+import { generateSmartCocId } from "@/lib/smartId"
 
 export async function createCoc(data: any) {
   try {
     const session = await auth()
     if (!session?.user) return { error: "Unauthorized" }
 
-    const id = generateId()
+    const smartCoc = await generateSmartCocId(data.clientId)
+    const id = smartCoc.id
+    const cocNumber = data.cocNumber?.trim() || smartCoc.cocNumber
 
     await prisma.certificateOfConformance.create({
       data: {
         id,
-        cocNumber: data.cocNumber || id,
+        cocNumber,
         clientId: data.clientId,
         quotationId: data.quotationId || null,
         clientPoRef: data.clientPoRef || null,

@@ -1,6 +1,7 @@
 "use server"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
+import { generateSmartPurchaseId } from "@/lib/smartId"
 
 export async function createPurchase(payload: {
   supplierId: string
@@ -13,8 +14,8 @@ export async function createPurchase(payload: {
   }
 
   try {
-    // Generate an ID for the purchase
-    const id = `pur-${Date.now()}`
+    // Generate a smart ascending ID for the purchase
+    const id = await generateSmartPurchaseId(payload.supplierId)
 
     // Calculate totals
     let totalAmount = 0
@@ -48,7 +49,7 @@ export async function createPurchase(payload: {
       }
     }
 
-    const itemsToCreate = payload.items.map(item => {
+    const itemsToCreate = payload.items.map((item, idx) => {
       const product = productMap[item.productId]
       const amount = item.cpSnapshot * item.quantity
       const gst = Math.round(amount * (product.gstRate / 100))
@@ -57,7 +58,7 @@ export async function createPurchase(payload: {
       totalGst += gst
 
       return {
-        id: `pi-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: `${id}-item-${idx + 1}`,
         productId: item.productId,
         quantity: item.quantity,
         cpSnapshot: item.cpSnapshot
@@ -156,7 +157,7 @@ export async function updatePurchase(id: string, payload: {
       }
     }
 
-    const itemsToCreate = payload.items.map(item => {
+    const itemsToCreate = payload.items.map((item, idx) => {
       const product = productMap[item.productId]
       const amount = item.cpSnapshot * item.quantity
       const gst = Math.round(amount * (product.gstRate / 100))
@@ -165,7 +166,7 @@ export async function updatePurchase(id: string, payload: {
       totalGst += gst
 
       return {
-        id: `pi-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: `${id}-item-${idx + 1}`,
         productId: item.productId,
         quantity: item.quantity,
         cpSnapshot: item.cpSnapshot

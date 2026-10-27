@@ -203,6 +203,11 @@ model QuotationItem {
   comment              String? // User comment for this item in the quotation
   leadTime             String? // Lead time for delivery
   additionalCost       Int?      @default(0) // paise. Internal cost (e.g. freight) borne by us, reduces profit.
+  isConfirmed          Boolean   @default(true) // Whether client confirmed this item in partial/full order
+  quotedQuantity       Float? // Original quoted quantity before partial order adjustment
+  itemDescription      String? // Line-specific product description (e.g. variant/size override)
+  itemSpecification    String? // Line-specific specification override
+  itemUnit             String? // Line-specific unit override
 
   @@index([quotationId])
   @@index([productId])
@@ -270,13 +275,14 @@ model Rfq {
 }
 
 model RfqItem {
-  id        String  @id
-  rfqId     String
-  rfq       Rfq     @relation(fields: [rfqId], references: [id], onDelete: Cascade)
-  productId String
-  product   Product @relation(fields: [productId], references: [id])
-  quantity  Float
-  comment   String?
+  id              String  @id
+  rfqId           String
+  rfq             Rfq     @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  productId       String
+  product         Product @relation(fields: [productId], references: [id])
+  quantity        Float
+  comment         String?
+  itemDescription String? // Line-specific description override
   vendorResponses RfqVendorResponseItem[]
 
   @@index([rfqId])
@@ -344,15 +350,16 @@ model PurchaseOrder {
 }
 
 model PurchaseOrderItem {
-  id        String        @id
-  poId      String
-  po        PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
-  productId String
-  product   Product       @relation(fields: [productId], references: [id])
-  quantity  Float
-  unitPrice Int // paise (vendor quoted price)
-  gstRate   Float
-  comment   String?
+  id              String        @id
+  poId            String
+  po              PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+  productId       String
+  product         Product       @relation(fields: [productId], references: [id])
+  quantity        Float
+  unitPrice       Int // paise (vendor quoted price)
+  gstRate         Float
+  comment         String?
+  itemDescription String? // Line-specific description override
 
   @@index([poId])
   @@index([productId])
@@ -448,15 +455,16 @@ model CertificateOfConformance {
 }
 
 model CocItem {
-  id         String                   @id @default(cuid())
-  cocId      String
-  coc        CertificateOfConformance @relation(fields: [cocId], references: [id], onDelete: Cascade)
-  productId  String
-  product    Product                  @relation(fields: [productId], references: [id])
-  quantity   Float
-  batchNo    String?
-  remarks    String?
-  attributes String? // JSON string for key-value pairs
+  id              String                   @id @default(cuid())
+  cocId           String
+  coc             CertificateOfConformance @relation(fields: [cocId], references: [id], onDelete: Cascade)
+  productId       String
+  product         Product                  @relation(fields: [productId], references: [id])
+  quantity        Float
+  batchNo         String?
+  remarks         String?
+  itemDescription String? // Line-specific description override
+  attributes      String? // JSON string for key-value pairs
 
   @@index([cocId])
   @@index([productId])

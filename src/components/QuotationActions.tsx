@@ -1,25 +1,51 @@
 "use client"
-import { Printer, Copy, Check, Edit, Trash2 } from "lucide-react"
+import { Printer, Copy, Check, Edit, Trash2, FileSpreadsheet, Clock, ClipboardList, CheckSquare, Layers } from "lucide-react"
 import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { deleteQuotation } from "@/app/actions/quotation"
-import { formatRupee, numberToWordsRupees } from "@/lib/utils"
-import { toast } from "sonner"
+import { formatRupee, formatShortId } from "@/lib/utils"
+import { sileo } from "sileo"
+import {
+  DocumentPrintPortal,
+  CorporateDocumentTemplate,
+  buildSmartPdfFilename,
+  triggerPrintWithFilename,
+} from "./DocumentTemplate"
+import { QuotationOrderConfirmModal } from "./QuotationOrderConfirmModal"
+import { ConfirmDeleteModal } from "./ConfirmDeleteModal"
+import { SmartMultiPoModal } from "./SmartMultiPoModal"
 
 export function QuotationActions({ 
   quotation, 
-  settings 
+  settings,
+  suppliers = [],
+  isFullyOrdered = false,
+  existingPosCount = 0
 }: { 
   quotation: any, 
-  settings: any 
+  settings: any,
+  suppliers?: { id: string; name: string }[],
+  isFullyOrdered?: boolean,
+  existingPosCount?: number
 }) {
   const [copied, setCopied] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false)
+  const [isSmartSplitModalOpen, setIsSmartSplitModalOpen] = useState(false)
   const emailTableRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
+  const pdfFilename = buildSmartPdfFilename({
+    docType: "Quotation",
+    docNumber: formatShortId(quotation.id),
+    partyName: quotation.client?.name,
+    referenceNo: quotation.prNo || quotation.rfqNo,
+    date: quotation.createdAt,
+  })
+
   const handlePrint = () => {
-    window.print()
+    triggerPrintWithFilename(pdfFilename, `Quotation #${formatShortId(quotation.id)}`)
   }
 
   const handleCopyEmail = async () => {
@@ -38,55 +64,58 @@ export function QuotationActions({
       ])
       
       setCopied(true)
+      sileo.success({
+        title: "Quotation Copied for Email",
+        description: `Formatted HTML table for Quotation #${formatShortId(quotation.id)} is ready to paste into your email client.`
+      })
       setTimeout(() => setCopied(false), 2000)
     } catch (err) {
-      console.error("Failed to use Clipboard API, falling back to basic copy", err)
       try {
-        // Fallback for non-HTTPS or browsers that don't support ClipboardItem
         const range = document.createRange()
         range.selectNodeContents(emailTableRef.current)
         const selection = window.getSelection()
         selection?.removeAllRanges()
         selection?.addRange(range)
-        
-        // This requires the hidden div to actually be visible enough to be selected,
-        // but since it's `hidden print:block`, standard `execCommand` might fail.
-        // Let's temporarily make it visible for copying
-        const originalClass = emailTableRef.current.parentElement?.className
-        if (emailTableRef.current.parentElement) {
-          emailTableRef.current.parentElement.className = 'w-full bg-white text-black p-8 absolute top-[-9999px] left-[-9999px]'
-        }
-        
-        document.execCommand('copy')
-        
-        if (emailTableRef.current.parentElement && originalClass) {
-          emailTableRef.current.parentElement.className = originalClass
-        }
-        
+        document.execCommand("copy")
         selection?.removeAllRanges()
-        
         setCopied(true)
+        sileo.success({
+          title: "Quotation Copied",
+          description: "Formatted quotation copied to clipboard."
+        })
         setTimeout(() => setCopied(false), 2000)
       } catch (fallbackErr) {
-        console.error("Fallback copy also failed", fallbackErr)
-        toast.error("Failed to copy. Your browser might not support this feature.")
+        sileo.error({
+          title: "Clipboard Copy Failed",
+          description: "Your browser blocked clipboard access. Please try printing to PDF instead."
+        })
       }
     }
   }
 
   const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this quotation?")) return
     setIsDeleting(true)
     try {
       const res = await deleteQuotation(quotation.id)
       if (res.success) {
+        sileo.success({
+          title: "Quotation Deleted",
+          description: `Quotation #${formatShortId(quotation.id)} has been permanently removed.`
+        })
+        setIsDeleteModalOpen(false)
         router.push("/quotations")
         router.refresh()
       } else {
-        toast.error(res.error)
+        sileo.error({
+          title: "Could Not Delete Quotation",
+          description: res.error || "An error occurred while deleting."
+        })
       }
     } catch (e: any) {
-      toast.error("Failed to delete quotation")
+      sileo.error({
+        title: "Delete Error",
+        description: e.message || "Failed to delete quotation."
+      })
     } finally {
       setIsDeleting(false)
     }
@@ -101,15 +130,21 @@ export function QuotationActions({
     
     try {
       await navigator.clipboard.writeText(lines)
-      toast.success("Lead times copied to clipboard!")
+      sileo.success({
+        title: "Lead Times Copied",
+        description: `Copied lead times for ${quotation.items.length} item(s) to clipboard.`
+      })
     } catch (err) {
-      toast.error("Failed to copy lead times")
+      sileo.error({
+        title: "Copy Failed",
+        description: "Unable to copy lead times to clipboard."
+      })
     }
   }
 
   const handleExportExcel = async () => {
     try {
-      const XLSX = await import("xlsx");
+      const XLSX = await import("xlsx")
       
       const rows = quotation.items.filter((item: any) => item.spSnapshot > 0).map((item: any, index: number) => ({
         "SR NO": index + 1,
@@ -117,271 +152,390 @@ export function QuotationActions({
         "Description": item.product.materialDescription,
         "Specification": item.product.specification || "",
         "Comment": item.comment || "",
+        "Lead Time": item.leadTime || "",
         "Qty": item.quantity,
         "UOM": item.product.unit,
-        "Rate": item.spSnapshot / 100,
-        "Amount": Math.round(item.spSnapshot * item.quantity) / 100
-      }));
+        "GST %": item.gstSnapshot || item.product.gstRate,
+        "Rate (INR)": item.spSnapshot / 100,
+        "Amount (INR)": Math.round(item.spSnapshot * item.quantity) / 100
+      }))
       
-      // Calculate totals
       rows.push({
         "SR NO": "",
         "Code": "",
-        "Description": "Subtotal",
+        "Description": "Subtotal (Excl. GST)",
         "Specification": "",
         "Comment": "",
+        "Lead Time": "",
         "Qty": "",
         "UOM": "",
-        "Rate": "",
-        "Amount": quotation.totalAmount / 100
-      } as any);
+        "GST %": "",
+        "Rate (INR)": "",
+        "Amount (INR)": quotation.totalAmount / 100
+      } as any)
       rows.push({
         "SR NO": "",
         "Code": "",
         "Description": "Total GST",
         "Specification": "",
         "Comment": "",
+        "Lead Time": "",
         "Qty": "",
         "UOM": "",
-        "Rate": "",
-        "Amount": quotation.totalGst / 100
-      } as any);
+        "GST %": "",
+        "Rate (INR)": "",
+        "Amount (INR)": quotation.totalGst / 100
+      } as any)
       rows.push({
         "SR NO": "",
         "Code": "",
-        "Description": "Grand Total",
+        "Description": "Grand Total (Incl. GST)",
         "Specification": "",
         "Comment": "",
+        "Lead Time": "",
         "Qty": "",
         "UOM": "",
-        "Rate": "",
-        "Amount": (quotation.totalAmount + quotation.totalGst) / 100
-      } as any);
+        "GST %": "",
+        "Rate (INR)": "",
+        "Amount (INR)": (quotation.totalAmount + quotation.totalGst) / 100
+      } as any)
 
-      const worksheet = XLSX.utils.json_to_sheet(rows);
-      
-      // Auto-size columns roughly
-      const columnWidths = [
-        { wch: 8 },  // SR NO
-        { wch: 20 }, // Code
-        { wch: 50 }, // Description
-        { wch: 30 }, // Specification
-        { wch: 30 }, // Comment
-        { wch: 8 },  // Qty
-        { wch: 8 },  // UOM
-        { wch: 12 }, // Rate
-        { wch: 15 }, // Amount
-      ];
-      worksheet['!cols'] = columnWidths;
+      const worksheet = XLSX.utils.json_to_sheet(rows)
+      worksheet["!cols"] = [
+        { wch: 8 },
+        { wch: 18 },
+        { wch: 45 },
+        { wch: 30 },
+        { wch: 25 },
+        { wch: 16 },
+        { wch: 10 },
+        { wch: 10 },
+        { wch: 10 },
+        { wch: 14 },
+        { wch: 16 },
+      ]
 
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Quotation");
-      
-      XLSX.writeFile(workbook, `Quotation_${quotation.id.slice(-6)}.xlsx`);
+      const workbook = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Quotation")
+      XLSX.writeFile(workbook, `${pdfFilename}.xlsx`)
+      sileo.success({
+        title: "Excel Exported",
+        description: `Downloaded ${pdfFilename}.xlsx`
+      })
     } catch (err) {
-      console.error("Failed to export to Excel", err);
-      toast.error("Failed to export to Excel.");
+      sileo.error({
+        title: "Excel Export Failed",
+        description: "Could not generate spreadsheet file."
+      })
     }
+  }
+
+  const activeItems =
+    quotation.status === "ACCEPTED" || quotation.status === "COMPLETED"
+      ? quotation.items.filter((item: any) => item.isConfirmed !== false)
+      : quotation.items
+  const quotedItems = activeItems.filter((item: any) => item.spSnapshot > 0)
+  const displayItems = quotedItems.length > 0 ? quotedItems : activeItems
+  const confirmedCount = quotation.items.filter((item: any) => item.isConfirmed !== false).length
+
+  const deleteImpactItems: string[] = [
+    `${quotation.items?.length || 0} quotation line item(s) will be permanently removed`,
+  ]
+  const totalPosCount = quotation.purchaseOrders?.length ?? existingPosCount ?? 0
+  if (totalPosCount > 0) {
+    deleteImpactItems.push(
+      `${totalPosCount} linked Purchase Order(s) will be unlinked from this quotation`
+    )
+  }
+  if (quotation.cocs?.length > 0) {
+    deleteImpactItems.push(
+      `${quotation.cocs.length} linked Quality Certificate(s) (COC) will be unlinked`
+    )
+  }
+  if (quotation.payments?.length > 0) {
+    deleteImpactItems.push(
+      `${quotation.payments.length} recorded payment transaction(s) will be removed`
+    )
   }
 
   return (
     <>
-      <div className="flex gap-3 print:hidden">
+      <QuotationOrderConfirmModal
+        isOpen={isConfirmModalOpen}
+        onClose={() => setIsConfirmModalOpen(false)}
+        quotationId={quotation.id}
+        clientName={quotation.client?.name || "Client"}
+        prNo={quotation.prNo}
+        items={quotation.items}
+      />
+
+      <SmartMultiPoModal
+        isOpen={isSmartSplitModalOpen}
+        onClose={() => setIsSmartSplitModalOpen(false)}
+        quotation={quotation}
+        suppliers={suppliers}
+        existingPos={quotation.purchaseOrders}
+      />
+
+      <ConfirmDeleteModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDelete}
+        isDeleting={isDeleting}
+        title={`Delete Quotation #${formatShortId(quotation.id)}?`}
+        description={`Are you sure you want to permanently delete this quotation for ${
+          quotation.client?.name || "this client"
+        }? This action cannot be undone.`}
+        impactItems={deleteImpactItems}
+      />
+
+      <div className="flex flex-wrap items-center gap-2 print:hidden">
+        <button
+          type="button"
+          onClick={() => setIsConfirmModalOpen(true)}
+          className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg shadow-xs transition-all cursor-pointer"
+          title="Select which items and quantities were confirmed by the client"
+        >
+          <CheckSquare className="w-4 h-4 text-white" />
+          <span className="text-white">
+            {quotation.status === "ACCEPTED" || quotation.status === "COMPLETED"
+              ? `Confirmed Items (${confirmedCount}/${quotation.items.length})`
+              : "Confirm Order (Full / Partial)"}
+          </span>
+        </button>
+
+        {(quotation.status === "ACCEPTED" || quotation.status === "COMPLETED") && (
+          <>
+            <button
+              onClick={() => {
+                if (isFullyOrdered) {
+                  sileo.warning({
+                    title: "All Items Already Ordered",
+                    description: "Purchase Orders have already been generated for all items in this quotation."
+                  })
+                  return
+                }
+                router.push(`/purchase-orders/new?quotationId=${quotation.id}`)
+              }}
+              className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all border ${
+                isFullyOrdered
+                  ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed"
+                  : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200"
+              }`}
+            >
+              <ClipboardList className="w-4 h-4" />
+              <span>{isFullyOrdered ? "PO Fully Created" : "Create PO"}</span>
+            </button>
+
+            {!isFullyOrdered && (
+              <button
+                type="button"
+                onClick={() => setIsSmartSplitModalOpen(true)}
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 text-xs font-semibold rounded-lg transition-all cursor-pointer shadow-2xs"
+                title="Split quotation items across multiple vendors and generate all POs in one click"
+              >
+                <Layers className="w-4 h-4 text-orange-600" />
+                <span>Smart Split POs</span>
+              </button>
+            )}
+          </>
+        )}
         <button 
           onClick={handleExportExcel}
-          className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 font-medium rounded-md transition-colors border border-emerald-500/20 active:scale-95"
+          className="flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium rounded-lg transition-colors border border-slate-200 shadow-xs"
         >
-          <span className="text-sm">Export Excel</span>
-        </button>
-        <button 
-          onClick={() => router.push(`/quotations/${quotation.id}/edit`)}
-          className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-white font-medium rounded-md transition-colors border border-premium-border active:scale-95"
-        >
-          <Edit className="w-4 h-4" />
-          <span className="text-sm">Edit</span>
-        </button>
-        <button 
-          onClick={() => router.push(`/quotations/new?duplicateFrom=${quotation.id}`)}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 font-medium rounded-md transition-colors border border-indigo-500/20 active:scale-95"
-        >
-          <Copy className="w-4 h-4" />
-          <span className="text-sm">Duplicate</span>
-        </button>
-        <button 
-          onClick={handleDelete}
-          disabled={isDeleting}
-          className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 disabled:opacity-50 text-red-500 font-medium rounded-md transition-colors border border-red-500/20 active:scale-95"
-        >
-          <Trash2 className="w-4 h-4" />
-          <span className="text-sm">{isDeleting ? "Deleting..." : "Delete"}</span>
-        </button>
-        <button 
-          onClick={handleCopyEmail}
-          className="flex items-center gap-2 px-4 py-2 bg-brand-slate hover:bg-brand-slate/80 text-white font-medium rounded-md transition-colors border border-brand-slate/50 active:scale-95"
-        >
-          {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-          <span className="text-sm">{copied ? "Copied!" : "Copy for Email"}</span>
+          <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+          <span>Export Excel</span>
         </button>
         <button 
           onClick={handleCopyLeadTime}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 font-medium rounded-md transition-colors border border-blue-500/20 active:scale-95"
+          className="flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium rounded-lg transition-colors border border-slate-200 shadow-xs"
         >
-          <Copy className="w-4 h-4" />
-          <span className="text-sm">Copy Lead Time</span>
+          <Clock className="w-4 h-4 text-blue-600" />
+          <span>Copy Lead Times</span>
+        </button>
+        <button 
+          onClick={handleCopyEmail}
+          className="flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium rounded-lg transition-colors border border-slate-200 shadow-xs"
+        >
+          {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-slate-500" />}
+          <span>{copied ? "Copied!" : "Copy for Email"}</span>
+        </button>
+        <button 
+          onClick={() => router.push(`/quotations/new?duplicateFrom=${quotation.id}`)}
+          className="flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium rounded-lg transition-colors border border-slate-200 shadow-xs"
+        >
+          <Copy className="w-4 h-4 text-indigo-600" />
+          <span>Duplicate</span>
+        </button>
+        <button 
+          onClick={() => router.push(`/quotations/${quotation.id}/edit`)}
+          className="flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium rounded-lg transition-colors border border-slate-200 shadow-xs"
+        >
+          <Edit className="w-4 h-4 text-slate-600" />
+          <span>Edit</span>
+        </button>
+        <button 
+          onClick={() => setIsDeleteModalOpen(true)}
+          disabled={isDeleting}
+          className="flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-rose-50 disabled:opacity-50 text-rose-600 text-xs font-medium rounded-lg transition-colors border border-rose-200 shadow-xs"
+        >
+          <Trash2 className="w-4 h-4" />
+          <span>{isDeleting ? "Deleting..." : "Delete"}</span>
         </button>
         <button 
           onClick={handlePrint}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-brand-orange to-brand-orange-dark hover:from-brand-orange-dark hover:to-brand-orange shadow-lg shadow-brand-orange/20 text-white font-medium rounded-md transition-all active:scale-95"
+          title={`Auto-filename: ${pdfFilename}.pdf`}
+          className="flex items-center gap-1.5 px-4 py-2 bg-brand-orange hover:bg-brand-orange-dark text-white text-xs font-semibold rounded-lg shadow-sm transition-all active:scale-95 cursor-pointer"
         >
-          <Printer className="w-4 h-4" />
-          <span className="text-sm">Print Quotation</span>
+          <Printer className="w-4 h-4 text-white" />
+          <span className="text-white">Print / Save PDF</span>
         </button>
       </div>
 
-      {/* Print Template & Hidden Email Table */}
-      {/* Print Template & Hidden Email Table */}
-      <div className="hidden print:block w-full bg-white text-black">
-        <style type="text/css" media="print">
-          {`
-            @page { margin: 15mm; size: A4; }
-            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: white; }
-            * { font-family: var(--font-sans), 'Outfit', system-ui, sans-serif; }
-            h1, h2, h3 { font-family: var(--font-heading), 'Montserrat', sans-serif !important; }
-          `}
-        </style>
-        
-        <div ref={emailTableRef} style={{ color: "#1f2937", width: "100%", maxWidth: "800px", margin: "0 auto", padding: "40px", boxSizing: "border-box", fontSize: "12px", lineHeight: "1.4", fontFamily: "Arial, sans-serif" }}>
-          
-          {/* Header */}
-          <table width="100%" border={0} cellPadding={0} cellSpacing={0} style={{ borderBottom: "2px solid #f3f4f6", paddingBottom: "16px", marginBottom: "24px" }}>
-            <tbody>
-              <tr>
-                <td valign="top" width="50%">
-                  {settings?.logoUrl ? (
-                    <img src={settings.logoUrl} alt={settings.companyName} style={{ maxHeight: "48px", marginBottom: "12px" }} />
-                  ) : (
-                    <h1 style={{ margin: "0 0 12px 0", fontSize: "20px", fontWeight: "700", color: "#111827", fontFamily: "var(--font-heading), 'Montserrat', Arial, sans-serif" }}>{settings?.companyName || "Company Name"}</h1>
-                  )}
-                </td>
-                <td valign="top" width="50%" align="right">
-                  <h2 style={{ margin: "0 0 6px 0", fontSize: "22px", fontWeight: "800", color: "#f97316", textTransform: "uppercase", letterSpacing: "1px", fontFamily: "var(--font-heading), 'Montserrat', Arial, sans-serif" }}>Quotation</h2>
-                  <p style={{ margin: "0 0 2px 0", color: "#4b5563" }}><strong>Date:</strong> {new Date(quotation.createdAt).toLocaleDateString()}</p>
-                  <p style={{ margin: "0", color: "#4b5563", wordBreak: "break-all" }}><strong>Quote No:</strong> {quotation.id}</p>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-
-          {/* Details */}
-          <table width="100%" border={0} cellPadding={0} cellSpacing={0} style={{ marginBottom: "24px" }}>
-            <tbody>
-              <tr>
-                <td valign="top" width="50%" style={{ paddingRight: "16px" }}>
-                  <h3 style={{ margin: "0 0 6px 0", fontSize: "10px", textTransform: "uppercase", color: "#9ca3af", letterSpacing: "0.5px" }}>Quote To</h3>
-                  <p style={{ margin: "0 0 2px 0", fontSize: "14px", fontWeight: "600", color: "#111827" }}>{quotation.client.name}</p>
-                  {quotation.client.email && <p style={{ margin: "0 0 2px 0", color: "#4b5563" }}>{quotation.client.email}</p>}
-                </td>
-                <td valign="top" width="50%" style={{ paddingLeft: "16px", borderLeft: "1px solid #f3f4f6" }}>
-                  <h3 style={{ margin: "0 0 6px 0", fontSize: "10px", textTransform: "uppercase", color: "#9ca3af", letterSpacing: "0.5px" }}>Reference</h3>
-                  {quotation.prNo && <p style={{ margin: "0 0 2px 0" }}><strong style={{ color: "#4b5563" }}>PR No:</strong> {quotation.prNo}</p>}
-                  {quotation.rfqNo && <p style={{ margin: "0 0 2px 0" }}><strong style={{ color: "#4b5563" }}>RFQ No:</strong> {quotation.rfqNo}</p>}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-
-          {settings?.quotationMessage && (
-            <div 
-              style={{ marginBottom: "24px", padding: "12px", backgroundColor: "#f9fafb", borderRadius: "6px", color: "#374151" }}
-              dangerouslySetInnerHTML={{ __html: settings.quotationMessage }}
-            />
-          )}
-
-          {/* Table */}
-          <table width="100%" border={0} cellPadding={0} cellSpacing={0} style={{ borderCollapse: "collapse", border: "1px solid #d1d5db", marginBottom: "24px", tableLayout: "fixed" }}>
-            <thead style={{ backgroundColor: "#f9fafb" }}>
-              <tr>
-                <th style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "left", color: "#374151", fontSize: "11px", textTransform: "uppercase", fontWeight: "700", width: "15%" }}>Code</th>
-                <th style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "left", color: "#374151", fontSize: "11px", textTransform: "uppercase", fontWeight: "700", width: "45%" }}>Description</th>
-                <th style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "center", color: "#374151", fontSize: "11px", textTransform: "uppercase", fontWeight: "700", width: "10%" }}>Qty</th>
-                <th style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "right", color: "#374151", fontSize: "11px", textTransform: "uppercase", fontWeight: "700", width: "15%" }}>Rate</th>
-                <th style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "right", color: "#374151", fontSize: "11px", textTransform: "uppercase", fontWeight: "700", width: "15%" }}>Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {quotation.items.filter((item: any) => item.spSnapshot > 0).map((item: any) => (
-                <tr key={item.id}>
-                  <td style={{ border: "1px solid #d1d5db", padding: "10px 8px", verticalAlign: "top", wordBreak: "break-word" }}>
-                    <span style={{ fontFamily: "monospace", color: "#4b5563" }}>{item.product.materialCode}</span>
-                  </td>
-                  <td style={{ border: "1px solid #d1d5db", padding: "10px 8px", verticalAlign: "top", wordBreak: "break-word" }}>
-                    <div style={{ fontWeight: "600", color: "#111827", marginBottom: "4px", fontSize: "13px" }}>{item.product.materialDescription}</div>
-                    {item.product.specification && (
-                      <div style={{ fontSize: "11px", color: "#6b7280", whiteSpace: "pre-wrap", marginBottom: "4px" }}>{item.product.specification}</div>
-                    )}
-                    {item.comment && (
-                      <div style={{ fontSize: "11px", color: "#dc2626", fontWeight: "bold", whiteSpace: "pre-wrap", marginTop: "4px" }}>{item.comment}</div>
-                    )}
-                    {item.leadTime && (
-                      <div style={{ fontSize: "11px", color: "#2563eb", fontWeight: "bold", whiteSpace: "pre-wrap", marginTop: "4px" }}>Lead Time: {item.leadTime}</div>
-                    )}
-                  </td>
-                  <td style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "center", verticalAlign: "top" }}>
-                    <span style={{ fontWeight: "600", color: "#374151", fontSize: "13px", fontVariantNumeric: "tabular-nums" }}>{item.quantity}</span>
-                    <span style={{ fontSize: "10px", color: "#9ca3af", marginLeft: "4px" }}>{item.product.unit}</span>
-                  </td>
-                  <td style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "right", verticalAlign: "top", fontSize: "13px", fontVariantNumeric: "tabular-nums" }}>
-                    {formatRupee(item.spSnapshot)}
-                  </td>
-                  <td style={{ border: "1px solid #d1d5db", padding: "10px 8px", textAlign: "right", verticalAlign: "top", fontWeight: "600", color: "#111827", fontSize: "13px", fontVariantNumeric: "tabular-nums" }}>
-                    {formatRupee(Math.round(item.spSnapshot * item.quantity))}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {/* Totals - Email Safe */}
-          <table width="100%" border={0} cellPadding={0} cellSpacing={0} style={{ marginBottom: "40px" }}>
-            <tbody>
-              <tr>
-                <td width="40%"></td>
-                <td width="60%" align="right">
-                  <table width="100%" border={0} cellPadding={0} cellSpacing={0} style={{ border: "1px solid #d1d5db", backgroundColor: "#f9fafb", borderCollapse: "collapse" }}>
-                    <tbody>
-                      <tr>
-                        <td style={{ padding: "12px 16px", color: "#4b5563", textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Subtotal</td>
-                        <td style={{ padding: "12px 16px", fontWeight: "600", color: "#111827", textAlign: "right", borderBottom: "1px solid #e5e7eb", fontVariantNumeric: "tabular-nums" }}>{formatRupee(quotation.totalAmount)}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ padding: "12px 16px", color: "#4b5563", textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Total GST</td>
-                        <td style={{ padding: "12px 16px", fontWeight: "600", color: "#111827", textAlign: "right", borderBottom: "1px solid #e5e7eb", fontVariantNumeric: "tabular-nums" }}>{formatRupee(quotation.totalGst)}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ padding: "16px", fontSize: "16px", fontWeight: "800", color: "#111827", textAlign: "left" }}>Grand Total</td>
-                        <td style={{ padding: "16px", fontSize: "16px", fontWeight: "800", color: "#f97316", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{formatRupee(quotation.totalAmount + quotation.totalGst)}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                  
-                  <div style={{ marginTop: "12px", fontSize: "12px", color: "#4b5563", textAlign: "right", fontStyle: "italic" }}>
-                    Amount in words: <span style={{ fontWeight: "600" }}>{numberToWordsRupees(quotation.totalAmount + quotation.totalGst)}</span>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-
-          {/* Footer */}
-          {settings?.bottomDetails && (
-            <div 
-              style={{ borderTop: "1px solid #e5e7eb", paddingTop: "24px", fontSize: "12px", color: "#6b7280", lineHeight: "1.6" }}
-              dangerouslySetInnerHTML={{ __html: settings.bottomDetails }}
-            />
-          )}
-        </div>
-      </div>
+      {/* Unified Print & Email Template */}
+      <DocumentPrintPortal filename={pdfFilename}>
+        <CorporateDocumentTemplate
+          ref={emailTableRef}
+          docType="QUOTATION"
+          docNumber={formatShortId(quotation.id)}
+          date={quotation.createdAt}
+          filename={pdfFilename}
+          settings={settings}
+          showBankDetails={true}
+          metaRows={[
+            ...(quotation.prNo ? [{ label: "Client PR No", value: quotation.prNo }] : []),
+            ...(quotation.rfqNo ? [{ label: "Client RFQ No", value: quotation.rfqNo }] : []),
+          ]}
+          partyBox={{
+            heading: "Quotation For (Client)",
+            name: quotation.client?.name || "Client",
+            address: quotation.client?.address,
+            location: quotation.client?.location,
+            gstNumber: quotation.client?.gstNumber,
+            contact: quotation.client?.contact,
+            email: quotation.client?.email,
+          }}
+          summaryBox={{
+            heading: "Commercial Offer Summary",
+            rows: [
+              { label: "Total Line Items", value: `${displayItems.length} item(s)` },
+              { label: "Currency", value: "INR (₹)" },
+              ...(quotation.prNo ? [{ label: "PR Reference", value: quotation.prNo }] : []),
+              ...(quotation.rfqNo ? [{ label: "RFQ Reference", value: quotation.rfqNo }] : []),
+              {
+                label: "Offer Status",
+                value: quotation.status === "ACCEPTED" || quotation.status === "COMPLETED" ? "Confirmed Order" : "Commercial Offer",
+              },
+            ],
+          }}
+          introHtml={settings?.quotationMessage}
+          columns={[
+            { label: "#", width: "6%", align: "center" },
+            { label: "Material Code", width: "15%", align: "left" },
+            { label: "Description & Specification", width: "37%", align: "left" },
+            { label: "Qty / UOM", width: "10%", align: "center" },
+            { label: "GST", width: "7%", align: "center" },
+            { label: "Unit Rate", width: "12%", align: "right" },
+            { label: "Amount", width: "13%", align: "right" },
+          ]}
+          rows={displayItems.map((item: any, idx: number) => [
+            <span key="idx" style={{ color: "#64748b", fontSize: "11px" }}>
+              {idx + 1}
+            </span>,
+            <span
+              key="code"
+              style={{
+                fontFamily: "monospace",
+                fontSize: "11px",
+                fontWeight: 700,
+                color: "#0f172a",
+              }}
+            >
+              {item.product.materialCode}
+            </span>,
+            <div key="desc">
+              <div style={{ fontWeight: 700, color: "#0f172a", fontSize: "12px" }}>
+                {item.product.materialDescription}
+              </div>
+              {item.product.specification && (
+                <div
+                  style={{
+                    fontSize: "11px",
+                    color: "#475569",
+                    whiteSpace: "pre-wrap",
+                    marginTop: "3px",
+                  }}
+                >
+                  {item.product.specification}
+                </div>
+              )}
+              {item.comment && (
+                <div
+                  style={{
+                    fontSize: "11px",
+                    color: "#c2410c",
+                    fontWeight: 600,
+                    whiteSpace: "pre-wrap",
+                    marginTop: "3px",
+                  }}
+                >
+                  Note: {item.comment}
+                </div>
+              )}
+              {item.leadTime && (
+                <div
+                  style={{
+                    fontSize: "10.5px",
+                    color: "#1d4ed8",
+                    fontWeight: 600,
+                    marginTop: "3px",
+                  }}
+                >
+                  Lead Time: {item.leadTime}
+                </div>
+              )}
+            </div>,
+            <div key="qty">
+              <span style={{ fontWeight: 700, color: "#0f172a" }}>{item.quantity}</span>
+              <span style={{ fontSize: "10px", color: "#64748b", display: "block" }}>
+                {item.product.unit}
+              </span>
+            </div>,
+            <span key="gst" style={{ fontSize: "11px", color: "#475569" }}>
+              {item.gstSnapshot ?? item.product.gstRate}%
+            </span>,
+            <span
+              key="rate"
+              style={{
+                fontSize: "11.5px",
+                color: "#0f172a",
+                whiteSpace: "nowrap",
+                fontFamily: "monospace",
+              }}
+            >
+              {formatRupee(item.spSnapshot)}
+            </span>,
+            <span
+              key="amt"
+              style={{
+                fontWeight: 700,
+                color: "#0f172a",
+                fontSize: "11.5px",
+                whiteSpace: "nowrap",
+                fontFamily: "monospace",
+              }}
+            >
+              {formatRupee(Math.round(item.spSnapshot * item.quantity))}
+            </span>,
+          ])}
+          totals={{
+            subtotal: quotation.totalAmount,
+            totalGst: quotation.totalGst,
+            grandTotal: quotation.totalAmount + quotation.totalGst,
+          }}
+        />
+      </DocumentPrintPortal>
     </>
   )
 }
-

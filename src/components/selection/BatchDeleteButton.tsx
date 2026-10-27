@@ -4,12 +4,13 @@ import React, { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useSelection } from "./SelectionContext"
 import { Trash2, Loader2 } from "lucide-react"
+import { sileo } from "sileo"
 
-export function BatchDeleteButton({ 
-  deleteAction, 
-  entityName = "items" 
-}: { 
-  deleteAction: (ids: string[]) => Promise<{ success: boolean; error?: string }>,
+export function BatchDeleteButton({
+  deleteAction,
+  entityName = "items",
+}: {
+  deleteAction: (ids: string[]) => Promise<{ success: boolean; error?: string }>
   entityName?: string
 }) {
   const router = useRouter()
@@ -25,15 +26,26 @@ export function BatchDeleteButton({
 
     setIsDeleting(true)
     try {
+      const count = selectedIds.size
       const result = await deleteAction(Array.from(selectedIds))
       if (result.success) {
         clearSelection()
+        sileo.success({
+          title: "Items Deleted",
+          description: `Successfully deleted ${count} ${entityName}.`,
+        })
         router.refresh()
       } else {
-        alert(result.error || "Failed to delete selected items")
+        sileo.error({
+          title: "Deletion Failed",
+          description: result.error || "Failed to delete selected items.",
+        })
       }
-    } catch (e: any) {
-      alert("An error occurred during deletion.")
+    } catch {
+      sileo.error({
+        title: "Deletion Failed",
+        description: "An unexpected error occurred during deletion.",
+      })
     } finally {
       setIsDeleting(false)
     }
@@ -43,11 +55,10 @@ export function BatchDeleteButton({
     <button
       onClick={handleDelete}
       disabled={isDeleting}
-      className="flex items-center gap-2 px-4 py-2 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-md transition-colors text-sm font-medium border border-rose-500/20 shadow-sm disabled:opacity-50"
+      className="flex items-center gap-2 px-3.5 py-2 bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white rounded-lg transition-colors text-xs font-semibold border border-rose-200 shadow-2xs disabled:opacity-50 cursor-pointer"
     >
       {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
       Delete Selected ({selectedIds.size})
     </button>
   )
 }
-

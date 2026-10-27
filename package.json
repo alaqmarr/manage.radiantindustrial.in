@@ -35,6 +35,7 @@
     "react-hook-form": "^7.84.0",
     "react-markdown": "^10.1.0",
     "recharts": "^3.10.1",
+    "sileo": "^0.1.6",
     "slugify": "^1.6.9",
     "sonner": "^2.0.8",
     "tailwind-merge": "^3.6.0",

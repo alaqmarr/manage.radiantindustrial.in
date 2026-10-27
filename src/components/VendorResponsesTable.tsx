@@ -3,6 +3,7 @@ import { useState } from "react"
 import { formatRupee } from "@/lib/utils"
 import { convertRfqResponseToPo } from "@/app/actions/rfq"
 import { Loader2, Trophy, ExternalLink, Mail, Phone, Clock, FileText } from "lucide-react"
+import { sileo } from "sileo"
 
 export function VendorResponsesTable({ rfq }: { rfq: any }) {
   const [awardingId, setAwardingId] = useState<string | null>(null)
@@ -13,10 +14,10 @@ export function VendorResponsesTable({ rfq }: { rfq: any }) {
     setAwardingId(responseId)
     const res = await convertRfqResponseToPo(responseId)
     if (res.error) {
-      alert(res.error)
+      sileo.error({ title: "Award Failed", description: res.error })
       setAwardingId(null)
     } else {
-      alert("Successfully converted to PO!")
+      sileo.success({ title: "RFQ Awarded", description: "Draft Purchase Order created from vendor response." })
       window.location.href = `/purchase-orders/${res.id}`
     }
   }

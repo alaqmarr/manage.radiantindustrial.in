@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { Copy, Check, Mail, Sparkles, Send, PartyPopper, Landmark, X, Loader2, CheckCircle2, AlertCircle, XCircle } from "lucide-react"
 import { sendEmailAction } from "@/app/actions/email"
+import { sileo } from "sileo"
 
 type TemplateType = 'custom' | 'intro' | 'followup' | 'festive' | 'bank'
 
@@ -97,10 +98,11 @@ export function EmailTemplateBuilder({ settings, data }: EmailTemplateBuilderPro
       
       await navigator.clipboard.write(data);
       setCopied(true);
+      sileo.success({ title: "Copied to Clipboard", description: "Formatted email HTML copied. Paste directly into Gmail or Outlook." });
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error("Failed to copy email", err);
-      alert("Failed to copy to clipboard.");
+      sileo.error({ title: "Copy Failed", description: "Failed to copy email template to clipboard." });
     }
   }
 
@@ -113,7 +115,7 @@ export function EmailTemplateBuilder({ settings, data }: EmailTemplateBuilderPro
     }
 
     if (finalEmails.length === 0) {
-      alert("Please enter at least one valid recipient email address.");
+      sileo.warning({ title: "Missing Recipient", description: "Please enter at least one valid recipient email address." });
       return;
     }
 
@@ -139,13 +141,17 @@ export function EmailTemplateBuilder({ settings, data }: EmailTemplateBuilderPro
       });
 
       if (result.error && !result.results) {
-        alert(result.error);
+        sileo.error({ title: "Send Failed", description: result.error });
       } else if (result.results) {
         setSendResults(result.results as any);
+        const sentCount = result.results.filter((r: any) => r.status === 'success').length;
+        if (sentCount > 0) {
+          sileo.success({ title: "Email Dispatched", description: `Sent to ${sentCount} of ${result.results.length} recipients.` });
+        }
       }
     } catch (err) {
       console.error("Failed to send email", err);
-      alert("Failed to send email due to a network error.");
+      sileo.error({ title: "Network Error", description: "Failed to send email due to a network error." });
     } finally {
       setIsSending(false);
     }

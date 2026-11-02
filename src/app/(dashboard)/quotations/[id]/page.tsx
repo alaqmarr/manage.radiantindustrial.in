@@ -664,7 +664,7 @@ export default async function QuotationViewPage({ params }: { params: Promise<{ 
       )}
 
       {/* Sticky Financial Summary Bar */}
-      <div className="fixed bottom-0 left-0 md:left-64 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200 p-4 md:px-8 flex flex-wrap items-center justify-between gap-6 shadow-lg print:hidden">
+      <div className="sticky bottom-0 -mx-6 lg:-mx-8 -mb-6 lg:-mb-8 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200 p-4 md:px-8 flex flex-wrap items-center justify-between gap-6 shadow-lg print:hidden">
         {(() => {
           const totalAmount = quotation.totalAmount
           const totalGst = quotation.totalGst

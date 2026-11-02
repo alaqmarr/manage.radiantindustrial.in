@@ -111,7 +111,7 @@ export function SettingsForm({ settings }: { settings: any }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-6 max-w-4xl bg-white border border-slate-200 p-6 sm:p-8 rounded-2xl shadow-xs"
+      className="space-y-6 w-full bg-white border border-slate-200 p-6 sm:p-8 rounded-2xl shadow-xs"
     >
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6 border-b border-slate-100">

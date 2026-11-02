@@ -24,11 +24,11 @@ export default async function DashboardLayout({
         <div className="print:hidden">
           <TopBar />
         </div>
-        <main className="flex-1 p-6 lg:p-8 max-w-[1600px] w-full mx-auto print:p-0 print:m-0">
+        <main className="flex-1 p-6 lg:p-8 w-full max-w-none min-w-0 print:p-0 print:m-0">
           <div className="print:hidden">
             <CommandPalette />
           </div>
-          <div className="w-full animate-in fade-in duration-300 print:max-w-none">
+          <div className="w-full max-w-none animate-in fade-in duration-300">
             {children}
           </div>
         </main>

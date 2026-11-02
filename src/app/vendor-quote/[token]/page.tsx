@@ -29,8 +29,8 @@ export default async function VendorQuotePage({ params }: { params: Promise<{ to
   })
 
   return (
-    <div className="min-h-screen bg-black text-white p-4 md:p-8 flex justify-center">
-      <div className="w-full max-w-4xl space-y-8">
+    <div className="min-h-screen bg-black text-white p-4 md:p-8">
+      <div className="w-full space-y-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-zinc-800 pb-8">
           <div>

@@ -77,7 +77,7 @@ export default async function VendorQuotePage({
 
       {/* Header Bar */}
       <header className="bg-white border-b border-slate-200 shadow-2xs">
-        <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col md:flex-row md:items-center justify-between gap-5">
+        <div className="w-full max-w-none px-4 sm:px-6 lg:px-10 py-5 flex flex-col md:flex-row md:items-center justify-between gap-5">
           <div className="flex items-start sm:items-center gap-4">
             <img
               src={settings?.logoUrl || "/logo-long.png"}
@@ -129,7 +129,7 @@ export default async function VendorQuotePage({
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+      <main className="flex-1 w-full max-w-none px-4 sm:px-6 lg:px-10 py-6 sm:py-8 space-y-6">
         {/* Buyer Organization Info Card */}
         <div className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-2">

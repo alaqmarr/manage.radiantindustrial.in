@@ -1,5 +1,5 @@
 "use client"
-import { Printer, Copy, Check, Edit, Trash2, Send, X, Loader2, CheckCircle2, XCircle, FileSpreadsheet, ClipboardList } from "lucide-react"
+import { Printer, Copy, Check, Edit, Trash2, Send, X, Loader2, CheckCircle2, XCircle, FileSpreadsheet, ClipboardList, Link2 } from "lucide-react"
 import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { deleteRfq } from "@/app/actions/rfq"
@@ -22,6 +22,7 @@ export function RfqActions({
   settings: any
 }) {
   const [copied, setCopied] = useState(false)
+  const [copiedPublicLink, setCopiedPublicLink] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const emailTableRef = useRef<HTMLDivElement>(null)
@@ -93,7 +94,15 @@ export function RfqActions({
     setIsSending(true)
     setSendResults(null)
     try {
-      const htmlContent = emailTableRef.current.innerHTML
+      const publicPortalHtml =
+        rfq.isPublic && rfq.publicToken && typeof window !== "undefined"
+          ? `<div style="margin-bottom:20px;padding:16px 20px;background-color:#fff7ed;border:1px solid #fdba74;border-radius:10px;font-family:'Segoe UI',Arial,sans-serif;">
+              <div style="font-size:13px;font-weight:700;color:#9a3412;margin-bottom:6px;">Submit Your Quotation Online (No Login Required)</div>
+              <div style="font-size:12px;color:#7c2d12;margin-bottom:12px;">Click the button below to enter your unit prices and delivery lead times directly on our procurement portal:</div>
+              <a href="${window.location.origin}/vendor-quote/${rfq.publicToken}" style="display:inline-block;padding:10px 18px;background-color:#ea580c;color:#ffffff;text-decoration:none;font-size:12px;font-weight:700;border-radius:8px;">Open Online Quotation Form &rarr;</a>
+            </div>`
+          : ""
+      const htmlContent = publicPortalHtml + emailTableRef.current.innerHTML
       const result = await sendEmailAction({
         to: finalEmails,
         subject: `Request for Quotation - ${rfq.id.slice(-6).toUpperCase()} from ${settings?.companyName || "Radiant Industrial Company"}`,
@@ -242,6 +251,33 @@ export function RfqActions({
   return (
     <>
       <div className="flex flex-wrap items-center gap-2 print:hidden">
+        {rfq.isPublic && rfq.publicToken && (
+          <button
+            type="button"
+            onClick={async () => {
+              const url = `${window.location.origin}/vendor-quote/${rfq.publicToken}`
+              try {
+                await navigator.clipboard.writeText(url)
+                setCopiedPublicLink(true)
+                sileo.success({
+                  title: "Public Bidding Link Copied",
+                  description: "Share with vendors via WhatsApp or Email — no login needed.",
+                })
+                setTimeout(() => setCopiedPublicLink(false), 2000)
+              } catch {
+                sileo.error({ title: "Copy Failed", description: "Could not copy link." })
+              }
+            }}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs font-semibold rounded-lg transition-colors border border-orange-200 cursor-pointer"
+          >
+            {copiedPublicLink ? (
+              <Check className="w-4 h-4 text-emerald-600" />
+            ) : (
+              <Link2 className="w-4 h-4 text-orange-600" />
+            )}
+            <span>{copiedPublicLink ? "Link Copied!" : "Copy Public Link"}</span>
+          </button>
+        )}
         <button
           onClick={() => router.push(`/purchase-orders/new?rfqId=${rfq.id}`)}
           className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg transition-colors border border-emerald-200"

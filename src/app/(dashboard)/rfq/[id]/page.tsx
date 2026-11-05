@@ -170,13 +170,29 @@ export default async function RfqViewPage({
               </div>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="inline-flex items-center gap-2 text-sm font-bold text-blue-700">
                 <Globe className="w-4 h-4" /> Public Multi-Vendor Portal Enabled
               </div>
-              <p className="text-xs text-slate-500">
-                Any supplier with the public share link below can submit their unit prices and lead times.
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Any supplier with the public share link can submit their unit prices and lead times online without logging in.
               </p>
+              {rfq.publicToken && (
+                <div className="pt-1 flex flex-wrap items-center gap-2">
+                  <a
+                    href={`/vendor-quote/${rfq.publicToken}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-semibold transition-colors"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    Open Public Bidding Form
+                  </a>
+                  <span className="text-xs font-semibold text-slate-600 bg-slate-100 border border-slate-200 px-2.5 py-1.5 rounded-lg">
+                    {rfq.responses.length} Vendor Bid{rfq.responses.length !== 1 ? "s" : ""} Received
+                  </span>
+                </div>
+              )}
             </div>
           )}
         </div>

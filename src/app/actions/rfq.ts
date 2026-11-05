@@ -209,14 +209,66 @@ export async function upsertDraftRfq(data: {
       })
     } else {
       await prisma.$transaction(async (tx) => {
-        await tx.rfqItem.deleteMany({
-          where: { rfqId: rfqId },
+        const currentRfq = await tx.rfq.findUnique({
+          where: { id: rfqId },
+          include: { items: { orderBy: { id: "asc" } } },
         })
 
-        const currentRfq = await tx.rfq.findUnique({ where: { id: rfqId } })
         let newToken = currentRfq?.publicToken
         if (data.isPublic && !newToken) {
           newToken = crypto.randomBytes(16).toString("hex")
+        }
+
+        const existingItems = currentRfq?.items || []
+        const keptItemIds = new Set<string>()
+
+        // Update existing items in-place by position when productId matches so vendor bids stay linked
+        const itemsToCreate: {
+          id: string
+          productId: string
+          itemDescription: string | null
+          quantity: number
+          comment: string | null
+        }[] = []
+
+        for (let index = 0; index < data.items.length; index++) {
+          const item = data.items[index]
+          const matchExisting = existingItems.find(
+            (ex) => !keptItemIds.has(ex.id) && ex.productId === item.product.id
+          )
+
+          if (matchExisting) {
+            keptItemIds.add(matchExisting.id)
+            await tx.rfqItem.update({
+              where: { id: matchExisting.id },
+              data: {
+                itemDescription: item.product.materialDescription || null,
+                quantity: item.quantity,
+                comment: item.comment || null,
+              },
+            })
+          } else {
+            itemsToCreate.push({
+              id: `${rfqId}-item-${index + 1}-${Date.now().toString(36).slice(-4)}`,
+              productId: item.product.id,
+              itemDescription: item.product.materialDescription || null,
+              quantity: item.quantity,
+              comment: item.comment || null,
+            })
+          }
+        }
+
+        const removedIds = existingItems
+          .filter((ex) => !keptItemIds.has(ex.id))
+          .map((ex) => ex.id)
+
+        if (removedIds.length > 0) {
+          await tx.rfqVendorResponseItem.deleteMany({
+            where: { rfqItemId: { in: removedIds } },
+          })
+          await tx.rfqItem.deleteMany({
+            where: { id: { in: removedIds } },
+          })
         }
 
         await tx.rfq.update({
@@ -226,15 +278,13 @@ export async function upsertDraftRfq(data: {
             isPublic: data.isPublic || false,
             publicToken: newToken,
             status: finalStatus,
-            items: {
-              create: data.items.map((item, index) => ({
-                id: `${rfqId}-item-${index + 1}-${Date.now().toString(36).slice(-3)}`,
-                productId: item.product.id,
-                itemDescription: item.product.materialDescription || null,
-                quantity: item.quantity,
-                comment: item.comment || null,
-              })),
-            },
+            ...(itemsToCreate.length > 0
+              ? {
+                  items: {
+                    create: itemsToCreate,
+                  },
+                }
+              : {}),
           },
         })
       })
@@ -298,40 +348,66 @@ export async function submitRfqResponse(
   }
 ) {
   try {
+    const trimmedName = (data.vendorName || "").trim()
+    const trimmedEmail = (data.vendorEmail || "").trim()
+    const trimmedPhone = (data.vendorPhone || "").trim()
+
+    if (!trimmedName) {
+      return { error: "Company / Vendor Name is required." }
+    }
+
     const rfq = await prisma.rfq.findUnique({
       where: { publicToken: token },
       include: { items: true },
     })
 
-    if (!rfq) return { error: "Invalid RFQ token" }
-    if (rfq.status === "COMPLETED") return { error: "This RFQ has already been closed" }
+    if (!rfq || !rfq.isPublic) return { error: "Invalid or inactive Public RFQ link." }
+    if (rfq.status === "COMPLETED") return { error: "This RFQ has already been closed." }
 
-    // Try to match supplier by name
-    const matchingSupplier = await prisma.supplier.findFirst({
-      where: { name: { equals: data.vendorName } },
+    if (!data.items.some((i) => i.unitPrice > 0)) {
+      return { error: "Please enter a valid unit price for at least one item." }
+    }
+
+    // Case-insensitive match against existing suppliers by name or email
+    const allSuppliers = await prisma.supplier.findMany({
+      select: { id: true, name: true, email: true },
     })
+    const matchingSupplier = allSuppliers.find(
+      (s) =>
+        s.name.trim().toLowerCase() === trimmedName.toLowerCase() ||
+        (trimmedEmail && s.email && s.email.trim().toLowerCase() === trimmedEmail.toLowerCase())
+    )
 
     await prisma.rfqVendorResponse.create({
       data: {
         rfqId: rfq.id,
         supplierId: matchingSupplier ? matchingSupplier.id : null,
-        vendorName: data.vendorName,
-        vendorEmail: data.vendorEmail,
-        vendorPhone: data.vendorPhone,
+        vendorName: trimmedName,
+        vendorEmail: trimmedEmail || null,
+        vendorPhone: trimmedPhone || null,
         items: {
           create: data.items.map((item) => ({
             rfqItemId: item.rfqItemId,
-            unitPrice: item.unitPrice,
-            leadTime: item.leadTime,
-            remarks: item.remarks,
+            unitPrice: Math.max(0, Math.round(item.unitPrice || 0)),
+            leadTime: item.leadTime?.trim() || null,
+            remarks: item.remarks?.trim() || null,
           })),
         },
       },
     })
 
-    // If we matched a supplier, update ProductSupplier history
+    // Ensure RFQ status reflects active bidding if still DRAFT
+    if (rfq.status === "DRAFT") {
+      await prisma.rfq.update({
+        where: { id: rfq.id },
+        data: { status: "ISSUED" },
+      })
+    }
+
+    // If matched to a registered supplier, update ProductSupplier catalog prices ONLY for quoted items (> 0)
     if (matchingSupplier) {
       for (const item of data.items) {
+        if (!item.unitPrice || item.unitPrice <= 0) continue
         const rfqItem = rfq.items.find((i) => i.id === item.rfqItemId)
         if (rfqItem) {
           await prisma.productSupplier.upsert({
@@ -341,22 +417,24 @@ export async function submitRfqResponse(
                 supplierId: matchingSupplier.id,
               },
             },
-            update: { costPrice: item.unitPrice },
+            update: { costPrice: Math.round(item.unitPrice) },
             create: {
               productId: rfqItem.productId,
               supplierId: matchingSupplier.id,
-              costPrice: item.unitPrice,
+              costPrice: Math.round(item.unitPrice),
             },
           })
         }
       }
     }
 
+    revalidatePath("/rfq")
     revalidatePath(`/rfq/${rfq.id}`)
+    revalidatePath(`/vendor-quote/${token}`)
     return { success: true }
   } catch (error: any) {
     console.error("Submit RFQ Response Error:", error)
-    return { error: error.message || "Failed to submit response" }
+    return { error: error.message || "Failed to submit quotation response" }
   }
 }
 
@@ -374,27 +452,74 @@ export async function convertRfqResponseToPo(responseId: string) {
       },
     })
 
-    if (!response) return { error: "Response not found" }
-    if (!response.supplier) {
-      return {
-        error:
-          "Cannot convert to PO: Vendor is not a registered supplier. Please create a supplier with the exact name '" +
-          response.vendorName +
-          "' first.",
+    if (!response) return { error: "Vendor response not found" }
+
+    const quotedItems = response.items.filter((ri) => ri.unitPrice > 0)
+    if (quotedItems.length === 0) {
+      return { error: "Cannot create PO: this vendor response has no priced items." }
+    }
+
+    // Resolve or auto-register Supplier so awarding a Public RFQ bid always works in 1 click
+    let supplier = response.supplier
+    if (!supplier) {
+      const allSuppliers = await prisma.supplier.findMany()
+      supplier =
+        allSuppliers.find(
+          (s) =>
+            s.name.trim().toLowerCase() === response.vendorName.trim().toLowerCase() ||
+            (response.vendorEmail &&
+              s.email &&
+              s.email.trim().toLowerCase() === response.vendorEmail.trim().toLowerCase())
+        ) || null
+
+      if (!supplier) {
+        supplier = await prisma.supplier.create({
+          data: {
+            id: generateSlug(response.vendorName, true),
+            name: response.vendorName.trim(),
+            email: response.vendorEmail || null,
+            contact: response.vendorPhone || null,
+          },
+        })
+      }
+
+      await prisma.rfqVendorResponse.update({
+        where: { id: response.id },
+        data: { supplierId: supplier.id },
+      })
+    }
+
+    // Sync quoted vendor rates into ProductSupplier catalog
+    for (const ri of quotedItems) {
+      const rfqItem = response.rfq.items.find((i) => i.id === ri.rfqItemId)
+      if (rfqItem) {
+        await prisma.productSupplier.upsert({
+          where: {
+            productId_supplierId: {
+              productId: rfqItem.productId,
+              supplierId: supplier.id,
+            },
+          },
+          update: { costPrice: ri.unitPrice },
+          create: {
+            productId: rfqItem.productId,
+            supplierId: supplier.id,
+            costPrice: ri.unitPrice,
+          },
+        })
       }
     }
 
-    const smartPo = await generateSmartPoId(response.supplier.id)
+    const smartPo = await generateSmartPoId(supplier.id)
     const poId = smartPo.id
     const poNumber = smartPo.poNumber
 
-    // Calculate totals
     let totalAmount = 0
     let totalGst = 0
 
-    const poItemsData = response.items.map((responseItem, idx) => {
+    const poItemsData = quotedItems.map((responseItem, idx) => {
       const rfqItem = response.rfq.items.find((i) => i.id === responseItem.rfqItemId)
-      if (!rfqItem) throw new Error("Mismatched item")
+      if (!rfqItem) throw new Error("Mismatched RFQ line item")
 
       const amount = responseItem.unitPrice * rfqItem.quantity
       const gst = amount * (rfqItem.product.gstRate / 100)
@@ -417,7 +542,7 @@ export async function convertRfqResponseToPo(responseId: string) {
       data: {
         id: poId,
         poNumber,
-        supplierId: response.supplier.id,
+        supplierId: supplier.id,
         rfqId: response.rfqId,
         status: "DRAFT",
         totalAmount: Math.round(totalAmount),
@@ -428,13 +553,15 @@ export async function convertRfqResponseToPo(responseId: string) {
       },
     })
 
-    // Mark RFQ as completed
     await prisma.rfq.update({
       where: { id: response.rfqId },
       data: { status: "COMPLETED" },
     })
 
+    revalidatePath("/suppliers")
+    revalidatePath("/products")
     revalidatePath("/purchase-orders")
+    revalidatePath("/rfq")
     revalidatePath(`/rfq/${response.rfqId}`)
     return { success: true, id: po.id }
   } catch (error: any) {

@@ -10,13 +10,20 @@ export default {
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user
-      const isAuthRoute = nextUrl.pathname.startsWith("/login") || nextUrl.pathname.startsWith("/setup")
-      
+      const pathname = nextUrl.pathname
+
+      // Public vendor RFQ bidding portal — never require authentication
+      if (pathname.startsWith("/vendor-quote")) {
+        return true
+      }
+
+      const isAuthRoute = pathname.startsWith("/login") || pathname.startsWith("/setup")
+
       if (isAuthRoute) {
         if (isLoggedIn) return Response.redirect(new URL("/", nextUrl))
         return true
       }
-      
+
       if (!isLoggedIn) return false
       return true
     },
